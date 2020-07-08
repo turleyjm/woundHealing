@@ -1,2 +1,0 @@
-# woundHealing
- PhD project
