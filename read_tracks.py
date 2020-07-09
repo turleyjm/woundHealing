@@ -184,256 +184,256 @@ def trackmate_edges_import(trackmate_xml_path):
 
 # ----------------------------------------------
 
-# df_vertice = trackmate_vertices_import(trackmate_xml_path, get_tracks=True)
-# df_edge = trackmate_edges_import(trackmate_xml_path)
+df_vertice = trackmate_vertices_import(trackmate_xml_path, get_tracks=True)
+df_edge = trackmate_edges_import(trackmate_xml_path)
 
-# unique_label = list(set(df_vertice["label"]))
+unique_label = list(set(df_vertice["label"]))
 
-# _df_divisions = []
-# for label in unique_label:
+_df_divisions = []f
+for label in unique_label:
 
-#     df = df_vertice.loc[lambda df_vertice: df_vertice["label"] == label, :]
+    df = df_vertice.loc[lambda df_vertice: df_vertice["label"] == label, :]
 
-#     t = list(df.iloc[:, 0])
-#     unique = list(set(t))
+    t = list(df.iloc[:, 0])
+    unique = list(set(t))
 
-#     if len(unique) < len(t):
-#         division = True
-#         spotID = df.iloc[:, 7]
-#     else:
-#         division = False
+    if len(unique) < len(t):
+        division = True
+        spotID = df.iloc[:, 7]
+    else:
+        division = False
 
-#     if division == True:
-#         _df2 = []
-#         for spot in spotID:
-#             _df2.append(
-#                 df_edge.loc[lambda df_edge: df_edge["SPOT_SOURCE_ID"] == spot, :]
-#             )
+    if division == True:
+        _df2 = []
+        for spot in spotID:
+            _df2.append(
+                df_edge.loc[lambda df_edge: df_edge["SPOT_SOURCE_ID"] == spot, :]
+            )
 
-#         df2 = pd.concat(_df2)
+        df2 = pd.concat(_df2)
 
-#         for spot in spotID:
+        for spot in spotID:
 
-#             df3 = df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == spot, :]
-#             n = len(df3)
-#             if n == 2:
-#                 divID = spot
-#                 daughter0 = list(df3["SPOT_TARGET_ID"])[0]
-#                 daughter1 = list(df3["SPOT_TARGET_ID"])[1]
+            df3 = df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == spot, :]
+            n = len(df3)
+            if n == 2:
+                divID = spot
+                daughter0 = list(df3["SPOT_TARGET_ID"])[0]
+                daughter1 = list(df3["SPOT_TARGET_ID"])[1]
 
-#         divID = list([0, divID])
-#         con = True
-#         while con == True:
+        divID = list([0, divID])
+        con = True
+        while con == True:
 
-#             try:
-#                 con = False
-#                 divID.append(
-#                     list(
-#                         df2.loc[lambda df2: df2["SPOT_TARGET_ID"] == divID[-1], :][
-#                             "SPOT_SOURCE_ID"
-#                         ]
-#                     )[0]
-#                 )
-#                 con = True
-#             except:
-#                 pass
+            try:
+                con = False
+                divID.append(
+                    list(
+                        df2.loc[lambda df2: df2["SPOT_TARGET_ID"] == divID[-1], :][
+                            "SPOT_SOURCE_ID"
+                        ]
+                    )[0]
+                )
+                con = True
+            except:
+                pass
 
-#         parent = divID[1:]
-#         parent.reverse()
+        parent = divID[1:]
+        parent.reverse()
 
-#         daughter0 = list([0, daughter0])
-#         con = True
-#         while con == True:
+        daughter0 = list([0, daughter0])
+        con = True
+        while con == True:
 
-#             try:
-#                 con = False
-#                 daughter0.append(
-#                     list(
-#                         df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == daughter0[-1], :][
-#                             "SPOT_TARGET_ID"
-#                         ]
-#                     )[0]
-#                 )
-#                 con = True
-#             except:
-#                 pass
+            try:
+                con = False
+                daughter0.append(
+                    list(
+                        df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == daughter0[-1], :][
+                            "SPOT_TARGET_ID"
+                        ]
+                    )[0]
+                )
+                con = True
+            except:
+                pass
 
-#         daughter0 = daughter0[1:]
+        daughter0 = daughter0[1:]
 
-#         daughter1 = list([0, daughter1])
-#         con = True
-#         while con == True:
+        daughter1 = list([0, daughter1])
+        con = True
+        while con == True:
 
-#             try:
-#                 con = False
-#                 daughter1.append(
-#                     list(
-#                         df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == daughter1[-1], :][
-#                             "SPOT_TARGET_ID"
-#                         ]
-#                     )[0]
-#                 )
-#                 con = True
-#             except:
-#                 pass
+            try:
+                con = False
+                daughter1.append(
+                    list(
+                        df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == daughter1[-1], :][
+                            "SPOT_TARGET_ID"
+                        ]
+                    )[0]
+                )
+                con = True
+            except:
+                pass
 
-#         daughter1 = daughter1[1:]
+        daughter1 = daughter1[1:]
 
-#         _df3 = []
-#         for spot in parent:
-#             _df3.append(
-#                 df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
-#             )
+        _df3 = []
+        for spot in parent:
+            _df3.append(
+                df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
+            )
 
-#         df3 = pd.concat(_df3)
-#         time_list = []
-#         C_list = []
+        df3 = pd.concat(_df3)
+        time_list = []
+        C_list = []
 
-#         for i in range(len(df3)):
-#             t = int(df3.iloc[i, 1])
-#             x = df3.iloc[i, 2]
-#             y = df3.iloc[i, 3]
+        for i in range(len(df3)):
+            t = int(df3.iloc[i, 1])
+            x = df3.iloc[i, 2]
+            y = df3.iloc[i, 3]
 
-#             time_list.append(t)
-#             C_list.append([x, y])
+            time_list.append(t)
+            C_list.append([x, y])
 
-#             if i < len(df3) - 1:
-#                 t0 = int(df3.iloc[i, 1])
-#                 t1 = int(df3.iloc[i + 1, 1])
-#                 gap = t1 - t0
-#                 if gap > 1:
-#                     for j in range(gap - 1):
-#                         time_list.append(t + 1 + j)
+            if i < len(df3) - 1:
+                t0 = int(df3.iloc[i, 1])
+                t1 = int(df3.iloc[i + 1, 1])
+                gap = t1 - t0
+                if gap > 1:
+                    for j in range(gap - 1):
+                        time_list.append(t + 1 + j)
 
-#                         x1 = df3.iloc[i + 1, 2]
-#                         y1 = df3.iloc[i + 1, 3]
+                        x1 = df3.iloc[i + 1, 2]
+                        y1 = df3.iloc[i + 1, 3]
 
-#                         cx = x + ((x1 - x) * (j + 1)) / (gap)
-#                         cy = y + ((y1 - y) * (j + 1)) / (gap)
-#                         C_list.append([cx, cy])
+                        cx = x + ((x1 - x) * (j + 1)) / (gap)
+                        cy = y + ((y1 - y) * (j + 1)) / (gap)
+                        C_list.append([cx, cy])
 
-#         _df_divisions.append(
-#             {"Label": label, "Time": time_list, "Position": C_list, "Chain": "parent",}
-#         )
-#         divisionTime = time_list[-1]
-#         divisionPlace = C_list[-1]
+        _df_divisions.append(
+            {"Label": label, "Time": time_list, "Position": C_list, "Chain": "parent",}
+        )
+        divisionTime = time_list[-1]
+        divisionPlace = C_list[-1]
 
-#         _df3 = []
-#         for spot in daughter0:
-#             _df3.append(
-#                 df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
-#             )
+        _df3 = []
+        for spot in daughter0:
+            _df3.append(
+                df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
+            )
 
-#         df3 = pd.concat(_df3)
-#         time_list = []
-#         C_list = []
+        df3 = pd.concat(_df3)
+        time_list = []
+        C_list = []
 
-#         t = int(df3.iloc[0, 1])
-#         if t - 1 != divisionTime:
-#             gap = t - divisionTime
-#             for j in range(gap - 1):
-#                 time_list.append(divisionTime + 1 + j)
+        t = int(df3.iloc[0, 1])
+        if t - 1 != divisionTime:
+            gap = t - divisionTime
+            for j in range(gap - 1):
+                time_list.append(divisionTime + 1 + j)
 
-#                 [x, y] = divisionPlace
-#                 x1 = df3.iloc[0, 2]
-#                 y1 = df3.iloc[0, 3]
+                [x, y] = divisionPlace
+                x1 = df3.iloc[0, 2]
+                y1 = df3.iloc[0, 3]
 
-#                 cx = x + ((x1 - x) * (j + 1)) / (gap)
-#                 cy = y + ((y1 - y) * (j + 1)) / (gap)
-#                 C_list.append([cx, cy])
+                cx = x + ((x1 - x) * (j + 1)) / (gap)
+                cy = y + ((y1 - y) * (j + 1)) / (gap)
+                C_list.append([cx, cy])
 
-#         for i in range(len(df3)):
-#             t = int(df3.iloc[i, 1])
-#             x = df3.iloc[i, 2]
-#             y = df3.iloc[i, 3]
+        for i in range(len(df3)):
+            t = int(df3.iloc[i, 1])
+            x = df3.iloc[i, 2]
+            y = df3.iloc[i, 3]
 
-#             time_list.append(t)
-#             C_list.append([x, y])
+            time_list.append(t)
+            C_list.append([x, y])
 
-#             if i < len(df3) - 1:
-#                 t0 = int(df3.iloc[i, 1])
-#                 t1 = int(df3.iloc[i + 1, 1])
-#                 gap = t1 - t0
-#                 if gap > 1:
-#                     for j in range(gap - 1):
-#                         time_list.append(t + 1 + j)
+            if i < len(df3) - 1:
+                t0 = int(df3.iloc[i, 1])
+                t1 = int(df3.iloc[i + 1, 1])
+                gap = t1 - t0
+                if gap > 1:
+                    for j in range(gap - 1):
+                        time_list.append(t + 1 + j)
 
-#                         x1 = df3.iloc[i + 1, 2]
-#                         y1 = df3.iloc[i + 1, 3]
+                        x1 = df3.iloc[i + 1, 2]
+                        y1 = df3.iloc[i + 1, 3]
 
-#                         cx = x + ((x1 - x) * (j + 1)) / (gap)
-#                         cy = y + ((y1 - y) * (j + 1)) / (gap)
-#                         C_list.append([cx, cy])
+                        cx = x + ((x1 - x) * (j + 1)) / (gap)
+                        cy = y + ((y1 - y) * (j + 1)) / (gap)
+                        C_list.append([cx, cy])
 
-#         _df_divisions.append(
-#             {
-#                 "Label": label,
-#                 "Time": time_list,
-#                 "Position": C_list,
-#                 "Chain": "daughter0",
-#             }
-#         )
+        _df_divisions.append(
+            {
+                "Label": label,
+                "Time": time_list,
+                "Position": C_list,
+                "Chain": "daughter0",
+            }
+        )
 
-#         _df3 = []
-#         for spot in daughter1:
-#             _df3.append(
-#                 df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
-#             )
+        _df3 = []
+        for spot in daughter1:
+            _df3.append(
+                df_vertice.loc[lambda df_vertice: df_vertice["spot_id"] == spot, :]
+            )
 
-#         df3 = pd.concat(_df3)
-#         time_list = []
-#         C_list = []
+        df3 = pd.concat(_df3)
+        time_list = []
+        C_list = []
 
-#         t = int(df3.iloc[0, 1])
-#         if t - 1 != divisionTime:
-#             gap = t - divisionTime
-#             for j in range(gap - 1):
-#                 time_list.append(divisionTime + 1 + j)
+        t = int(df3.iloc[0, 1])
+        if t - 1 != divisionTime:
+            gap = t - divisionTime
+            for j in range(gap - 1):
+                time_list.append(divisionTime + 1 + j)
 
-#                 [x, y] = divisionPlace
-#                 x1 = df3.iloc[0, 2]
-#                 y1 = df3.iloc[0, 3]
+                [x, y] = divisionPlace
+                x1 = df3.iloc[0, 2]
+                y1 = df3.iloc[0, 3]
 
-#                 cx = x + ((x1 - x) * (j + 1)) / (gap)
-#                 cy = y + ((y1 - y) * (j + 1)) / (gap)
-#                 C_list.append([cx, cy])
+                cx = x + ((x1 - x) * (j + 1)) / (gap)
+                cy = y + ((y1 - y) * (j + 1)) / (gap)
+                C_list.append([cx, cy])
 
-#         for i in range(len(df3)):
-#             t = int(df3.iloc[i, 1])
-#             x = df3.iloc[i, 2]
-#             y = df3.iloc[i, 3]
+        for i in range(len(df3)):
+            t = int(df3.iloc[i, 1])
+            x = df3.iloc[i, 2]
+            y = df3.iloc[i, 3]
 
-#             time_list.append(t)
-#             C_list.append([x, y])
+            time_list.append(t)
+            C_list.append([x, y])
 
-#             if i < len(df3) - 1:
-#                 t0 = int(df3.iloc[i, 1])
-#                 t1 = int(df3.iloc[i + 1, 1])
-#                 gap = t1 - t0
-#                 if gap > 1:
-#                     for j in range(gap - 1):
-#                         time_list.append(t + 1 + j)
+            if i < len(df3) - 1:
+                t0 = int(df3.iloc[i, 1])
+                t1 = int(df3.iloc[i + 1, 1])
+                gap = t1 - t0
+                if gap > 1:
+                    for j in range(gap - 1):
+                        time_list.append(t + 1 + j)
 
-#                         x1 = df3.iloc[i + 1, 2]
-#                         y1 = df3.iloc[i + 1, 3]
+                        x1 = df3.iloc[i + 1, 2]
+                        y1 = df3.iloc[i + 1, 3]
 
-#                         cx = x + ((x1 - x) * (j + 1)) / (gap)
-#                         cy = y + ((y1 - y) * (j + 1)) / (gap)
-#                         C_list.append([cx, cy])
+                        cx = x + ((x1 - x) * (j + 1)) / (gap)
+                        cy = y + ((y1 - y) * (j + 1)) / (gap)
+                        C_list.append([cx, cy])
 
-#         _df_divisions.append(
-#             {
-#                 "Label": label,
-#                 "Time": time_list,
-#                 "Position": C_list,
-#                 "Chain": "daughter1",
-#             }
-#         )
+        _df_divisions.append(
+            {
+                "Label": label,
+                "Time": time_list,
+                "Position": C_list,
+                "Chain": "daughter1",
+            }
+        )
 
-# df_divisions = pd.DataFrame(_df_divisions)
-# df_divisions.to_pickle(f"databases/mitosis_of_{filename}.pkl")
-# df_vertice.to_pickle(f"databases/vertice_of_{filename}.pkl")
-# df_edge.to_pickle(f"databases/edge_of_{filename}.pkl")
+df_divisions = pd.DataFrame(_df_divisions)
+df_divisions.to_pickle(f"databases/mitosis_of_{filename}.pkl")
+df_vertice.to_pickle(f"databases/vertice_of_{filename}.pkl")
+df_edge.to_pickle(f"databases/edge_of_{filename}.pkl")
 
 # --------------------------------------
 
