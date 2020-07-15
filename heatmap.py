@@ -38,10 +38,10 @@ def image_to_poly_labels(img_file):
     in the making of the heat plot"""
 
     img = sm.io.imread(img_file).astype(int)
-    mu = cell.mean(cell.mean(img))
-    if mu < 130:
-        img = img
-        img = np.invert(img - 255) + 1
+    # mu = cell.mean(cell.mean(img))
+    # if mu < 130:
+    #     img = img
+    #     img = np.invert(img - 255) + 1
 
     img_xy = fi.img_rc_to_xy(img)
 

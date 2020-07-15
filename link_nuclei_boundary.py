@@ -21,6 +21,45 @@ from collections import Counter
 import cell_properties as cell
 import find_good_cells as fi
 
+# -----
+
+
+def round_sig(x, sig=2):
+
+    return round(x, sig - int(floor(log10(abs(x)))) - 1)
+
+
+def plot_dist(prop, function_name, function_title, filename, bins=40, xlim="None"):
+    """produces a bar plot with mean line from the colume col of table df"""
+
+    # mu = cell.mean(prop)
+    # sigma = cell.sd(prop)
+    # sigma = float(sigma)
+    # sigma = round_sig(sigma, 3)
+    fig, ax = plt.subplots()
+    plt.gcf().subplots_adjust(bottom=0.15)
+    ax.hist(prop, density=False, bins=bins)
+    ax.set_xlabel(function_name, y=0.13)
+    # ax.axvline(mu, c="k", label="mean")
+    # ax.axvline(mu + sigma, c="k", label=r"$\sigma$", ls="--")
+    # ax.axvline(mu - sigma, c="k", ls="--")
+    # ax.axvline(med, c='r', label='median')
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if xlim != "None":
+        ax.set_xlim(xlim)
+    # plt.suptitle(f"Distribution of {function_name}", y=1)
+    # plt.suptitle(r"$\sigma$" + f" = {sigma}", y=0.95)
+    # fig.legend(loc="upper right", fontsize=18, bbox_to_anchor=(0.9, 0.85))
+    fig.savefig(
+        "results/bar_graphs/" + f"_dist_{function_title}_{filename}.png",
+        dpi=200,
+        transparent=True,
+    )
+
+
+# ------
+
 plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
@@ -29,6 +68,7 @@ filename = "HelenH2"
 df_mitosis = pd.read_pickle(f"databases/mitosisPoly{filename}.pkl")
 
 binary = sm.io.imread(f"dat_binary/binary_prob_HelenEcad.tif").astype(float)
+trackBinary = binary
 
 vid_labels = []
 T = len(binary)
@@ -58,22 +98,23 @@ for label in unique:
     polygonsDaughter2 = []
 
     (Cx, Cy) = df3.iloc[0, 2][-1]
-    t0 = df3.iloc[0, 1][-1]
+    tm = df3.iloc[0, 1][-1]
 
-    if t0 < len(vid_labels) - 5:
+    Cx = int(Cx)
+    Cy = int(Cy)
+    t = tm
 
-        Cx = int(Cx)
-        Cy = int(Cy)
+    parentLabel = vid_labels[tm][Cy, Cx]  # change coord
 
-        img_label = vid_labels[t0][Cy, Cx]  # change coord
+    divided = False
 
-        cell_pos = np.zeros([512, 512])
+    while divided == False and (t + 1 < T):
 
-        cell_pos[vid_labels[t0] == img_label] = 1
-
-        labels = vid_labels[t0 + 4][cell_pos == 1]
+        labels = vid_labels[t + 1][vid_labels[t] == parentLabel]
 
         uniqueLabels = set(list(labels))
+        if 0 in uniqueLabels:
+            uniqueLabels.remove(0)
 
         count = Counter(labels)
         c = []
@@ -81,77 +122,61 @@ for label in unique:
             c.append(count[l])
 
         uniqueLabels = list(uniqueLabels)
-        daughterLabel1 = uniqueLabels[c.index(max(c))]
+        mostLabel = uniqueLabels[c.index(max(c))]
+        C = max(c)
 
         c.remove(max(c))
-        uniqueLabels.remove(daughterLabel1)
+        uniqueLabels.remove(mostLabel)
 
-        daughterLabel2 = uniqueLabels[c.index(max(c))]
+        if c == []:
+            Cdash = 0
+        else:
+            mostLabel2nd = uniqueLabels[c.index(max(c))]
+            Cdash = max(c)
 
-        iter = 0
+        if Cdash / C > 0.5:
+            divided = True
+            daughterLabel1 = mostLabel
+            daughterLabel2 = mostLabel2nd
+        else:
+            t += 1
+            parentLabel = mostLabel
 
-        while (daughterLabel1 != daughterLabel2) and (iter <= 4):
+    if divided == True:
 
-            savedLabel1 = daughterLabel1
+        tc = t  # time of cytokinesis
 
-            labels = vid_labels[t0 + 3 - iter][
-                vid_labels[t0 + 4 - iter] == daughterLabel1
-            ]
-            uniqueLabels = set(list(labels))
-            count = Counter(labels)
-            c = []
-            for l in uniqueLabels:
-                c.append(count[l])
-
-            uniqueLabels = list(uniqueLabels)
-            daughterLabel1 = uniqueLabels[c.index(max(c))]
-
-            # ----
-
-            savedLabel2 = daughterLabel2
-
-            labels = vid_labels[t0 + 3 - iter][
-                vid_labels[t0 + 4 - iter] == daughterLabel2
-            ]
-            uniqueLabels = set(list(labels))
-            count = Counter(labels)
-            c = []
-            for l in uniqueLabels:
-                c.append(count[l])
-
-            uniqueLabels = list(uniqueLabels)
-            daughterLabel2 = uniqueLabels[c.index(max(c))]
-
-            iter = iter + 1
-
-        parentLabel = daughterLabel1
-
-        t0 = t0 + 5 - iter  # time of cytokinesis
-
-        if len(vid_labels) > t0 + 10:
+        if len(vid_labels) > tc + 11:
             t_fin = 9
         else:
-            t_fin = len(vid_labels) - t0 - 1
+            t_fin = len(vid_labels) - tc - 2
 
-        daughterLabel1 = savedLabel1
+        trackBinary[tc + 1][vid_labels[tc + 1] == daughterLabel1] = 200
 
-        contour = sm.measure.find_contours(vid_labels[t0] == daughterLabel1, level=0)[0]
+        contour = sm.measure.find_contours(
+            vid_labels[tc + 1] == daughterLabel1, level=0
+        )[0]
         poly = sm.measure.approximate_polygon(contour, tolerance=1)
         polygonsDaughter1.append(poly)
 
         # --
 
-        daughterLabel2 = savedLabel2
+        trackBinary[tc + 1][vid_labels[tc + 1] == daughterLabel2] = 150
 
-        contour = sm.measure.find_contours(vid_labels[t0] == daughterLabel2, level=0)[0]
+        contour = sm.measure.find_contours(
+            vid_labels[tc + 1] == daughterLabel2, level=0
+        )[0]
         poly = sm.measure.approximate_polygon(contour, tolerance=1)
         polygonsDaughter2.append(poly)
 
         for i in range(t_fin):
 
-            labels = vid_labels[t0 + 1 + i][vid_labels[t0 + i] == daughterLabel1]
+            labels = vid_labels[tc + 2 + i][vid_labels[tc + 1 + i] == daughterLabel1]
 
             uniqueLabels = set(list(labels))
+            if 0 in uniqueLabels:
+                uniqueLabels.remove(0)
+
             count = Counter(labels)
             c = []
             for l in uniqueLabels:
@@ -160,17 +185,22 @@ for label in unique:
             uniqueLabels = list(uniqueLabels)
             daughterLabel1 = uniqueLabels[c.index(max(c))]
 
+            trackBinary[tc + 2 + i][vid_labels[tc + 2 + i] == daughterLabel1] = 200
+
             contour = sm.measure.find_contours(
-                vid_labels[t0 + 1 + i] == daughterLabel1, level=0
+                vid_labels[tc + 2 + i] == daughterLabel1, level=0
             )[0]
             poly = sm.measure.approximate_polygon(contour, tolerance=1)
             polygonsDaughter1.append(poly)
 
             # ----
 
-            labels = vid_labels[t0 + 1 + i][vid_labels[t0 + i] == daughterLabel2]
+            labels = vid_labels[tc + 2 + i][vid_labels[tc + 1 + i] == daughterLabel2]
 
             uniqueLabels = set(list(labels))
+            if 0 in uniqueLabels:
+                uniqueLabels.remove(0)
+
             count = Counter(labels)
             c = []
             for l in uniqueLabels:
@@ -179,27 +209,31 @@ for label in unique:
             uniqueLabels = list(uniqueLabels)
             daughterLabel2 = uniqueLabels[c.index(max(c))]
 
+            trackBinary[tc + 2 + i][vid_labels[tc + 2 + i] == daughterLabel2] = 150
+
             contour = sm.measure.find_contours(
-                vid_labels[t0 + 1 + i] == daughterLabel2, level=0
+                vid_labels[tc + 2 + i] == daughterLabel2, level=0
             )[0]
             poly = sm.measure.approximate_polygon(contour, tolerance=1)
             polygonsDaughter2.append(poly)
 
-        if 0 < t0 - 10:
+        if 0 < tc - 10:
             t_mitosis = 9
         else:
-            t_mitosis = t0 - 1
+            t_mitosis = tc
 
-        contour = sm.measure.find_contours(vid_labels[t0 - 1] == parentLabel, level=0)[
-            0
-        ]
+        trackBinary[tc][vid_labels[tc] == parentLabel] = 100
+        contour = sm.measure.find_contours(vid_labels[tc] == parentLabel, level=0)[0]
         poly = sm.measure.approximate_polygon(contour, tolerance=1)
         polygonsParent.append(poly)
 
         for i in range(t_mitosis):
-            labels = vid_labels[t0 - i - 2][vid_labels[t0 - i - 1] == parentLabel]
+            labels = vid_labels[tc - i - 1][vid_labels[tc - i] == parentLabel]
 
             uniqueLabels = set(list(labels))
+            if 0 in uniqueLabels:
+                uniqueLabels.remove(0)
+
             count = Counter(labels)
             c = []
             for l in uniqueLabels:
@@ -208,8 +242,10 @@ for label in unique:
             uniqueLabels = list(uniqueLabels)
             parentLabel = uniqueLabels[c.index(max(c))]
 
+            trackBinary[tc - i - 1][vid_labels[tc - i - 1] == parentLabel] = 100
+
             contour = sm.measure.find_contours(
-                vid_labels[t0 - i - 2] == parentLabel, level=0
+                vid_labels[tc - i - 1] == parentLabel, level=0
             )[0]
             poly = sm.measure.approximate_polygon(contour, tolerance=1)
             polygonsParent.append(poly)
@@ -220,10 +256,15 @@ for label in unique:
                 "Parent": polygonsParent,
                 "Daughter1": polygonsDaughter1,
                 "Daughter2": polygonsDaughter2,
+                "Time difference": tc - tm,
             }
         )
 
 df4 = pd.DataFrame(_df4)
+
+
+trackBinary = np.asarray(trackBinary, "uint8")
+tifffile.imwrite(f"results/mitosis/tracks_{filename}.tif", trackBinary)
 
 A = []
 for t in range(20):
@@ -290,3 +331,11 @@ fig.savefig(
     "results/mitosis/" + f"cytokinesis_sf", dpi=300, transparent=True,
 )
 plt.close("all")
+
+time_delay = []
+for i in range(len(df4)):
+    time = df4.iloc[i][4]
+    time_delay.append(time)
+
+plot_dist(time_delay, "time-lag", "time-lag", filename, bins=20)
+
