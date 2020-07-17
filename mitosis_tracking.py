@@ -4,7 +4,7 @@ from math import floor, log10
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.linalg as linalg
@@ -163,7 +163,7 @@ for label in unique:
         t0 = df3.iloc[1, 1][0]
 
     (Cx, Cy) = C[t0]
-    r = (wound_polygon.area / np.pi) ** 0.5
+    r = (wound_polygon.area / np.pi) ** 0.5  # change as not time depend
     [x0, y0] = df3.iloc[0, 2][delta_t0]
     [x1, y1] = df3.iloc[1, 2][delta_t1]
 
@@ -184,7 +184,7 @@ for label in unique:
 plot_dist(div_ori, "div_ori" + filename, bins=15, xlim=[0, 90])
 plot_dist(dist, "dist" + filename, bins=10)
 
-vid = sm.io.imread(f"../dat_videos/HelenMerged.tif").astype(float)
+vid = sm.io.imread(f"../../dat_videos/HelenMerged.tif").astype(float)
 color = (0, 0, 255)
 df = pd.read_pickle(f"databases/mitosis_of_{filename}.pkl")
 
@@ -256,7 +256,7 @@ for t in range(len(wound_prob)):
 wound_prob = np.asarray(wound_prob, "uint8")
 tifffile.imwrite(f"results/mitosis/binary_wound_{filename}.tif", wound_prob)
 
-vid = sm.io.imread(f"../dat_videos/HelenMerged.tif").astype(float)
+vid = sm.io.imread(f"../../dat_videos/HelenMerged.tif").astype(float)
 
 for t in range(T):
     for x in range(512):

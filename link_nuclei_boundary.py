@@ -63,6 +63,22 @@ def plot_dist(prop, function_name, function_title, filename, bins=40, xlim="None
 plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
+
+wound = sm.io.imread("dat_nucleus/Helen_wound.tif").astype(float)
+Centroids = []
+for t in range(len(wound)):
+    img_wound = wound[t]
+    img_wound[img_wound == 0] = 1
+    img_wound[img_wound == 255] = 0
+    img_wound[img_wound == 1] = 255
+    img_label = sm.measure.label(img_wound, background=0, connectivity=1)
+    contour = sm.measure.find_contours(img_label == 1, level=0)[0]
+    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+    wound_polygon = Polygon(poly)
+    c = cell.centroid(wound_polygon)
+    c = np.array(c)
+    Centroids.append(c)
+
 filename = "HelenH2"
 
 df_mitosis = pd.read_pickle(f"databases/mitosisPoly{filename}.pkl")
@@ -257,6 +273,7 @@ for label in unique:
                 "Daughter1": polygonsDaughter1,
                 "Daughter2": polygonsDaughter2,
                 "Time difference": tc - tm,
+                "Cytokineses time": tc,
             }
         )
 
@@ -339,3 +356,31 @@ for i in range(len(df4)):
 
 plot_dist(time_delay, "time-lag", "time-lag", filename, bins=20)
 
+div_ori = []
+
+for i in range(len(df4)):
+    polygonDaughter1 = df4.iloc[i, 2][0]
+    polygonDaughter2 = df4.iloc[i, 3][0]
+    tc = df4.iloc[i, 5]
+
+    polygonDaughter1 = Polygon(polygonDaughter1)
+    polygonDaughter2 = Polygon(polygonDaughter2)
+
+    (Cx, Cy) = Centroids[tc + 1]
+    [x0, y0] = cell.centroid(polygonDaughter1)
+    [x1, y1] = cell.centroid(polygonDaughter2)
+
+    xm = (x0 + x1) / 2
+    ym = (y0 + y1) / 2
+    v = np.array([x0 - x1, y0 - y1])
+    w = np.array([xm - Cx, ym - Cy])
+
+    phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
+
+    if phi > np.pi / 2:
+        theta = np.pi - phi
+    else:
+        theta = phi
+    div_ori.append(theta * (180 / np.pi))
+
+plot_dist(div_ori, "div_ori", "div_ori_cells", filename, bins=15, xlim=[0, 90])
