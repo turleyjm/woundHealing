@@ -316,7 +316,7 @@ for t in range(20):
     A[t] = cell.mean(A[t])
     Sf[t] = cell.mean(Sf[t])
 
-x = np.array(range(20))
+x = np.array(range(20)) - 10
 
 fig = plt.figure(1, figsize=(8, 8))
 plt.errorbar(x, A, errA)
