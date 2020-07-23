@@ -33,9 +33,9 @@ cwd = os.getcwd()
 
 files = os.listdir(cwd + f"/{folder1}")
 
-for vid_file in files:
+for vidFile in files:
 
-    filename = vid_file
+    filename = vidFile
 
     filename = filename.replace("focus", "")
     filename = filename.replace(".tif", "")
@@ -45,12 +45,33 @@ for vid_file in files:
 
     woundMask = sm.io.imread(f"{folder2}/" + f"maskWound{filename1}.tif").astype(int)
 
-    vid_file = f"{folder1}/" + vid_file
+    vidFile = f"{folder1}/" + vidFile
 
-    vid = sm.io.imread(vid_file).astype(int)
+    vid = sm.io.imread(vidFile).astype(int)
 
     vid[woundMask == 255] = 0
 
     vid = np.asarray(vid, "uint8")
     tifffile.imwrite(f"dat/datFocusRemoveWound/focusRemoveWound{filename}.tif", vid)
 
+
+folder3 = "dat/datNuclei"
+
+files = os.listdir(cwd + f"/{folder3}")
+
+for vidFile in files:
+
+    filename = vid_file
+
+    filename = filename.replace("nuclei", "")
+    filename = filename.replace(".tif", "")
+
+    vid_file = f"{folder3}/" + vidFile
+
+    vid = sm.io.imread(vidFile).astype(int)
+
+    for z in range(len(vid[0])):
+        vid[:, z][woundMask == 255] = 0
+
+    vid = np.asarray(vid, "uint8")
+    tifffile.imwrite(f"dat/datNucleiRemoveWound/nucleiRemoveWound{filename}.tif", vid)

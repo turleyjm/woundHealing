@@ -106,16 +106,16 @@ cwd = os.getcwd()
 
 files = os.listdir(cwd + f"/{folder}")
 
-for vid_file in files:
+for vidFile in files:
 
-    filename = vid_file
+    filename = vidFile
 
     filename = filename.replace("probOutPlane", "")
     filename = filename.replace(".tif", "")
 
-    vid_file = f"{folder}/" + vid_file
+    vidFile = f"{folder}/" + vidFile
 
-    vid = sm.io.imread(vid_file).astype(int)
+    vid = sm.io.imread(vidFile).astype(int)
     vidOutPlane = vid
 
     for t in range(len(vid)):

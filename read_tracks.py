@@ -189,7 +189,7 @@ df_edge = trackmate_edges_import(trackmate_xml_path)
 
 unique_label = list(set(df_vertice["label"]))
 
-_df_divisions = []f
+_df_divisions = []
 for label in unique_label:
 
     df = df_vertice.loc[lambda df_vertice: df_vertice["label"] == label, :]
