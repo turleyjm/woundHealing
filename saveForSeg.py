@@ -18,7 +18,7 @@ import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
 
-import cell_properties as cell
+import cellProperties as cell
 import find_good_cells as fi
 
 plt.rcParams.update({"font.size": 20})

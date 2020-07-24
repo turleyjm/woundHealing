@@ -15,6 +15,9 @@ import skimage.measure
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import LinearRing
 
+from skimage.draw import circle_perimeter
+from scipy import optimize
+
 
 def mean(x):
     """the mean of list x"""
@@ -37,7 +40,7 @@ def sd(x):
     return sigma
 
 
-def periodic_mean(theta, lim):
+def periodicMean(theta, lim):
 
     n = len(theta)
     scale = (2 * np.pi) / lim
@@ -53,10 +56,10 @@ def periodic_mean(theta, lim):
     return Vhat
 
 
-def periodic_sd(theta, lim):
+def periodicSD(theta, lim):
 
     n = len(theta)
-    Vhat = periodic_mean(theta, lim)
+    Vhat = periodicMean(theta, lim)
     scale = (2 * np.pi) / lim
 
     s = 0
@@ -124,7 +127,7 @@ def inertia(polygon):
     return I
 
 
-def shape_tensor(polygon):
+def shapeTensor(polygon):
 
     S = inertia(polygon)
     TrS = S[0, 0] + S[1, 1]
@@ -135,7 +138,7 @@ def shape_tensor(polygon):
     return Q
 
 
-def shape_tensor_q(polygon):
+def shapeTensorq(polygon):
 
     S = inertia(polygon)
     TrS = S[0, 0] + S[1, 1]
@@ -206,7 +209,7 @@ def ellipticity(polygon):
     return ell
 
 
-def shape_factor(polygon):
+def shapeFactor(polygon):
     """Using the inertia tensor matrix it products the shape factor of the polygon"""
 
     I = inertia(polygon)
@@ -217,24 +220,24 @@ def shape_factor(polygon):
     return SF
 
 
-def trace_S(polygon):
+def traceS(polygon):
 
     S = inertia(polygon)
     TrS = S[0, 0] + S[1, 1]
     return TrS
 
 
-def trace_QQ(polygon):
+def traceQQ(polygon):
 
-    Q = shape_tensor(polygon)
+    Q = shapeTensor(polygon)
     QQ = np.dot(Q, Q)
     TrQQ = QQ[0, 0] + QQ[1, 1]
     return TrQQ
 
 
-def trace_qq(polygon):
+def traceqq(polygon):
 
-    q = shape_tensor_q(polygon)
+    q = shapeTensorq(polygon)
     qq = np.dot(q, q)
     Trqq = qq[0, 0] + qq[1, 1]
     return Trqq
@@ -285,7 +288,7 @@ def polarisation(polygon):
     return I
 
 
-def mayor_x_polar(polygon):
+def mayorPolar(polygon):
 
     I = polarisation(polygon)
 
@@ -294,7 +297,7 @@ def mayor_x_polar(polygon):
     return M
 
 
-def minor_y_polar(polygon):
+def minorPolar(polygon):
 
     I = polarisation(polygon)
 
@@ -303,10 +306,10 @@ def minor_y_polar(polygon):
     return m
 
 
-def polar_ori(polygon):
+def polarOri(polygon):
 
-    m = minor_y_polar(polygon)
-    M = mayor_x_polar(polygon)
+    m = minorPolar(polygon)
+    M = mayorPolar(polygon)
 
     theta = orientation(polygon)
 
@@ -326,45 +329,109 @@ def polar_ori(polygon):
     return P_ori
 
 
-def polar_mag(polygon):
+def polarMag(polygon):
 
-    m = minor_y_polar(polygon)
-    M = mayor_x_polar(polygon)
+    m = minorPolar(polygon)
+    M = mayorPolar(polygon)
 
     r = (m ** 2 + M ** 2) ** (0.5)
 
     return r
 
 
+def findContourCurvature(contour, m):
+
+    n = len(contour)
+
+    contourPlus = contour[n - int((m - 1) / 2) : n]
+    contourMinus = contour[0 : int((m - 1) / 2)]
+
+    con = np.concatenate([contourPlus, contour, contourMinus])
+
+    class ComputeCurvature:
+        def __init__(self):
+            """ Initialize some variables """
+            self.xc = 0  # X-coordinate of circle center
+            self.yc = 0  # Y-coordinate of circle center
+            self.r = 0  # Radius of the circle
+            self.xx = np.array([])  # Data points
+            self.yy = np.array([])  # Data points
+
+        def calc_r(self, xc, yc):
+            """ calculate the distance of each 2D points from the center (xc, yc) """
+            return np.sqrt((self.xx - xc) ** 2 + (self.yy - yc) ** 2)
+
+        def f(self, c):
+            """ calculate the algebraic distance between the data points and the mean circle centered at c=(xc, yc) """
+            ri = self.calc_r(*c)
+            return ri - ri.mean()
+
+        def df(self, c):
+            """ Jacobian of f_2b
+            The axis corresponding to derivatives must be coherent with the col_deriv option of leastsq"""
+            xc, yc = c
+            df_dc = np.empty((len(c), x.size))
+
+            ri = self.calc_r(xc, yc)
+            df_dc[0] = (xc - x) / ri  # dR/dxc
+            df_dc[1] = (yc - y) / ri  # dR/dyc
+            df_dc = df_dc - df_dc.mean(axis=1)[:, np.newaxis]
+            return df_dc
+
+        def fit(self, xx, yy):
+            self.xx = xx
+            self.yy = yy
+            center_estimate = np.r_[np.mean(xx), np.mean(yy)]
+            center = optimize.leastsq(
+                self.f, center_estimate, Dfun=self.df, col_deriv=True
+            )[0]
+
+            self.xc, self.yc = center
+            ri = self.calc_r(*center)
+            self.r = ri.mean()
+
+            return 1 / self.r  # Return the curvature
+
+    curvature = []
+
+    for i in range(n):
+        x = np.r_[con[i : i + m][:, 0]]
+        y = np.r_[con[i : i + m][:, 1]]
+        comp_curv = ComputeCurvature()
+        curvature.append(comp_curv.fit(x, y))
+
+    return curvature
+
+
 # ------------------------------------------
 
 
-def find_label(polygon, img_xy):
+def findLabel(polygon, imgxy):
 
     (cx, cy) = centroid(polygon)
     cx = int(cx)
     cy = int(cy)
-    label = img_xy[(cx, cy)]
+    label = imgxy[(cx, cy)]
 
     return label
 
 
-def mean_intensity(polygon, img_xy, img_MAX_xy, q=0.75):
+def meanIntensity(polygon, imgxy, imgMAXxy, q=0.75):
 
-    label = find_label(polygon, img_xy)
+    label = findLabel(polygon, imgxy)
 
-    intensity = img_MAX_xy[img_xy == label]
+    intensity = imgMAXxy[imgxy == label]
 
-    mean_int = np.quantile(intensity, q)
+    meanInt = np.quantile(intensity, q)
 
-    return mean_int
+    return meanInt
 
 
-def sd_intensity(polygon, img_xy, img_MAX_xy):
+def sdIntensity(polygon, imgxy, imgMAXxy):
 
-    label = find_label(polygon, img_xy)
+    label = findLabel(polygon, imgxy)
 
-    intensity = img_MAX_xy[img_xy == label]
+    intensity = imgMAXxy[imgxy == label]
 
     intensity = np.array(intensity)
 

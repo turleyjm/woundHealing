@@ -8,7 +8,7 @@ import scipy as sp
 from shapely.geometry import Polygon
 import tifffile
 
-import cell_properties as cell
+import cellProperties as cell
 
 
 def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):

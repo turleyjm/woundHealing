@@ -18,7 +18,7 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 
-import cell_properties as cell
+import cellProperties as cell
 import find_good_cells as fi
 
 

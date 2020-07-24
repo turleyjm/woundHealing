@@ -18,68 +18,12 @@ import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
 
-import cell_properties as cell
+import cellProperties as cell
 import find_good_cells as fi
 
 plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
-
-
-def findContourCurvature(con, n, m):
-    class ComputeCurvature:
-        def __init__(self):
-            """ Initialize some variables """
-            self.xc = 0  # X-coordinate of circle center
-            self.yc = 0  # Y-coordinate of circle center
-            self.r = 0  # Radius of the circle
-            self.xx = np.array([])  # Data points
-            self.yy = np.array([])  # Data points
-
-        def calc_r(self, xc, yc):
-            """ calculate the distance of each 2D points from the center (xc, yc) """
-            return np.sqrt((self.xx - xc) ** 2 + (self.yy - yc) ** 2)
-
-        def f(self, c):
-            """ calculate the algebraic distance between the data points and the mean circle centered at c=(xc, yc) """
-            ri = self.calc_r(*c)
-            return ri - ri.mean()
-
-        def df(self, c):
-            """ Jacobian of f_2b
-            The axis corresponding to derivatives must be coherent with the col_deriv option of leastsq"""
-            xc, yc = c
-            df_dc = np.empty((len(c), x.size))
-
-            ri = self.calc_r(xc, yc)
-            df_dc[0] = (xc - x) / ri  # dR/dxc
-            df_dc[1] = (yc - y) / ri  # dR/dyc
-            df_dc = df_dc - df_dc.mean(axis=1)[:, np.newaxis]
-            return df_dc
-
-        def fit(self, xx, yy):
-            self.xx = xx
-            self.yy = yy
-            center_estimate = np.r_[np.mean(xx), np.mean(yy)]
-            center = optimize.leastsq(
-                self.f, center_estimate, Dfun=self.df, col_deriv=True
-            )[0]
-
-            self.xc, self.yc = center
-            ri = self.calc_r(*center)
-            self.r = ri.mean()
-
-            return 1 / self.r  # Return the curvature
-
-    curvature = []
-
-    for i in range(n):
-        x = np.r_[con[i : i + m][:, 0]]
-        y = np.r_[con[i : i + m][:, 1]]
-        comp_curv = ComputeCurvature()
-        curvature.append(comp_curv.fit(x, y))
-
-    return curvature
 
 
 # Apply code for an example
@@ -172,14 +116,8 @@ for vidFile in files:
         vidWound[0][imgLabel != label] = 0
 
         m = 41
-        n = len(contour)
 
-        contourPlus = contour[n - int((m - 1) / 2) : n]
-        contourMinus = contour[0 : int((m - 1) / 2)]
-
-        con = np.concatenate([contourPlus, contour, contourMinus])
-
-        curvature = findContourCurvature(con, n, m)
+        curvature = cell.findContourCurvature(contour, m)
 
         _dfWound.append(
             {
@@ -205,14 +143,7 @@ for vidFile in files:
             (Cx, Cy) = cell.centroid(polygon)
             vidWound[t + 1][imgLabel != label] = 0
 
-            n = len(contour)
-
-            contourPlus = contour[n - int((m - 1) / 2) : n]
-            contourMinus = contour[0 : int((m - 1) / 2)]
-
-            con = np.concatenate([contourPlus, contour, contourMinus])
-
-            curvature = findContourCurvature(con, n, m)
+            curvature = cell.findContourCurvature(contour, m)
 
             _dfWound.append(
                 {
