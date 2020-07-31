@@ -7,7 +7,7 @@ import scipy as sp
 from shapely.geometry import Polygon
 import tifffile
 
-import cell_properties as cell
+import cellProperties as cell
 
 trackmate_xml_path = "dat_nucleus/mitosisHighlight.xml"
 

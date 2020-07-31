@@ -17,8 +17,8 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 
-import cell_properties as cell
-import find_good_cells as fi
+import cellProperties as cell
+import findGoodCells as fi
 
 plt.rcParams.update({"font.size": 14})
 plt.ioff()

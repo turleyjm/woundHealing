@@ -19,7 +19,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from shapely.geometry import Polygon
 from shapely.geometry import Point
 from shapely.geometry.polygon import LinearRing
-import find_good_cells as fi
+import findGoodCells as fi
 import tifffile
 
 folder1 = "dat/datProbBoundary"

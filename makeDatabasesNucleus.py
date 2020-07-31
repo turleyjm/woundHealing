@@ -142,6 +142,11 @@ cwd = os.getcwd()
 
 files = os.listdir(cwd + f"/{folder}")
 
+try:
+    files.remove(".DS_Store")
+except:
+    pass
+
 for track in files:
 
     filename = track
@@ -198,3 +203,17 @@ for track in files:
     dfTracks = pd.DataFrame(_dfTracks)
 
     dfTracks.to_pickle(f"dat/databases/nucleusTracks{filename}.pkl")
+
+    height = np.zeros([181, 512, 512])
+
+    for i in range(len(dfTracks)):
+        for j in range(len(dfTracks["x"][i])):
+            t = int(dfTracks["t"][i][j])
+            x = int(dfTracks["x"][i][j])
+            y = int(dfTracks["y"][i][j])
+            z = dfTracks["z"][i][j]
+
+            height[t, y, x] = z / 25
+
+    height = np.asarray(height, "float32")
+    tifffile.imwrite(f"dat/datHeight/height{filename}.tif", height)

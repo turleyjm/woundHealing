@@ -32,6 +32,12 @@ cwd = os.getcwd()
 
 files = os.listdir(cwd + f"/{folder}")
 
+try:
+    files.remove(".DS_Store")
+except:
+    pass
+
+
 for vidFile in files:
 
     filename = vidFile
@@ -48,6 +54,8 @@ for vidFile in files:
     _dfShape = []
 
     for t in range(T):
+
+        print(f"{vidFile} {t}")
 
         img = vid[t]
 

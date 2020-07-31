@@ -19,7 +19,7 @@ from skimage.draw import circle_perimeter
 from scipy import optimize
 
 import cellProperties as cell
-import find_good_cells as fi
+import findGoodCells as fi
 
 plt.rcParams.update({"font.size": 20})
 plt.ioff()
@@ -44,11 +44,15 @@ pd.set_option("display.width", 1000)
 
 folder = "dat/datProbOutPlane"
 
-wound = True  # Do wounded and unwounded separately
 
 cwd = os.getcwd()
 
 files = os.listdir(cwd + f"/{folder}")
+
+try:
+    files.remove(".DS_Store")
+except:
+    pass
 
 for vidFile in files:
 
@@ -56,6 +60,11 @@ for vidFile in files:
 
     filename = filename.replace("probOutPlane", "")
     filename = filename.replace(".tif", "")
+
+    if "Unwound" in filename:
+        wound = False
+    else:
+        wound = True
 
     vidFile = f"{folder}/" + vidFile
 
@@ -148,8 +157,8 @@ for vidFile in files:
             _dfWound.append(
                 {
                     "name": filename,
-                    "polygons": polygon,
-                    "centriods": cell.centroid(polygon),
+                    "polygon": polygon,
+                    "centriod": cell.centroid(polygon),
                     "curvature": curvature,
                 }
             )

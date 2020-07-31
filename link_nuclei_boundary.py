@@ -18,8 +18,8 @@ import tifffile
 from skimage.draw import circle_perimeter
 from collections import Counter
 
-import cell_properties as cell
-import find_good_cells as fi
+import cellProperties as cell
+import findGoodCells as fi
 
 # -----
 
@@ -300,7 +300,7 @@ for i in range(len(df4)):
         poly = polygonsParent[j]
         polygon = Polygon(poly)
         area = cell.area(polygon)
-        shape = cell.shape_factor(polygon)
+        shape = cell.shapeFactor(polygon)
 
         A[9 - j].append(area)
         Sf[9 - j].append(shape)
@@ -309,7 +309,7 @@ for i in range(len(df4)):
         poly = polygonsDaughter1[j]
         polygon = Polygon(poly)
         area = cell.area(polygon)
-        shape = cell.shape_factor(polygon)
+        shape = cell.shapeFactor(polygon)
 
         A[10 + j].append(area)
         Sf[10 + j].append(shape)
@@ -319,7 +319,7 @@ for i in range(len(df4)):
         poly = polygonsDaughter2[j]
         polygon = Polygon(poly)
         area = cell.area(polygon)
-        shape = cell.shape_factor(polygon)
+        shape = cell.shapeFactor(polygon)
 
         A[10 + j].append(area)
         Sf[10 + j].append(shape)
