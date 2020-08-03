@@ -71,6 +71,8 @@ for vidFile in files:
     vid = sm.io.imread(vidFile).astype(int)
     vidOutPlane = vid
 
+    # removes all the regions that are out of plane
+
     for t in range(len(vid)):
 
         img = vid[t]
@@ -108,6 +110,8 @@ for vidFile in files:
     tifffile.imwrite(f"dat/datOutPlane/outPlane{filename}.tif", vidOutPlane)
 
     (T, X, Y) = vidOutPlane.shape
+
+    # If there is a wound the boundary is found quantified
 
     if wound == True:
 

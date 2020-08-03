@@ -149,6 +149,7 @@ except:
 
 for track in files:
 
+    # gather databases from tracking .xml file
     filename = track
     dfNucleus = trackmate_vertices_import(folder + "/" + filename, get_tracks=True)
 
@@ -160,6 +161,7 @@ for track in files:
     _dfTracks = []
     for label in uniqueLabel:
 
+        # convert in to much simple dataframe
         df = dfNucleus.loc[lambda dfNucleus: dfNucleus["label"] == label, :]
 
         x = []
@@ -172,6 +174,8 @@ for track in files:
             y.append(df.iloc[i, 3])
             z.append(df.iloc[i, 4])
             t.append(df.iloc[i, 1])
+
+        # fill in spot gaps in the tracks
 
         X = []
         Y = []
@@ -203,6 +207,8 @@ for track in files:
     dfTracks = pd.DataFrame(_dfTracks)
 
     dfTracks.to_pickle(f"dat/databases/nucleusTracks{filename}.pkl")
+
+    # save a image contaning the height of each nuclei
 
     height = np.zeros([181, 512, 512])
 

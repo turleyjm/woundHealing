@@ -181,6 +181,8 @@ def heightOfMitosis(img, polygon):
     rList = []
     zList = []
 
+    # finds region local to the dividion
+
     if Cx > 462:
         xRange = range(int(Cx - 50), 512)
     elif Cx < 50:
@@ -195,6 +197,8 @@ def heightOfMitosis(img, polygon):
     else:
         yRange = range(int(Cy - 50), int(Cy + 50))
 
+    # collects the height of the neclui local to the division
+
     for x in xRange:
         for y in yRange:
             z = img[y, x]  # change coord
@@ -204,6 +208,8 @@ def heightOfMitosis(img, polygon):
                 rList.append(r)
 
     n = len(rList)
+
+    # finds the change in hieght of mitosis
 
     height = []
     rMin = 50
@@ -536,8 +542,10 @@ for vidFile in files:
 
     _dfDivisions2 = []
 
-    for t in range(T):
+    # use the boundary of the nuclei and convents to polygons to find there orientation and shape factor
 
+    for t in range(T):
+        # labels all the mitosic nuclei
         vidLabels.append(sm.measure.label(vidBinary[t], background=0, connectivity=1))
 
     for i in range(len(dfDivisions)):
@@ -600,6 +608,8 @@ for vidFile in files:
     dfDivisions2 = pd.DataFrame(_dfDivisions2)
 
     # -------
+
+    # finds the orientation of division
 
     divOri = []
 
@@ -733,6 +743,8 @@ for vidFile in files:
 
     dfDivisions3 = pd.DataFrame(_dfDivisions3)
 
+    # links the mitosic cells to there cell boundarys and tracks these cells
+
     binary = sm.io.imread(f"dat/datBinaryBoundary/binary{filename}.tif").astype("uint8")
     trackBinary = binary
 
@@ -769,6 +781,8 @@ for vidFile in files:
 
         divided = False
 
+        # finds the time and position of cytokinesis
+
         while divided == False and (t + 1 < T):
 
             labels = vidLabels[t + 1][vidLabels[t] == parentLabel]
@@ -802,6 +816,8 @@ for vidFile in files:
             else:
                 t += 1
                 parentLabel = mostLabel
+
+        # tracks the cell forwards and backwards in time
 
         if divided == True:
 
