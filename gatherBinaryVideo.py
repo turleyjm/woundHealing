@@ -46,8 +46,10 @@ for vidFile in files:
 
         if frame < 10:
             framenum = f"00{frame}"
-        else:
+        elif frame < 100:
             framenum = f"0{frame}"
+        else:
+            framenum = f"{frame}"
 
         foldername = (
             "/Users/jt15004/Documents/Coding/Python/woundHealing/dat/imagesForSeg"

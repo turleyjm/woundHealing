@@ -42,7 +42,9 @@ for vidFile in files:
     vid = sm.io.imread(folder + "/" + vidFile).astype(float)
 
     for t in range(len(vid)):
-        if t > 9:
+        if t > 99:
+            T = f"{t}"
+        elif t > 9:
             T = "0" + f"{t}"
         else:
             T = "00" + f"{t}"
