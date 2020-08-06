@@ -9,3 +9,6 @@ venv
 .vscode
 dat
 datFullSet
+datOld
+.DS_Store
+pythonText.txt

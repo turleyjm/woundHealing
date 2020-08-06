@@ -25,7 +25,6 @@ plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
 
-
 f = open("pythonText.txt", "r")
 
 filenames = f.read()
@@ -33,18 +32,11 @@ filenames = filenames.split(", ")
 
 for filename in filenames:
 
-    vid = sm.io.imread(f"dat/{filename}/probBoundary{filename}.tif").astype(float)
+    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-    for t in range(len(vid)):
-        if t > 99:
-            T = f"{t}"
-        elif t > 9:
-            T = "0" + f"{t}"
-        else:
-            T = "00" + f"{t}"
+    T = len(dfWound)
 
-        img = np.asarray(vid[t] * 255, "uint8")
-        tifffile.imwrite(
-            f"dat/{filename}/imagesForSeg/probBoundary{filename}_{T}.tif", img
-        )
+    for t in range(T):
+
+        curvature = dfWound["curvature"][t]
 

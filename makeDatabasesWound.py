@@ -42,31 +42,19 @@ pd.set_option("display.width", 1000)
 # plt.title('curvature = {:.3e}'.format(curvature))
 # plt.show()
 
-folder = "dat/datProbOutPlane"
+f = open("pythonText.txt", "r")
 
+filenames = f.read()
+filenames = filenames.split(", ")
 
-cwd = os.getcwd()
-
-files = os.listdir(cwd + f"/{folder}")
-
-try:
-    files.remove(".DS_Store")
-except:
-    pass
-
-for vidFile in files:
-
-    filename = vidFile
-
-    filename = filename.replace("probOutPlane", "")
-    filename = filename.replace(".tif", "")
+for filename in filenames:
 
     if "Unwound" in filename:
         wound = False
     else:
         wound = True
 
-    vidFile = f"{folder}/" + vidFile
+    vidFile = f"dat/{filename}/outPlane{filename}.tif"
 
     vid = sm.io.imread(vidFile).astype(int)
     vidOutPlane = vid
@@ -107,7 +95,7 @@ for vidFile in files:
 
     vidWound = vidOutPlane
     vidOutPlane = np.asarray(vidOutPlane, "uint8")
-    tifffile.imwrite(f"dat/datOutPlane/outPlane{filename}.tif", vidOutPlane)
+    tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
 
     (T, X, Y) = vidOutPlane.shape
 
@@ -118,6 +106,8 @@ for vidFile in files:
         start = (int(Y / 2), int(X / 2))  # change coords
 
         _dfWound = []
+
+        vidCurvature = vidOutPlane
 
         imgWound = vidWound[0]
         imgLabel = sm.measure.label(imgWound, background=0, connectivity=1)
@@ -130,7 +120,7 @@ for vidFile in files:
 
         m = 41
 
-        curvature = cell.findContourCurvature(contour, m)
+        curvature = np.array(cell.findContourCurvature(contour, m)) * len(contour)
 
         _dfWound.append(
             {
@@ -141,8 +131,12 @@ for vidFile in files:
             }
         )
 
-        # for i in range(n): # see contour
-        #     vidWound[0][int(contour[i][0]), int(contour[i][1])] = curvature[i]
+        n = len(contour)
+
+        vidCurvature[0][vidWound[0] >= 0] = 0
+
+        for i in range(n):  # see contour
+            vidCurvature[0][int(contour[i][0]), int(contour[i][1])] = curvature[i] * 5
 
         for t in range(T - 1):
             imgWound = vidWound[t + 1]
@@ -156,7 +150,7 @@ for vidFile in files:
             (Cx, Cy) = cell.centroid(polygon)
             vidWound[t + 1][imgLabel != label] = 0
 
-            curvature = cell.findContourCurvature(contour, m)
+            curvature = np.array(cell.findContourCurvature(contour, m)) * len(contour)
 
             _dfWound.append(
                 {
@@ -164,14 +158,24 @@ for vidFile in files:
                     "polygon": polygon,
                     "centriod": cell.centroid(polygon),
                     "curvature": curvature,
+                    "contour": contour,
                 }
             )
 
-            # for i in range(n): # see contour
-            #     vidWound[t + 1][int(contour[i][0]), int(contour[i][1])] = curvature[i]
+            n = len(contour)
+
+            vidCurvature[t + 1][vidWound[t + 1] >= 0] = 0
+
+            for i in range(n):  # see contour
+                vidCurvature[t + 1][int(contour[i][0]), int(contour[i][1])] = (
+                    curvature[i] * 5
+                )
 
     dfWound = pd.DataFrame(_dfWound)
-    dfWound.to_pickle(f"dat/databases/woundsite{filename}.pkl")
+    dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
     vidWound = np.asarray(vidWound, "uint8")
-    tifffile.imwrite(f"dat/datWound/maskWound{filename}.tif", vidWound)
+    tifffile.imwrite(f"dat/{filename}/maskWound{filename}.tif", vidWound)
+
+    vidCurvature = np.asarray(vidCurvature, "uint8")
+    tifffile.imwrite(f"dat/{filename}/curvature{filename}.tif", vidCurvature)
