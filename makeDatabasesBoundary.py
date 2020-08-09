@@ -26,26 +26,14 @@ plt.ioff()
 pd.set_option("display.width", 1000)
 
 
-folder = "dat/datBinaryBoundary"
+f = open("pythonText.txt", "r")
 
-cwd = os.getcwd()
+filenames = f.read()
+filenames = filenames.split(", ")
 
-files = os.listdir(cwd + f"/{folder}")
+for filename in filenames:
 
-try:
-    files.remove(".DS_Store")
-except:
-    pass
-
-
-for vidFile in files:
-
-    filename = vidFile
-
-    filename = filename.replace("binary", "")
-    filename = filename.replace(".tif", "")
-
-    vidFile = f"{folder}/" + vidFile
+    vidFile = f"dat/{filename}/binaryBoundary{filename}.tif"
 
     vid = sm.io.imread(vidFile).astype(int)
 
@@ -55,7 +43,7 @@ for vidFile in files:
 
     for t in range(T):
 
-        print(f"{vidFile} {t}")
+        print(f"{filename} {t}")
 
         img = vid[t]
 
@@ -111,4 +99,4 @@ for vidFile in files:
             )
 
     dfShape = pd.DataFrame(_dfShape)
-    dfShape.to_pickle(f"dat/databases/BoundaryShape{filename}.pkl")
+    dfShape.to_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")

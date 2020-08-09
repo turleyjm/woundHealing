@@ -54,60 +54,21 @@ for filename in filenames:
     else:
         wound = True
 
-    vidFile = f"dat/{filename}/outPlane{filename}.tif"
+    vidFile = f"dat/{filename}/maskWound{filename}.tif"  # change
 
-    vid = sm.io.imread(vidFile).astype(int)
-    vidOutPlane = vid
+    vidWound = sm.io.imread(vidFile).astype(int)
 
-    # removes all the regions that are out of plane
-
-    for t in range(len(vid)):
-
-        img = vid[t]
-
-        binary = np.zeros([514, 514])
-
-        mu = cell.mean(cell.mean(img))
-
-        for x in range(512):
-            for y in range(512):
-                if img[x, y] == 255:
-                    binary[x + 1, y + 1] = 255
-
-        imgLabel = sm.measure.label(binary, background=0, connectivity=1)
-        imgLabels = np.unique(imgLabel)[1:]
-
-        for label in imgLabels:
-            contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            try:
-                polygon = Polygon(poly)
-                a = cell.area(polygon)
-
-                if a < 600:
-                    binary[imgLabel == label] = 0
-            except:
-                continue
-
-        binary = binary[1:513, 1:513]
-
-        vidOutPlane[t] = binary
-
-    vidWound = vidOutPlane
-    vidOutPlane = np.asarray(vidOutPlane, "uint8")
-    tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
-
-    (T, X, Y) = vidOutPlane.shape
+    (T, X, Y) = vidWound.shape
 
     # If there is a wound the boundary is found quantified
 
     if wound == True:
 
+        vidCurvature = vidWound
+
         start = (int(Y / 2), int(X / 2))  # change coords
 
         _dfWound = []
-
-        vidCurvature = vidOutPlane
 
         imgWound = vidWound[0]
         imgLabel = sm.measure.label(imgWound, background=0, connectivity=1)
@@ -171,11 +132,8 @@ for filename in filenames:
                     curvature[i] * 5
                 )
 
-    dfWound = pd.DataFrame(_dfWound)
-    dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfWound = pd.DataFrame(_dfWound)
+        dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-    vidWound = np.asarray(vidWound, "uint8")
-    tifffile.imwrite(f"dat/{filename}/maskWound{filename}.tif", vidWound)
-
-    vidCurvature = np.asarray(vidCurvature, "uint8")
-    tifffile.imwrite(f"dat/{filename}/curvature{filename}.tif", vidCurvature)
+        vidCurvature = np.asarray(vidCurvature, "uint8")
+        tifffile.imwrite(f"dat/{filename}/curvature{filename}.tif", vidCurvature)

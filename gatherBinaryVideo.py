@@ -22,20 +22,14 @@ from shapely.geometry.polygon import LinearRing
 import findGoodCells as fi
 import tifffile
 
-folder1 = "dat/datProbBoundary"
-folder2 = "dat/datBinaryBoundary"
+f = open("pythonText.txt", "r")
 
-cwd = os.getcwd()
+filenames = f.read()
+filenames = filenames.split(", ")
 
-files = os.listdir(cwd + f"/{folder1}")
+for filename in filenames:
 
-for vidFile in files:
-
-    filename = vidFile
-
-    filename = filename.replace(".tif", "")
-
-    vid = sm.io.imread(folder1 + "/" + vidFile).astype(float)
+    vid = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(float)
 
     T = len(vid)
 
@@ -52,8 +46,8 @@ for vidFile in files:
             framenum = f"{frame}"
 
         foldername = (
-            "/Users/jt15004/Documents/Coding/Python/woundHealing/dat/imagesForSeg"
-            + f"/{filename}"
+            f"/Users/jt15004/Documents/Coding/Python/woundHealing/dat/{filename}/imagesForSeg"
+            + f"/probBoundary{filename}"
             + f"_{framenum}"
         )
 
@@ -67,8 +61,8 @@ for vidFile in files:
     filename = filename.replace("probBoundary", "")
 
     data = np.asarray(binary_vid, "uint8")
-    tifffile.imwrite(f"{folder2}" + "/" + f"binary{filename}.tif", data)
+    tifffile.imwrite(f"dat/{filename}/binaryBoundary{filename}.tif", data)
 
     # data = np.asarray(track_vid, "uint8")
-    # tifffile.imwrite(f"{folder}" + f"track_{filename}.tif", data)
+    # tifffile.imwrite(f"dat/{filename}/track{filename}.tif", data)
 

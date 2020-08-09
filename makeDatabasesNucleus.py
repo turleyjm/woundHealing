@@ -136,25 +136,17 @@ def filter_spots(spots, name, value, isabove):
 
 # -------------------
 
-folder = "dat/datNucleusTracks"
+f = open("pythonText.txt", "r")
 
-cwd = os.getcwd()
+filenames = f.read()
+filenames = filenames.split(", ")
 
-files = os.listdir(cwd + f"/{folder}")
-
-try:
-    files.remove(".DS_Store")
-except:
-    pass
-
-for track in files:
+for filename in filenames:
 
     # gather databases from tracking .xml file
-    filename = track
-    dfNucleus = trackmate_vertices_import(folder + "/" + filename, get_tracks=True)
-
-    filename = filename.replace("nuclei", "")
-    filename = filename.replace(".xml", "")
+    dfNucleus = trackmate_vertices_import(
+        f"dat/{filename}/nucleiTracks{filename}.xml", get_tracks=True
+    )
 
     uniqueLabel = list(set(dfNucleus["label"]))
 
@@ -206,11 +198,16 @@ for track in files:
 
     dfTracks = pd.DataFrame(_dfTracks)
 
-    dfTracks.to_pickle(f"dat/databases/nucleusTracks{filename}.pkl")
+    dfTracks.to_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 
     # save a image contaning the height of each nuclei
 
-    height = np.zeros([181, 512, 512])
+    vidFile = f"dat/{filename}/binaryBoundary{filename}.tif"
+
+    vid = sm.io.imread(vidFile).astype(int)
+    T = int(len(vid))
+
+    height = np.zeros([T, 512, 512])
 
     for i in range(len(dfTracks)):
         for j in range(len(dfTracks["x"][i])):
@@ -222,4 +219,4 @@ for track in files:
             height[t, y, x] = z / 25
 
     height = np.asarray(height, "float32")
-    tifffile.imwrite(f"dat/datHeight/height{filename}.tif", height)
+    tifffile.imwrite(f"dat/{filename}/height{filename}.tif", height)

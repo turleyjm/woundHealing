@@ -236,40 +236,24 @@ def heightOfMitosis(img, polygon):
 
 # ------------------
 
+f = open("pythonText.txt", "r")
 
-folder1 = "dat/datMitosisTracks"
-folder2 = "dat/datMitosis"
+filenames = f.read()
+filenames = filenames.split(", ")
 
-cwd = os.getcwd()
-
-files = os.listdir(cwd + f"/{folder1}")
-
-try:
-    files.remove(".DS_Store")
-except:
-    pass
-
-for vidFile in files:
-
-    filename = vidFile
-
-    xmlPath = f"{folder1}/" + filename
-    filename = filename.replace(".xml", "")
-
-    vidFile = f"{folder2}/" + filename + ".tif"
-    vid = sm.io.imread(vidFile).astype(int)  # gather video files
-
-    filename = filename.replace("mitosis", "")
+for filename in filenames:
 
     if "Unwound" in filename:
         wound = False
     else:
         wound = True
 
-    T = len(vid)
+    # gather xml files
 
-    dfVertice = trackmate_vertices_import(xmlPath, get_tracks=True)  # gather xml files
-    dfEdge = trackmate_edges_import(xmlPath)  # gather xml files
+    dfVertice = trackmate_vertices_import(
+        f"dat/{filename}/mitosisTracks{filename}.xml", get_tracks=True
+    )
+    dfEdge = trackmate_edges_import(f"dat/{filename}/mitosisTracks{filename}.xml")
 
     uniqueLabel = list(set(dfVertice["label"]))
 
@@ -532,15 +516,30 @@ for vidFile in files:
 
     dfDivisions = pd.DataFrame(_dfDivisions)
 
-    vidBinary = sm.io.imread(
-        f"dat/datBinaryMitosis/binaryMitosis{filename}.tif"
-    ).astype(float)
+    vidBinary = (
+        sm.io.imread(f"dat/{filename}/probMitosis{filename}.tif").astype(float) * 255
+    )
 
-    vidHeight = sm.io.imread(f"dat/datHeight/height{filename}.tif").astype("float") * 25
+    T = len(vidBinary)
+
+    for t in range(T):
+        vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
+
+    vidBinary[vidBinary > 100] = 255
+    vidBinary[vidBinary <= 100] = 0
+
+    vidBinary = np.asarray(vidBinary, "uint8")
+    tifffile.imwrite(f"dat/{filename}/binaryMitosis{filename}.tif", vidBinary)
+
+    vidHeight = (
+        sm.io.imread(f"dat/{filename}/height{filename}.tif").astype("float") * 25
+    )
 
     vidLabels = []
 
     _dfDivisions2 = []
+
+    T = len(vidBinary)
 
     # use the boundary of the nuclei and convents to polygons to find there orientation and shape factor
 
@@ -620,7 +619,7 @@ for vidFile in files:
     j = 0
 
     if wound == True:
-        dfWound = pd.read_pickle(f"dat/databases/woundsite{filename}.pkl")
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         dist = []
 
@@ -641,15 +640,15 @@ for vidFile in files:
 
             if len(df3["Time"][3 * j + 2]) > 2:
                 delta_t1 = 2
-                t0 = df3["Time"][3 * j + 1][2]
+                t0 = df3["Time"][3 * j + 2][2]
             elif len(df3["Time"][3 * j + 2]) > 1:
                 delta_t1 = 1
-                t0 = df3["Time"][3 * j + 1][1]
+                t0 = df3["Time"][3 * j + 2][1]
             else:
                 delta_t1 = 0
-                t0 = df3["Time"][3 * j + 1][0]
+                t0 = df3["Time"][3 * j + 2][0]
 
-            (Cy, Cx) = dfWound["centirod"][t0]  # change ord
+            (Cy, Cx) = dfWound["centriod"][t0]  # change ord
             woundPolygon = dfWound["polygon"][t0]
             r = (woundPolygon.area / np.pi) ** 0.5
             [x0, y0] = df3["Position"][3 * j + 1][delta_t0]
@@ -745,7 +744,9 @@ for vidFile in files:
 
     # links the mitosic cells to there cell boundarys and tracks these cells
 
-    binary = sm.io.imread(f"dat/datBinaryBoundary/binary{filename}.tif").astype("uint8")
+    binary = sm.io.imread(f"dat/{filename}/binaryBoundary{filename}.tif").astype(
+        "uint8"
+    )
     trackBinary = binary
 
     vidLabels = []
@@ -757,7 +758,7 @@ for vidFile in files:
         vidLabels.append(sm.measure.label(img, background=0, connectivity=1))
 
     vidLabels = np.asarray(vidLabels, "uint16")
-    tifffile.imwrite(f"results/labelBoundary/vidLabel{filename}.tif", vidLabels)
+    tifffile.imwrite(f"dat/{filename}/vidLabel{filename}.tif", vidLabels)
 
     _dfDivisions4 = []
 
@@ -1000,7 +1001,7 @@ for vidFile in files:
 
     dfDivisions4 = pd.DataFrame(_dfDivisions4)
 
-    dfDivisions4.to_pickle(f"dat/databases/mitosisTracks{filename}.pkl")
+    dfDivisions4.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
 
     trackBinary = np.asarray(trackBinary, "uint8")
-    tifffile.imwrite(f"results/labelBoundary/tracks{filename}.tif", trackBinary)
+    tifffile.imwrite(f"dat/{filename}/tracks{filename}.tif", trackBinary)
