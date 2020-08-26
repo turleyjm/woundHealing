@@ -343,6 +343,10 @@ def findContourCurvature(contour, m):
 
     n = len(contour)
 
+    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+    polygon = Polygon(poly)
+    (Cx, Cy) = centroid(polygon)
+
     contourPlus = contour[n - int((m - 1) / 2) : n]
     contourMinus = contour[0 : int((m - 1) / 2)]
 
@@ -390,7 +394,7 @@ def findContourCurvature(contour, m):
             ri = self.calc_r(*center)
             self.r = ri.mean()
 
-            return 1 / self.r  # Return the curvature
+            return (1 / self.r, center)  # Return the curvature
 
     curvature = []
 
@@ -398,8 +402,18 @@ def findContourCurvature(contour, m):
         x = np.r_[con[i : i + m][:, 0]]
         y = np.r_[con[i : i + m][:, 1]]
         comp_curv = ComputeCurvature()
-        curvature.append(comp_curv.fit(x, y))
+        center = comp_curv.fit(x, y)[1]
+        xMid = x[int((m - 1) / 2)]
+        yMid = y[int((m - 1) / 2)]
 
+        v0 = np.array([Cx - xMid, Cy - yMid])
+        v1 = np.array([center[0] - xMid, center[1] - yMid])
+        costheta = np.dot(v0, v1) / (np.linalg.norm(v0) * np.linalg.norm(v1))
+
+        if costheta < 0:
+            curvature.append(-comp_curv.fit(x, y)[0])
+        else:
+            curvature.append(comp_curv.fit(x, y)[0])
     return curvature
 
 

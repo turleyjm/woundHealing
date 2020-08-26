@@ -34,7 +34,7 @@ for filename in filenames:
     T = len(vid)
 
     binary_vid = []
-    # track_vid = []
+    track_vid = []
 
     for frame in range(T):
 
@@ -55,14 +55,14 @@ for filename in filenames:
         img = imgRGB[:, :, 0]
         binary_vid.append(img)
 
-        # img = sm.io.imread(foldername + "/tracked_cells_resized.tif").astype(float)
-        # track_vid.append(img)
+        img = sm.io.imread(foldername + "/tracked_cells_resized.tif").astype(float)
+        track_vid.append(img)
 
     filename = filename.replace("probBoundary", "")
 
     data = np.asarray(binary_vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/binaryBoundary{filename}.tif", data)
 
-    # data = np.asarray(track_vid, "uint8")
-    # tifffile.imwrite(f"dat/{filename}/track{filename}.tif", data)
+    data = np.asarray(track_vid, "uint8")
+    tifffile.imwrite(f"dat/{filename}/track{filename}.tif", data)
 
