@@ -51,8 +51,6 @@ for filename in filenames:
 
         binary = np.zeros([514, 514])
 
-        mu = cell.mean(cell.mean(img))
-
         for x in range(512):
             for y in range(512):
                 if img[x, y] == 255:
@@ -80,15 +78,46 @@ for filename in filenames:
     vidOutPlane = np.asarray(vidOutPlane, "uint8")
     tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
 
+    vidWound = vidOutPlane
+
+    imgLabel = sm.measure.label(vidWound[0], background=0, connectivity=1)
+    imgLabels = np.unique(imgLabel)[1:]
+    label = imgLabel[256, 256]
+
+    contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
+    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+    polygon = Polygon(poly)
+
+    [Cx, Cy] = cell.centroid(polygon)
+
+    vidWound[0][imgLabel != label] = 0
+
+    for t in range(len(vid) - 1):
+
+        imgLabel = sm.measure.label(vidWound[t + 1], background=0, connectivity=1)
+        imgLabels = np.unique(imgLabel)[1:]
+        label = imgLabel[int(Cx), int(Cy)]  # change coord?????
+
+        contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
+        poly = sm.measure.approximate_polygon(contour, tolerance=1)
+        polygon = Polygon(poly)
+
+        [Cx, Cy] = cell.centroid(polygon)
+
+        vidWound[t + 1][imgLabel != label] = 0
+
+    vidWound = np.asarray(vidWound, "uint8")
+    tifffile.imwrite(f"dat/{filename}/woundMask{filename}.tif", vidWound)
+
     vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
     vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
 
-    vidEcad[vidOutPlane == 255] = 0
+    vidEcad[vidWound == 255] = 0
 
     vidEcad = np.asarray(vidEcad, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vidEcad)
 
-    vidH2[vidOutPlane == 255] = 0
+    vidH2[vidWound == 255] = 0
 
     vidH2 = np.asarray(vidH2, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
