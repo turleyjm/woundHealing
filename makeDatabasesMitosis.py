@@ -253,7 +253,7 @@ for filename in filenames:
     dfVertice = trackmate_vertices_import(
         f"dat/{filename}/mitosisTracks{filename}.xml", get_tracks=True
     )
-    dfEdge = trackmate_edges_import(f"dat/{filename}/mitosisTracks{filename}.xml")
+    dfEdge = trackmate_edges_import(f"dat/{filename}/mitosisHeightTracks{filename}.xml")
 
     uniqueLabel = list(set(dfVertice["label"]))
 
