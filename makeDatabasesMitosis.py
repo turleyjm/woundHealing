@@ -288,9 +288,8 @@ for filename in filenames:
                 n = len(df3)
                 if n == 2:
                     divID = spot
-                    daughter0 = list(df3["SPOT_TARGET_ID"])[
-                        0
-                    ]  # finds the spot correponding to the new daughter nuclui
+                    # finds the spot correponding to the new daughter nuclui
+                    daughter0 = list(df3["SPOT_TARGET_ID"])[0]
                     daughter1 = list(df3["SPOT_TARGET_ID"])[1]
 
             # track the links back from the spot just before division to get parent chain
