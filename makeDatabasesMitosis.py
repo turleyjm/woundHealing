@@ -28,150 +28,389 @@ plt.ioff()
 pd.set_option("display.width", 1000)
 
 
-def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):
-    """Import detected tracks with TrackMate Fiji plugin.
+def costFunction(u0, u1):
 
-    Parameters
-    ----------
-    trackmate_xml_path : str
-        TrackMate XML file path.
-    get_tracks : boolean
-        Add tracks to label
-    """
+    cost = np.linalg.norm(u0 + u1) / (np.linalg.norm(u0) + np.linalg.norm(u1))
+
+    return cost
+
+
+def splitGraph(graph, spot):
+
+    keys = list(graph.keys())
+    values = list(graph.values())
+    val = []
+
+    # finds starting spot
+    for value in values:
+        if len(value) == 1:
+            val.append(value[0])
+        else:
+            val.append(value[0])
+            val.append(value[1])
+
+    keySpot = int(np.setdiff1d(keys, val))
+
+    graph0 = {}
+    graph1 = {}
+
+    branch = []
+    source = []
+    notFinished = True
+
+    # makes tree and avoids the break point
+    while notFinished:
+
+        if keySpot == spot:
+
+            if branch == []:
+                notFinished = False
+
+            elif branch[0] == spot:
+                falseSpot = branch[0]
+                branch.remove(falseSpot)
+                falseSpot = source[0]
+                source.remove(falseSpot)
+
+            else:
+                keySpot = branch[0]
+                branch.remove(keySpot)
+                newStart = source[0]
+                source.remove(newStart)
+                out = graph0[newStart]
+                if out[0] == spot:
+                    graph0[newStart] = [keySpot]
+                else:
+                    graph0[newStart] = [keySpot, out[0]]
+
+        else:
+
+            try:
+                output = graph[keySpot]
+                n = len(output)
+
+                if n > 1:
+                    branch.append(output[1])
+                    source.append(keySpot)
+
+                graph0[keySpot] = [output[0]]
+                keySpot = output[0]
+
+            except KeyError:
+                if branch == []:
+                    notFinished = False
+                elif branch[0] == spot:
+                    falseSpot = branch[0]
+                    branch.remove(falseSpot)
+                    falseSpot = source[0]
+                    source.remove(falseSpot)
+                else:
+                    keySpot = branch[0]
+                    branch.remove(keySpot)
+                    newStart = source[0]
+                    source.remove(newStart)
+                    out = graph0[newStart]
+                    if out[0] == spot:
+                        graph0[newStart] = [keySpot]
+                    else:
+                        graph0[newStart] = [keySpot, out[0]]
+
+    keySpot = spot
+
+    branch = []
+    source = []
+    notFinished = True
+
+    # makes second tree starting from the brake point
+    while notFinished:
+        try:
+            output = graph[keySpot]
+            n = len(output)
+
+            if n > 1:
+                branch.append(output[1])
+                source.append(keySpot)
+
+            graph1[keySpot] = [output[0]]
+            keySpot = output[0]
+
+        except KeyError:
+            if branch == []:
+                notFinished = False
+            else:
+                keySpot = branch[0]
+                branch.remove(keySpot)
+                newStart = source[0]
+                source.remove(newStart)
+                out = graph1[newStart]
+                graph1[newStart] = [keySpot, out[0]]
+
+    return [graph0, graph1]
+
+
+def importDividingTracks(trackmate_xml_path):
 
     root = et.fromstring(open(trackmate_xml_path).read())
 
-    objects = []
-    object_labels = {
-        "FRAME": "t_stamp",
-        "POSITION_T": "t",
-        "POSITION_X": "x",
-        "POSITION_Y": "y",
-        "POSITION_Z": "z",
-        "ESTIMATED_DIAMETER": "w",
-        "QUALITY": "q",
-        "ID": "spot_id",
-        "MEAN_INTENSITY": "mean_intensity",
-        "MEDIAN_INTENSITY": "median_intensity",
-        "MIN_INTENSITY": "min_intensity",
-        "MAX_INTENSITY": "max_intensity",
-        "TOTAL_INTENSITY": "total_intensity",
-        "STANDARD_DEVIATION": "std_intensity",
-        "CONTRAST": "contrast",
-        "SNR": "snr",
-    }
+    # get spots
 
-    features = root.find("Model").find("FeatureDeclarations").find("SpotFeatures")
-    features = [c.get("feature") for c in features.getchildren()] + ["ID"]
+    features = ["name", "POSITION_X", "POSITION_Y", "POSITION_T"]
 
     spots = root.find("Model").find("AllSpots")
-    trajs = pd.DataFrame([])
     objects = []
     for frame in spots.findall("SpotsInFrame"):
         for spot in frame.findall("Spot"):
             single_object = []
-            for label in features:
-                single_object.append(spot.get(label))
+            name = list(spot.get("name"))[2:]
+            n = ""
+            for i in name:
+                n += i
+
+            single_object.append(int(n))
+            single_object.append(spot.get("POSITION_X"))
+            single_object.append(spot.get("POSITION_Y"))
+            single_object.append(spot.get("POSITION_T"))
+
             objects.append(single_object)
 
-    trajs = pd.DataFrame(objects, columns=features)
-    trajs = trajs.astype(np.float)
+    spotDat = pd.DataFrame(objects, columns=features)
 
-    # Apply initial filtering
-    initial_filter = root.find("Settings").find("InitialSpotFilter")
-
-    trajs = filter_spots(
-        trajs,
-        name=initial_filter.get("feature"),
-        value=float(initial_filter.get("value")),
-        isabove=True if initial_filter.get("isabove") == "true" else False,
-    )
-
-    # Apply filters
-    spot_filters = root.find("Settings").find("SpotFilterCollection")
-
-    for spot_filter in spot_filters.findall("Filter"):
-
-        trajs = filter_spots(
-            trajs,
-            name=spot_filter.get("feature"),
-            value=float(spot_filter.get("value")),
-            isabove=True if spot_filter.get("isabove") == "true" else False,
-        )
-
-    trajs = trajs.loc[:, object_labels.keys()]
-    trajs.columns = [object_labels[k] for k in object_labels.keys()]
-    trajs["label"] = np.arange(trajs.shape[0])
-
-    # Get tracks
-    if get_tracks:
-        filtered_track_ids = [
-            int(track.get("TRACK_ID"))
-            for track in root.find("Model").find("FilteredTracks").findall("TrackID")
-        ]
-
-        label_id = 0
-        trajs["label"] = np.nan
-
-        tracks = root.find("Model").find("AllTracks")
-        for track in tracks.findall("Track"):
-
-            track_id = int(track.get("TRACK_ID"))
-            if track_id in filtered_track_ids:
-
-                spot_ids = [
-                    (
-                        edge.get("SPOT_SOURCE_ID"),
-                        edge.get("SPOT_TARGET_ID"),
-                        edge.get("EDGE_TIME"),
-                    )
-                    for edge in track.findall("Edge")
-                ]
-                spot_ids = np.array(spot_ids).astype("float")[:, :2]
-                spot_ids = set(spot_ids.flatten())
-
-                trajs.loc[trajs["spot_id"].isin(spot_ids), "label"] = label_id
-                label_id += 1
-
-        # Label remaining columns
-        single_track = trajs.loc[trajs["label"].isnull()]
-        trajs.loc[trajs["label"].isnull(), "label"] = label_id + np.arange(
-            0, len(single_track)
-        )
-
-    return trajs
-
-
-def filter_spots(spots, name, value, isabove):
-    if isabove:
-        spots = spots[spots[name] > value]
-    else:
-        spots = spots[spots[name] < value]
-
-    return spots
-
-
-def trackmate_edges_import(trackmate_xml_path):
-
-    root = et.fromstring(open(trackmate_xml_path).read())
+    # get tracks
 
     features = root.find("Model").find("FeatureDeclarations").find("EdgeFeatures")
     features = [c.get("feature") for c in features.getchildren()] + ["ID"]
+    features = features[0:2]
 
     tracks = root.find("Model").find("AllTracks")
-    trajs = pd.DataFrame([])
+    track = tracks[-1]
+    nextLabel = int(track.get("TRACK_ID")) + 1
     objects = []
+    _trackDat = []
     for track in tracks:
-        for edge in track:
-            single_object = []
-            for label in features:
-                single_object.append(edge.get(label))
-            objects.append(single_object)
+        # looks for tracks with Divisions
+        label = int(track.get("TRACK_ID"))
+        divisions = int(track.get("NUMBER_SPLITS"))
+        objects = []
 
-    trajs = pd.DataFrame(objects, columns=features)
-    trajs = trajs.astype(np.float)
+        if divisions >= 1:
+            for edge in track:
+                single_object = []
+                for feat in features:
+                    single_object.append(int(edge.get(feat)))
+                objects.append(single_object)
 
-    return trajs
+            start = []
+            end = []
+            for obj in objects:
+                start.append(obj[0])
+                end.append(obj[1])
+
+            # if only one division just need to check if its a good one
+            if divisions == 1:
+
+                uniqueLabels = set(list(start))
+                count = Counter(start)
+                c = []
+                for l in uniqueLabels:
+                    c.append(count[l])
+
+                uniqueLabels = list(uniqueLabels)
+                parentLabel = uniqueLabels[c.index(max(c))]
+
+                daughter = []
+
+                for i in range(len(start)):
+                    if start[i] == parentLabel:
+                        daughter.append(end[i])
+
+                parent = spotDat[spotDat["name"] == parentLabel]
+                daughter0 = spotDat[spotDat["name"] == daughter[0]]
+                daughter1 = spotDat[spotDat["name"] == daughter[1]]
+
+                u0 = np.array(
+                    [
+                        float(daughter0["POSITION_X"]) - float(parent["POSITION_X"]),
+                        float(daughter0["POSITION_Y"]) - float(parent["POSITION_Y"]),
+                    ]
+                )
+
+                u1 = np.array(
+                    [
+                        float(daughter1["POSITION_X"]) - float(parent["POSITION_X"]),
+                        float(daughter1["POSITION_Y"]) - float(parent["POSITION_Y"]),
+                    ]
+                )
+
+                # check the division
+                cost = costFunction(u0, u1)
+                # print(cost)
+                # print(label)
+
+                if cost < 0.5:
+                    spots = start
+                    for spot in end:
+                        spots.append(spot)
+
+                    uniqueSpots = set(spots)
+                    for spot in uniqueSpots:
+                        df = spotDat[spotDat["name"] == spot]
+
+                        time = int(float(df["POSITION_T"]))
+                        centroid = [float(df["POSITION_X"]), float(df["POSITION_Y"])]
+
+                        # save the good tracks
+                        _trackDat.append(
+                            {
+                                "Label": label,
+                                "Time": time,
+                                "Spot": spot,
+                                "Position": centroid,
+                                "Original Label": label,
+                            }
+                        )
+
+            # if there is multi division tracks
+            else:
+                graph = {}
+                start = []
+                end = []
+                for obj in objects:
+                    start.append(obj[0])
+                    end.append(obj[1])
+                uniqueLabels = set(list(start))
+
+                for spot in uniqueLabels:
+                    link = []
+                    for i in range(len(start)):
+                        if start[i] == spot:
+                            link.append(end[i])
+
+                    graph[spot] = link
+
+                keys = list(graph.keys())
+
+                # check for false links to be unpicked later
+                falseLink = []
+                for key in keys:
+                    if len(graph[key]) == 2:
+                        daughter0 = graph[key][0]
+                        daughter1 = graph[key][1]
+                        df0 = spotDat[spotDat["name"] == daughter0]
+                        df1 = spotDat[spotDat["name"] == daughter1]
+                        dfp = spotDat[spotDat["name"] == key]
+
+                        u0 = np.array(
+                            [
+                                float(df0["POSITION_X"]) - float(dfp["POSITION_X"]),
+                                float(df0["POSITION_Y"]) - float(dfp["POSITION_Y"]),
+                            ]
+                        )
+
+                        u1 = np.array(
+                            [
+                                float(df1["POSITION_X"]) - float(dfp["POSITION_X"]),
+                                float(df1["POSITION_Y"]) - float(dfp["POSITION_Y"]),
+                            ]
+                        )
+
+                        cost = costFunction(u0, u1)
+                        # print(cost)
+                        # print(label)
+
+                        if cost > 0.5:
+
+                            maxDis = max(np.linalg.norm(u0), np.linalg.norm(u1))
+                            if np.linalg.norm(u0) == maxDis:
+                                falseLink.append(daughter0)
+                            else:
+                                falseLink.append(daughter1)
+
+                # unpick the false division and save a Dictionary of the graphs
+                dictGraph = {}
+                dictGraph["graph0"] = graph
+                a = 1
+                for falseSpot in falseLink:
+                    keys = list(dictGraph.keys())
+                    for key in keys:
+                        graph = dictGraph[key]
+                        values = list(graph.values())
+                        val = []
+                        for value in values:
+                            if len(value) == 1:
+                                val.append(value[0])
+                            else:
+                                val.append(value[0])
+                                val.append(value[1])
+                        values = val
+
+                        if falseSpot in values:
+                            [graph, graph1] = splitGraph(graph, falseSpot)
+                            dictGraph[key] = graph
+                            dictGraph[f"graph{a}"] = graph1
+                            a += 1
+
+                keys = list(dictGraph.keys())
+                for key in keys:
+                    graph = dictGraph[key]
+                    graphKeys = list(graph.keys())
+
+                    divisionNum = 0
+                    for graphKey in graphKeys:
+                        if len(graph[graphKey]) == 2:
+                            divisionNum += 0
+                    # check if there are still multi division
+                    if divisionNum > 1:
+                        print("Fuck")
+
+                keys = list(dictGraph.keys())
+                for key in keys:
+                    graph = dictGraph[key]
+
+                    graphKeys = list(graph.keys())
+                    values = list(graph.values())
+                    val = []
+                    divisions = False
+                    for value in values:
+                        if len(value) == 1:
+                            val.append(value[0])
+                        else:
+                            val.append(value[0])
+                            val.append(value[1])
+                            divisions = True
+                    values = val
+                    spots = values + graphKeys
+                    uniqueSpots = set(spots)
+
+                    if divisions:
+                        for spot in uniqueSpots:
+                            df = spotDat[spotDat["name"] == spot]
+
+                            time = int(float(df["POSITION_T"]))
+                            centroid = [
+                                float(df["POSITION_X"]),
+                                float(df["POSITION_Y"]),
+                            ]
+                            # save divisions from the split up tracks in it
+                            _trackDat.append(
+                                {
+                                    "Label": nextLabel,
+                                    "Time": time,
+                                    "Spot": spot,
+                                    "Position": centroid,
+                                    "Original Label": label,
+                                }
+                            )
+
+                        nextLabel += 1
+
+        else:
+            continue
+
+    trackDat = pd.DataFrame(_trackDat)
+
+    trackDat = trackDat.sort_values(["Label", "Time"], ascending=[True, True])
+
+    return trackDat
 
 
 def heightOfMitosis(img, polygon):
@@ -234,7 +473,7 @@ def heightOfMitosis(img, polygon):
     return deltaHeight
 
 
-# ------------------
+# ----------------------------------------------------
 
 f = open("pythonText.txt", "r")
 
@@ -250,279 +489,143 @@ for filename in filenames:
 
     # gather xml files
 
-    dfVertice = trackmate_vertices_import(
-        f"dat/{filename}/mitosisTracks{filename}.xml", get_tracks=True
-    )
-    dfEdge = trackmate_edges_import(f"dat/{filename}/mitosisHeightTracks{filename}.xml")
+    df = importDividingTracks(f"dat/{filename}/mitosisHeightTracks{filename}.xml")
 
-    uniqueLabel = list(set(dfVertice["label"]))
+    uniqueLabels = list(set(df["Label"]))
 
     _dfDivisions = []
 
-    for label in uniqueLabel:
+    for label in uniqueLabels:
+        # pick out each division track
+        dfTrack = df.loc[lambda df: df["Label"] == label, :]
 
-        df = dfVertice.loc[lambda dfVertice: dfVertice["label"] == label, :]
+        timeList = list(dfTrack["Time"])
+        uniqueTime = list(set(timeList))
+        count = Counter(timeList)
 
-        t = list(df["t_stamp"])
-        unique = list(set(t))
+        num = []
+        for t in uniqueTime:
 
-        if len(unique) < len(t):
-            # compare number of spots with length of time of the track to see if there is a division
-            division = True
-            spotID = df["spot_id"]
-        else:
-            division = False
+            n = count[t]
 
-        if division == True:
-            _df2 = []
-            for spot in spotID:  # collect edges of the track label
-                _df2.append(
-                    dfEdge.loc[lambda dfEdge: dfEdge["SPOT_SOURCE_ID"] == spot, :]
-                )
+            if n == 2:
+                num.append(t)
 
-            df2 = pd.concat(_df2)
+        divisionTime = min(num)
+        parent = list(dfTrack["Spot"][dfTrack["Time"] < divisionTime])
+        [daughter0, daughter1] = list(dfTrack["Spot"][dfTrack["Time"] == divisionTime])
+        [daughterPos0, daughterPos1] = list(
+            dfTrack["Position"][dfTrack["Time"] == divisionTime]
+        )
+        daughterSpots = list(dfTrack["Spot"][dfTrack["Time"] > divisionTime])
+        daughterPos = list(dfTrack["Position"][dfTrack["Time"] > divisionTime])
 
-            for spot in spotID:
+        originalLabel = int(dfTrack["Original Label"][dfTrack["Spot"] == daughter0])
 
-                df3 = df2.loc[lambda df2: df2["SPOT_SOURCE_ID"] == spot, :]
-                n = len(df3)
-                if n == 2:
-                    divID = spot
-                    # finds the spot correponding to the new daughter nuclui
-                    daughter0 = list(df3["SPOT_TARGET_ID"])[0]
-                    daughter1 = list(df3["SPOT_TARGET_ID"])[1]
+        daughter0 = [daughter0]
+        daughter1 = [daughter1]
+        # build a database of the tracks
+        for i in range(len(daughterSpots)):
+            spot = daughterSpots[i]
+            position = daughterPos[i]
 
-            # track the links back from the spot just before division to get parent chain
-            divID = list([0, divID])
-            con = True
-            while con == True:
+            r0 = (
+                (daughterPos0[0] - position[0]) ** 2
+                + (daughterPos0[1] - position[1]) ** 2
+            ) ** 0.5
+            r1 = (
+                (daughterPos1[0] - position[0]) ** 2
+                + (daughterPos1[1] - position[1]) ** 2
+            ) ** 0.5
 
-                try:
-                    con = False
-                    divID.append(
-                        list(
-                            df2.loc[lambda df2: df2["SPOT_TARGET_ID"] == divID[-1], :][
-                                "SPOT_SOURCE_ID"
-                            ]
-                        )[0]
-                    )
-                    con = True
-                except:
-                    pass
+            if r0 > r1:
+                daughter1.append(spot)
+                daughterPos1 = position
+            else:
+                daughter0.append(spot)
+                daughterPos0 = position
 
-            parent = divID[1:]
-            parent.reverse()
+        timeList = []
+        cList = []
 
-            # track the links forward from the zth daughter spot just after division to get daughter0 chain
+        for spot in parent:
 
-            daughter0 = list([0, daughter0])
-            con = True
-            while con == True:
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
-                try:
-                    con = False
-                    daughter0.append(
-                        list(
-                            df2.loc[
-                                lambda df2: df2["SPOT_SOURCE_ID"] == daughter0[-1], :
-                            ]["SPOT_TARGET_ID"]
-                        )[0]
-                    )
-                    con = True
-                except:
-                    pass
+        # save the parent part of the track in one database line
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "parent",
+                "Original Label": originalLabel,
+                "Spot": parent,
+            }
+        )
 
-            daughter0 = daughter0[1:]
+        timeList = []
+        cList = []
 
-            # track the links forward from the 1st daughter spot just after division to get daughter1 chain
+        for spot in daughter0:
 
-            daughter1 = list([0, daughter1])
-            con = True
-            while con == True:
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
-                try:
-                    con = False
-                    daughter1.append(
-                        list(
-                            df2.loc[
-                                lambda df2: df2["SPOT_SOURCE_ID"] == daughter1[-1], :
-                            ]["SPOT_TARGET_ID"]
-                        )[0]
-                    )
-                    con = True
-                except:
-                    pass
+        # save the daughter0 part of the track in one database line
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "daughter0",
+                "Original Label": originalLabel,
+                "Spot": daughter0,
+            }
+        )
 
-            daughter1 = daughter1[1:]
+        timeList = []
+        cList = []
 
-            # Now we have the chains of spots we can collect to postion and time of each point.
-            _df3 = []
-            for spot in parent:
-                _df3.append(
-                    dfVertice.loc[lambda dfVertice: dfVertice["spot_id"] == spot, :]
-                )
+        for spot in daughter1:
 
-            df3 = pd.concat(_df3)
-            timeList = []
-            cList = []
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
-            for i in range(len(df3)):  # fill in any stop gaps
-                t = int(df3["t"].iloc[i])
-                x = df3["x"].iloc[i]
-                y = df3["y"].iloc[i]
-
-                timeList.append(t)
-                cList.append([x, y])
-
-                if i < len(df3) - 1:
-                    t0 = int(df3["t"].iloc[i])
-                    t1 = int(df3["t"].iloc[i + 1])
-                    gap = t1 - t0
-                    if gap > 1:
-                        for j in range(gap - 1):
-                            timeList.append(t + 1 + j)
-
-                            x1 = df3["x"].iloc[i + 1]
-                            y1 = df3["y"].iloc[i + 1]
-
-                            cx = x + ((x1 - x) * (j + 1)) / (gap)
-                            cy = y + ((y1 - y) * (j + 1)) / (gap)
-                            cList.append([cx, cy])
-            # save chains with data of there position and time
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "parent",
-                }
-            )
-            divisionTime = timeList[-1]
-            divisionPlace = cList[-1]
-
-            _df3 = []
-            for spot in daughter0:
-                _df3.append(
-                    dfVertice.loc[lambda dfVertice: dfVertice["spot_id"] == spot, :]
-                )
-
-            df3 = pd.concat(_df3)
-            timeList = []
-            cList = []
-
-            t = int(df3.iloc[0, 1])
-            if t - 1 != divisionTime:  # fill in any stop gaps
-                gap = t - divisionTime
-                for j in range(gap - 1):
-                    timeList.append(divisionTime + 1 + j)
-
-                    [x, y] = divisionPlace
-                    x1 = df3["x"].iloc[0]
-                    y1 = df3["y"].iloc[0]
-
-                    cx = x + ((x1 - x) * (j + 1)) / (gap)
-                    cy = y + ((y1 - y) * (j + 1)) / (gap)
-                    cList.append([cx, cy])
-
-            for i in range(len(df3)):
-                t = int(df3["t"].iloc[i])
-                x = df3["x"].iloc[i]
-                y = df3["y"].iloc[i]
-
-                timeList.append(t)
-                cList.append([x, y])
-
-                if i < len(df3) - 1:
-                    t0 = int(df3["t"].iloc[i])
-                    t1 = int(df3["t"].iloc[i + 1])
-                    gap = t1 - t0
-                    if gap > 1:
-                        for j in range(gap - 1):
-                            timeList.append(t + 1 + j)
-
-                            x1 = df3.iloc[i + 1, 2]
-                            y1 = df3.iloc[i + 1, 3]
-
-                            cx = x + ((x1 - x) * (j + 1)) / (gap)
-                            cy = y + ((y1 - y) * (j + 1)) / (gap)
-                            cList.append([cx, cy])
-
-            # save chains with data of there position and time
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "daughter0",
-                }
-            )
-
-            _df3 = []
-            for spot in daughter1:
-                _df3.append(
-                    dfVertice.loc[lambda dfVertice: dfVertice["spot_id"] == spot, :]
-                )
-
-            df3 = pd.concat(_df3)
-            timeList = []
-            cList = []
-
-            t = int(df3["t"].iloc[0])
-            if t - 1 != divisionTime:  # fill in any stop gaps
-                gap = t - divisionTime
-                for j in range(gap - 1):
-                    timeList.append(divisionTime + 1 + j)
-
-                    [x, y] = divisionPlace
-                    x1 = df3["x"].iloc[0]
-                    y1 = df3["y"].iloc[0]
-
-                    cx = x + ((x1 - x) * (j + 1)) / (gap)
-                    cy = y + ((y1 - y) * (j + 1)) / (gap)
-                    cList.append([cx, cy])
-
-            for i in range(len(df3)):
-                t = int(df3["t"].iloc[i])
-                x = df3["x"].iloc[i]
-                y = df3["y"].iloc[i]
-
-                timeList.append(t)
-                cList.append([x, y])
-
-                if i < len(df3) - 1:
-                    t0 = int(df3["t"].iloc[i])
-                    t1 = int(df3["t"].iloc[i + 1])
-                    gap = t1 - t0
-                    if gap > 1:
-                        for j in range(gap - 1):
-                            timeList.append(t + 1 + j)
-
-                            x1 = df3["x"].iloc[i + 1]
-                            y1 = df3["y"].iloc[i + 1]
-
-                            cx = x + ((x1 - x) * (j + 1)) / (gap)
-                            cy = y + ((y1 - y) * (j + 1)) / (gap)
-                            cList.append([cx, cy])
-            # save chains with data of there position and time
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "daughter1",
-                }
-            )
+        # save the daughter1 part of the track in one database line
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "daughter1",
+                "Original Label": originalLabel,
+                "Spot": daughter1,
+            }
+        )
 
     dfDivisions = pd.DataFrame(_dfDivisions)
 
+    dfDivisions = dfDivisions.sort_values(
+        ["Label", "Original Label"], ascending=[True, True]
+    )
+
     vidBinary = (
-        sm.io.imread(f"dat/{filename}/probMitosis{filename}.tif").astype(float) * 255
+        sm.io.imread(f"dat/{filename}/probMitosisHeight{filename}.tif").astype(float)
+        * 255
     )
 
     T = len(vidBinary)
 
-    for t in range(T):
-        vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
+    # for t in range(T):
+    #     vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
 
     vidBinary[vidBinary > 100] = 255
     vidBinary[vidBinary <= 100] = 0
@@ -571,6 +674,14 @@ for filename in filenames:
                 contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
                 poly = sm.measure.approximate_polygon(contour, tolerance=1)
 
+                if LinearRing(poly).is_simple:
+                    polygon = Polygon(poly)
+                else:
+                    sf.append(False)
+                    ori.append(False)
+                    polygons.append(False)
+                    h.append(False)
+
                 polygon = Polygon(poly)
 
                 sf.append(cell.shapeFactor(polygon))
@@ -589,6 +700,8 @@ for filename in filenames:
         timeList = dfDivisions["Time"][i]
         cList = dfDivisions["Position"][i]
         chain = dfDivisions["Chain"][i]
+        originalLabel = dfDivisions["Original Label"][i]
+        spots = dfDivisions["Spot"][i]
 
         _dfDivisions2.append(
             {
@@ -600,10 +713,15 @@ for filename in filenames:
                 "Height": h,
                 "Necleus Orientation": ori,
                 "Polygons": polygons,
+                "Original Label": originalLabel,
+                "Spot": spots,
             }
         )
 
     dfDivisions2 = pd.DataFrame(_dfDivisions2)
+    dfDivisions2 = dfDivisions2.sort_values(
+        ["Label", "Original Label"], ascending=[True, True]
+    )
 
     # -------
 
@@ -679,6 +797,8 @@ for filename in filenames:
                         "Necleus Orientation": df3["Necleus Orientation"][3 * j + i],
                         "Polygons": df3["Polygons"][3 * j + i],
                         "Division Orientation": divOri,
+                        "Original Label": df3["Original Label"][3 * j + i],
+                        "Spot": df3["Spot"][3 * j + i],
                     }
                 )
 
@@ -734,6 +854,8 @@ for filename in filenames:
                         "Necleus Orientation": df3["Necleus Orientation"][3 * j + i],
                         "Polygons": df3["Polygons"][3 * j + i],
                         "Division Orientation": divOri,
+                        "Original Label": df3["Original Label"][3 * j + i],
+                        "Spot": df3["Spot"][3 * j + i],
                     }
                 )
 
@@ -941,6 +1063,8 @@ for filename in filenames:
                     "Boundary Polygons": polygonsParent,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
+                    "Original Label": df4["Original Label"][3 * j],
+                    "Spot": df4["Spot"][3 * j],
                 }
             )
 
@@ -958,6 +1082,8 @@ for filename in filenames:
                     "Boundary Polygons": polygonsDaughter1,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
+                    "Original Label": df4["Original Label"][3 * j],
+                    "Spot": df4["Spot"][3 * j],
                 }
             )
 
@@ -975,6 +1101,8 @@ for filename in filenames:
                     "Boundary Polygons": polygonsDaughter2,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
+                    "Original Label": df4["Original Label"][3 * j],
+                    "Spot": df4["Spot"][3 * j],
                 }
             )
 
@@ -993,6 +1121,8 @@ for filename in filenames:
                         "Necleus Orientation": df4["Necleus Orientation"][3 * j + i],
                         "Polygons": df4["Polygons"][3 * j + i],
                         "Division Orientation": df4["Division Orientation"][3 * j + i],
+                        "Original Label": df4["Original Label"][3 * j + i],
+                        "Spot": df4["Spot"][3 * j + i],
                     }
                 )
 
