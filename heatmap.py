@@ -15,9 +15,9 @@ import skimage.measure
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import LinearRing
 
-import cell_properties as cell
-import find_good_cells as fi
-import get_functions as gf
+import cellProperties as cell
+import findGoodCells as fi
+import getFunctions as gf
 
 plt.rcParams.update({"font.size": 18})
 

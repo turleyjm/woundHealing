@@ -931,7 +931,7 @@ for filename in filenames:
                 mostLabel2nd = uniqueLabels[c.index(max(c))]
                 Cdash = max(c)
 
-            if Cdash / C > 0.5:
+            if Cdash / C > 0.3:
                 divided = True
                 daughterLabel1 = mostLabel
                 daughterLabel2 = mostLabel2nd
@@ -1129,6 +1129,10 @@ for filename in filenames:
             j += 1
 
     dfDivisions4 = pd.DataFrame(_dfDivisions4)
+
+    dfDivisions4 = dfDivisions4.sort_values(
+        ["Label", "Original Label"], ascending=[True, True]
+    )
 
     dfDivisions4.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
 
