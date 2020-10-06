@@ -35,7 +35,13 @@ for filename in filenames:
 
     vid = sm.io.imread(f"dat/{filename}/probBoundary{filename}.tif").astype(float)
 
-    for t in range(len(vid)):
+    video = []
+
+    for j in range(12):
+        for i in range(5):
+            video.append(vid[j, i])
+
+    for t in range(len(video)):
         if t > 99:
             T = f"{t}"
         elif t > 9:
@@ -43,7 +49,7 @@ for filename in filenames:
         else:
             T = "00" + f"{t}"
 
-        img = np.asarray(vid[t] * 255, "uint8")
+        img = np.asarray(video[t] * 255, "uint8")
         tifffile.imwrite(
             f"dat/{filename}/imagesForSeg/probBoundary{filename}_{T}.tif", img
         )

@@ -65,7 +65,7 @@ def inertia(pts):
 
 
 def shape_factor(pts):
-    """Using the inertia tensor matrix it products the shape factor of the polygon"""
+    """Using the inertia tensor matrix finds the eigenvalues it products the shape factor of the polygon"""
 
     I = inertia(pts)
     D = linalg.eig(I)[0]
