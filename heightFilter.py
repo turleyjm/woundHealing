@@ -24,14 +24,16 @@ import findGoodCells as fi
 
 def heightScale(z0, z):
 
-    d = 10
+    # e where scaling starts from the surface and d is the cut off
+    d = 8
+    e = 3
 
-    if z0 > z - 5:
+    if z0 + e > z:
         scale = 1
     elif z > z0 + d:
         scale = 0
     else:
-        scale = 1 - abs(z0 - z + 5) / (d - 5)
+        scale = (1 - abs(z - z0 - e) / (d - e)) ** 2
 
     return scale
 
@@ -67,6 +69,7 @@ background = 4
 for filename in filenames:
 
     # Surface height
+    print(filename)
 
     varFile = f"dat/{filename}/varEcad{filename}.tif"
     variance = sm.io.imread(varFile).astype(int)
@@ -76,6 +79,7 @@ for filename in filenames:
     height = np.zeros([T, X, Y])
 
     for t in range(T):
+        print(t)
         for x in range(X):
             for y in range(Y):
                 p = variance[t, :, x, y]
@@ -93,17 +97,10 @@ for filename in filenames:
     vidFile = f"dat/{filename}/3dH2{filename}.tif"
     H2 = sm.io.imread(vidFile).astype(int)
 
-    for t in range(T):
-        print(t)
-        for x in range(X):
-            for y in range(Y):
-
-                z0 = height[t, x, y]
-
-                for z in range(Z):
-
-                    scale = heightScale(z0, z)
-                    H2[t, z, x, y] = H2[t, z, x, y] * scale
+    for z in range(Z):
+        for z0 in range(Z):
+            scale = heightScale(z0, z)
+            H2[:, z][height == z0] = H2[:, z][height == z0] * scale
 
     H2 = np.asarray(H2, "uint8")
     tifffile.imwrite(f"dat/{filename}/heightH2{filename}.tif", H2)
@@ -111,17 +108,10 @@ for filename in filenames:
     vidFile = f"dat/{filename}/3dEcad{filename}.tif"
     Ecad = sm.io.imread(vidFile).astype(int)
 
-    for t in range(T):
-        print(t)
-        for x in range(X):
-            for y in range(Y):
-
-                z0 = height[t, x, y]
-
-                for z in range(Z):
-
-                    scale = heightScale(z0, z)
-                    Ecad[t, z, x, y] = Ecad[t, z, x, y] * scale
+    for z in range(Z):
+        for z0 in range(Z):
+            scale = heightScale(z0, z)
+            Ecad[:, z][height == z0] = Ecad[:, z][height == z0] * scale
 
     Ecad = np.asarray(Ecad, "uint8")
     tifffile.imwrite(f"dat/{filename}/heightEcad{filename}.tif", Ecad)
