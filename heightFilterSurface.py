@@ -64,38 +64,19 @@ f = open("pythonText.txt", "r")
 filenames = f.read()
 filenames = filenames.split(", ")
 
-background = 4
-
 for filename in filenames:
 
     # Surface height
-    print(filename)
 
-    varFile = f"dat/{filename}/varEcad{filename}.tif"
-    variance = sm.io.imread(varFile).astype(int)
-
-    (T, Z, X, Y) = variance.shape
-
-    height = np.zeros([T, X, Y])
-
-    for t in range(T):
-        print(t)
-        for x in range(X):
-            for y in range(Y):
-                p = variance[t, :, x, y]
-                m = surface(p)
-                h = [i for i, j in enumerate(p) if j == m][0]
-
-                height[t, x, y] = h
-
-    height = sp.ndimage.median_filter(height, size=9)
-    height = np.asarray(height, "uint8")
-    tifffile.imwrite(f"dat/{filename}/surface{filename}.tif", height)
+    vidFile = f"dat/{filename}/surface{filename}.tif"
+    height = sm.io.imread(vidFile).astype(int)
 
     # Height filter
 
     vidFile = f"dat/{filename}/3dH2{filename}.tif"
     H2 = sm.io.imread(vidFile).astype(int)
+
+    (T, Z, X, Y) = H2.shape
 
     for z in range(Z):
         for z0 in range(Z):
