@@ -618,8 +618,7 @@ for filename in filenames:
     )
 
     vidBinary = (
-        sm.io.imread(f"dat/{filename}/probMitosisHeight{filename}.tif").astype(float)
-        * 255
+        sm.io.imread(f"dat/{filename}/probMitosis{filename}.tif").astype(float) * 255
     )
 
     T = len(vidBinary)

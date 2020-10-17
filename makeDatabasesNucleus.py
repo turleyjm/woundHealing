@@ -202,7 +202,7 @@ for filename in filenames:
 
     # save a image contaning the height of each nuclei
 
-    vidFile = f"dat/{filename}/binaryBoundary{filename}.tif"
+    vidFile = f"dat/{filename}/surface{filename}.tif"
 
     vid = sm.io.imread(vidFile).astype(int)
     T = int(len(vid))

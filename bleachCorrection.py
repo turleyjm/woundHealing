@@ -77,3 +77,25 @@ for filename in filenames:
 
     vid = np.asarray(vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vid)
+
+    vidFile = f"dat/{filename}/3dH2{filename}.tif"
+
+    vid = sm.io.imread(vidFile).astype(int)
+
+    (T, Z, X, Y) = vid.shape
+
+    mu0 = 25
+
+    for t in range(T):
+        mu = vid[t][vid[t] > background]
+        vid[t][vid[t] <= background] = 0
+
+        mu = cell.mean(mu)
+
+        ratio = mu0 / mu
+
+        vid[t] = vid[t] * ratio
+        vid[t][vid[t] > 255] = 255
+
+    vid = np.asarray(vid, "uint8")
+    tifffile.imwrite(f"dat/{filename}/migration{filename}.tif", vid)

@@ -33,8 +33,14 @@ filenames = filenames.split(", ")
 for filename in filenames:
 
     vid = sm.io.imread(f"dat/{filename}/track{filename}.tif").astype(float)
-    vidLabel = sm.io.imread(f"dat/{filename}/vidLabel{filename}.tif").astype(float)
     binary = sm.io.imread(f"dat/{filename}/binaryBoundary{filename}.tif").astype(float)
+
+    vidLabel = []
+
+    for img in binary:
+
+        imgLabel = sm.measure.label(img, background=0, connectivity=1)
+        vidLabel.append(imgLabel)
 
     [T, X, Y, rgb] = vid.shape
 
@@ -125,5 +131,3 @@ for filename in filenames:
 
     binary = np.asarray(binary, "uint8")
     tifffile.imwrite(f"dat/{filename}/flash{filename}.tif", binary)
-
-    print("r")
