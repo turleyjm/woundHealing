@@ -72,7 +72,7 @@ for filename in filenames:
         for i in range(len(allPolys)):
 
             poly = allPolys[i]
-            contours = allContours[i]
+            contour = allContours[i]
             polygon = Polygon(poly)
             _dfShape.append(
                 {

@@ -489,7 +489,7 @@ for filename in filenames:
 
     # gather xml files
 
-    df = importDividingTracks(f"dat/{filename}/mitosisHeightTracks{filename}.xml")
+    df = importDividingTracks(f"dat/{filename}/mitosisTracks{filename}.xml")
 
     uniqueLabels = list(set(df["Label"]))
 
@@ -548,68 +548,72 @@ for filename in filenames:
         timeList = []
         cList = []
 
-        for spot in parent:
+        if len(daughter0) == 1 or len(daughter1) == 1:
+            continue
+        else:
 
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
+            for spot in parent:
 
-        # save the parent part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "parent",
-                "Original Label": originalLabel,
-                "Spot": parent,
-            }
-        )
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
 
-        timeList = []
-        cList = []
+            # save the parent part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "parent",
+                    "Original Label": originalLabel,
+                    "Spot": parent,
+                }
+            )
 
-        for spot in daughter0:
+            timeList = []
+            cList = []
 
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
+            for spot in daughter0:
 
-        # save the daughter0 part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "daughter0",
-                "Original Label": originalLabel,
-                "Spot": daughter0,
-            }
-        )
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
 
-        timeList = []
-        cList = []
+            # save the daughter0 part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "daughter0",
+                    "Original Label": originalLabel,
+                    "Spot": daughter0,
+                }
+            )
 
-        for spot in daughter1:
+            timeList = []
+            cList = []
 
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
+            for spot in daughter1:
 
-        # save the daughter1 part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "daughter1",
-                "Original Label": originalLabel,
-                "Spot": daughter1,
-            }
-        )
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
+
+            # save the daughter1 part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "daughter1",
+                    "Original Label": originalLabel,
+                    "Spot": daughter1,
+                }
+            )
 
     dfDivisions = pd.DataFrame(_dfDivisions)
 
@@ -623,11 +627,11 @@ for filename in filenames:
 
     T = len(vidBinary)
 
-    # for t in range(T):
-    #     vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
-
     vidBinary[vidBinary > 100] = 255
     vidBinary[vidBinary <= 100] = 0
+
+    for t in range(T):
+        vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
 
     vidBinary = np.asarray(vidBinary, "uint8")
     tifffile.imwrite(f"dat/{filename}/binaryMitosis{filename}.tif", vidBinary)
@@ -675,18 +679,15 @@ for filename in filenames:
 
                 if LinearRing(poly).is_simple:
                     polygon = Polygon(poly)
+                    sf.append(cell.shapeFactor(polygon))
+                    ori.append(cell.orientation(polygon))
+                    polygons.append(polygon)
+                    h.append(heightOfMitosis(vidHeight[t], polygon))
                 else:
                     sf.append(False)
                     ori.append(False)
                     polygons.append(False)
                     h.append(False)
-
-                polygon = Polygon(poly)
-
-                sf.append(cell.shapeFactor(polygon))
-                ori.append(cell.orientation(polygon))
-                polygons.append(polygon)
-                h.append(heightOfMitosis(vidHeight[t], polygon))
 
             else:
 
@@ -732,8 +733,6 @@ for filename in filenames:
 
     uniqueLabel = list(set(dfDivisions2["Label"]))
 
-    j = 0
-
     if wound == True:
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
@@ -744,31 +743,31 @@ for filename in filenames:
                 lambda dfDivisions2: dfDivisions2["Label"] == label, :
             ]
 
-            if len(df3["Time"][3 * j + 1]) > 2:
+            if len(df3["Time"].iloc[1]) > 2:
                 delta_t0 = 2
-                t0 = df3["Time"][3 * j + 1][2]
-            elif len(df3["Time"][3 * j + 1]) > 1:
+                t0 = df3["Time"].iloc[1][2]
+            elif len(df3["Time"].iloc[1]) > 1:
                 delta_t0 = 1
-                t0 = df3["Time"][3 * j + 1][1]
+                t0 = df3["Time"].iloc[1][1]
             else:
                 delta_t0 = 0
-                t0 = df3["Time"][3 * j + 1][0]
+                t0 = df3["Time"].iloc[1][0]
 
-            if len(df3["Time"][3 * j + 2]) > 2:
+            if len(df3["Time"].iloc[2]) > 2:
                 delta_t1 = 2
-                t0 = df3["Time"][3 * j + 2][2]
-            elif len(df3["Time"][3 * j + 2]) > 1:
+                t0 = df3["Time"].iloc[2][2]
+            elif len(df3["Time"].iloc[2]) > 1:
                 delta_t1 = 1
-                t0 = df3["Time"][3 * j + 2][1]
+                t0 = df3["Time"].iloc[2][1]
             else:
                 delta_t1 = 0
-                t0 = df3["Time"][3 * j + 2][0]
+                t0 = df3["Time"].iloc[2][0]
 
             (Cy, Cx) = dfWound["centriod"][t0]  # change ord
             woundPolygon = dfWound["polygon"][t0]
             r = (woundPolygon.area / np.pi) ** 0.5
-            [x0, y0] = df3["Position"][3 * j + 1][delta_t0]
-            [x1, y1] = df3["Position"][3 * j + 2][delta_t1]
+            [x0, y0] = df3["Position"].iloc[1][delta_t0]
+            [x1, y1] = df3["Position"].iloc[2][delta_t1]
 
             xm = (x0 + x1) / 2
             ym = (y0 + y1) / 2
@@ -787,21 +786,19 @@ for filename in filenames:
             for i in range(3):
                 _dfDivisions3.append(
                     {
-                        "Label": df3["Label"][3 * j + i],
-                        "Time": df3["Time"][3 * j + i],
-                        "Position": df3["Position"][3 * j + i],
-                        "Chain": df3["Chain"][3 * j + i],
-                        "Shape Factor": df3["Shape Factor"][3 * j + i],
-                        "Height": df3["Height"][3 * j + i],
-                        "Necleus Orientation": df3["Necleus Orientation"][3 * j + i],
-                        "Polygons": df3["Polygons"][3 * j + i],
+                        "Label": df3["Label"].iloc[i],
+                        "Time": df3["Time"].iloc[i],
+                        "Position": df3["Position"].iloc[i],
+                        "Chain": df3["Chain"].iloc[i],
+                        "Shape Factor": df3["Shape Factor"].iloc[i],
+                        "Height": df3["Height"].iloc[i],
+                        "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
+                        "Polygons": df3["Polygons"].iloc[i],
                         "Division Orientation": divOri,
-                        "Original Label": df3["Original Label"][3 * j + i],
-                        "Spot": df3["Spot"][3 * j + i],
+                        "Original Label": df3["Original Label"].iloc[i],
+                        "Spot": df3["Spot"].iloc[i],
                     }
                 )
-
-            j += 1
 
     else:
 
@@ -810,23 +807,23 @@ for filename in filenames:
                 lambda dfDivisions2: dfDivisions2["Label"] == label, :
             ]
 
-            if len(df3["Time"][3 * j + 1]) > 2:
+            if len(df3["Time"].iloc[1]) > 2:
                 delta_t0 = 2
-            elif len(df3["Time"][3 * j + 1]) > 1:
+            elif len(df3["Time"].iloc[1]) > 1:
                 delta_t0 = 1
             else:
                 delta_t0 = 0
 
-            if len(df3["Time"][3 * j + 2]) > 2:
+            if len(df3["Time"].iloc[2]) > 2:
                 delta_t1 = 2
-            elif len(df3["Time"][3 * j + 2]) > 1:
+            elif len(df3["Time"].iloc[2]) > 1:
                 delta_t1 = 1
             else:
                 delta_t1 = 0
 
             (Cx, Cy) = (0, 1)  # change coord
-            [x0, y0] = df3["Position"][3 * j + 1][delta_t0]
-            [x1, y1] = df3["Position"][3 * j + 2][delta_t1]
+            [x0, y0] = df3["Position"].iloc[1][delta_t0]
+            [x1, y1] = df3["Position"].iloc[2][delta_t1]
 
             xm = (x0 + x1) / 2
             ym = (y0 + y1) / 2
@@ -844,21 +841,19 @@ for filename in filenames:
             for i in range(3):
                 _dfDivisions3.append(
                     {
-                        "Label": df3["Label"][3 * j + i],
-                        "Time": df3["Time"][3 * j + i],
-                        "Position": df3["Position"][3 * j + i],
-                        "Chain": df3["Chain"][3 * j + i],
-                        "Shape Factor": df3["Shape Factor"][3 * j + i],
-                        "Height": df3["Height"][3 * j + i],
-                        "Necleus Orientation": df3["Necleus Orientation"][3 * j + i],
-                        "Polygons": df3["Polygons"][3 * j + i],
+                        "Label": df3["Label"].iloc[i],
+                        "Time": df3["Time"].iloc[i],
+                        "Position": df3["Position"].iloc[i],
+                        "Chain": df3["Chain"].iloc[i],
+                        "Shape Factor": df3["Shape Factor"].iloc[i],
+                        "Height": df3["Height"].iloc[i],
+                        "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
+                        "Polygons": df3["Polygons"].iloc[i],
                         "Division Orientation": divOri,
-                        "Original Label": df3["Original Label"][3 * j + i],
-                        "Spot": df3["Spot"][3 * j + i],
+                        "Original Label": df3["Original Label"].iloc[i],
+                        "Spot": df3["Spot"].iloc[i],
                     }
                 )
-
-            j += 1
 
     dfDivisions3 = pd.DataFrame(_dfDivisions3)
 
@@ -882,8 +877,6 @@ for filename in filenames:
 
     _dfDivisions4 = []
 
-    j = 0
-
     for label in uniqueLabel:
         df4 = dfDivisions3.loc[lambda dfDivisions3: dfDivisions3["Label"] == label, :]
 
@@ -891,8 +884,8 @@ for filename in filenames:
         polygonsDaughter1 = []
         polygonsDaughter2 = []
 
-        (Cx, Cy) = df4["Position"][3 * j][-1]
-        tm = df4["Time"][3 * j][-1]
+        (Cx, Cy) = df4["Position"].iloc[0][-1]
+        tm = df4["Time"].iloc[0][-1]
 
         Cx = int(Cx)
         Cy = int(Cy)
@@ -1050,82 +1043,78 @@ for filename in filenames:
 
             _dfDivisions4.append(
                 {
-                    "Label": df4["Label"][3 * j],
-                    "Time": df4["Time"][3 * j],
-                    "Position": df4["Position"][3 * j],
-                    "Chain": df4["Chain"][3 * j],
-                    "Shape Factor": df4["Shape Factor"][3 * j],
-                    "Height": df4["Height"][3 * j],
-                    "Necleus Orientation": df4["Necleus Orientation"][3 * j],
-                    "Polygons": df4["Polygons"][3 * j],
-                    "Division Orientation": df4["Division Orientation"][3 * j],
+                    "Label": df4["Label"].iloc[0],
+                    "Time": df4["Time"].iloc[0],
+                    "Position": df4["Position"].iloc[0],
+                    "Chain": df4["Chain"].iloc[0],
+                    "Shape Factor": df4["Shape Factor"].iloc[0],
+                    "Height": df4["Height"].iloc[0],
+                    "Necleus Orientation": df4["Necleus Orientation"].iloc[0],
+                    "Polygons": df4["Polygons"].iloc[0],
+                    "Division Orientation": df4["Division Orientation"].iloc[0],
                     "Boundary Polygons": polygonsParent,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"][3 * j],
-                    "Spot": df4["Spot"][3 * j],
+                    "Original Label": df4["Original Label"].iloc[0],
+                    "Spot": df4["Spot"].iloc[0],
                 }
             )
 
             _dfDivisions4.append(
                 {
-                    "Label": df4["Label"][3 * j + 1],
-                    "Time": df4["Time"][3 * j + 1],
-                    "Position": df4["Position"][3 * j + 1],
-                    "Chain": df4["Chain"][3 * j + 1],
-                    "Shape Factor": df4["Shape Factor"][3 * j + 1],
-                    "Height": df4["Height"][3 * j + 1],
-                    "Necleus Orientation": df4["Necleus Orientation"][3 * j + 1],
-                    "Polygons": df4["Polygons"][3 * j + 1],
-                    "Division Orientation": df4["Division Orientation"][3 * j + 1],
+                    "Label": df4["Label"].iloc[1],
+                    "Time": df4["Time"].iloc[1],
+                    "Position": df4["Position"].iloc[1],
+                    "Chain": df4["Chain"].iloc[1],
+                    "Shape Factor": df4["Shape Factor"].iloc[1],
+                    "Height": df4["Height"].iloc[1],
+                    "Necleus Orientation": df4["Necleus Orientation"].iloc[1],
+                    "Polygons": df4["Polygons"].iloc[1],
+                    "Division Orientation": df4["Division Orientation"].iloc[1],
                     "Boundary Polygons": polygonsDaughter1,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"][3 * j],
-                    "Spot": df4["Spot"][3 * j],
+                    "Original Label": df4["Original Label"].iloc[1],
+                    "Spot": df4["Spot"].iloc[1],
                 }
             )
 
             _dfDivisions4.append(
                 {
-                    "Label": df4["Label"][3 * j + 2],
-                    "Time": df4["Time"][3 * j + 2],
-                    "Position": df4["Position"][3 * j + 2],
-                    "Chain": df4["Chain"][3 * j + 2],
-                    "Shape Factor": df4["Shape Factor"][3 * j + 2],
-                    "Height": df4["Height"][3 * j + 2],
-                    "Necleus Orientation": df4["Necleus Orientation"][3 * j + 2],
-                    "Polygons": df4["Polygons"][3 * j + 2],
-                    "Division Orientation": df4["Division Orientation"][3 * j + 2],
+                    "Label": df4["Label"].iloc[2],
+                    "Time": df4["Time"].iloc[2],
+                    "Position": df4["Position"].iloc[2],
+                    "Chain": df4["Chain"].iloc[2],
+                    "Shape Factor": df4["Shape Factor"].iloc[2],
+                    "Height": df4["Height"].iloc[2],
+                    "Necleus Orientation": df4["Necleus Orientation"].iloc[2],
+                    "Polygons": df4["Polygons"].iloc[2],
+                    "Division Orientation": df4["Division Orientation"].iloc[2],
                     "Boundary Polygons": polygonsDaughter2,
                     "Cytokineses time": tc,
                     "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"][3 * j],
-                    "Spot": df4["Spot"][3 * j],
+                    "Original Label": df4["Original Label"].iloc[2],
+                    "Spot": df4["Spot"].iloc[2],
                 }
             )
-
-            j += 1
 
         else:
             for i in range(3):
                 _dfDivisions4.append(
                     {
-                        "Label": df4["Label"][3 * j + i],
-                        "Time": df4["Time"][3 * j + i],
-                        "Position": df4["Position"][3 * j + i],
-                        "Chain": df4["Chain"][3 * j + i],
-                        "Shape Factor": df4["Shape Factor"][3 * j + i],
-                        "Height": df4["Height"][3 * j + i],
-                        "Necleus Orientation": df4["Necleus Orientation"][3 * j + i],
-                        "Polygons": df4["Polygons"][3 * j + i],
-                        "Division Orientation": df4["Division Orientation"][3 * j + i],
-                        "Original Label": df4["Original Label"][3 * j + i],
-                        "Spot": df4["Spot"][3 * j + i],
+                        "Label": df4["Label"].iloc[i],
+                        "Time": df4["Time"].iloc[i],
+                        "Position": df4["Position"].iloc[i],
+                        "Chain": df4["Chain"][i],
+                        "Shape Factor": df4["Shape Factor"].iloc[i],
+                        "Height": df4["Height"].iloc[i],
+                        "Necleus Orientation": df4["Necleus Orientation"].iloc[i],
+                        "Polygons": df4["Polygons"].iloc[i],
+                        "Division Orientation": df4["Division Orientation"].iloc[i],
+                        "Original Label": df4["Original Label"].iloc[i],
+                        "Spot": df4["Spot"].iloc[i],
                     }
                 )
-
-            j += 1
 
     dfDivisions4 = pd.DataFrame(_dfDivisions4)
 

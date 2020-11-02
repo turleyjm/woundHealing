@@ -36,7 +36,7 @@ for filename in filenames:
 
     [T, X, Y, rgb] = vid.shape
 
-    highlightDivisions = np.zeros([60, 552, 552, 3])
+    highlightDivisions = np.zeros([T, 552, 552, 3])
 
     for x in range(X):
         for y in range(Y):
@@ -63,7 +63,7 @@ for filename in filenames:
 
         timeVid = []
         for t in times:
-            if t >= 0 and t < 60:
+            if t >= 0 and t <= T:
                 timeVid.append(t)
 
         for t in timeVid:
