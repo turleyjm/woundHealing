@@ -145,7 +145,7 @@ for filename in filenames:
                                 contourReal[np.all((contourReal - con) == 0, axis=1)][0]
                             )
 
-                    for con in overlap:
+                    for con in overlap[1:-1]:
                         binary[t][int(con[0]), int(con[1])] = 0
 
     binary = np.asarray(binary, "uint8")

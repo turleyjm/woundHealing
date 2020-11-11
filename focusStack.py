@@ -50,9 +50,6 @@ for filename in filenames:
                 vid[t, x, y] = stack[t, h, x, y]
                 height[t, x, y] = h
 
-    # vid = np.asarray(vid, "uint8")
-    # tifffile.imwrite(f"results/mitosis/focus_{filename}.tif", vid)
-
     height = sp.ndimage.median_filter(height, size=5)
 
     height = np.asarray(height, "uint8")

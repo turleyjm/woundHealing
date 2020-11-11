@@ -548,72 +548,68 @@ for filename in filenames:
         timeList = []
         cList = []
 
-        if len(daughter0) == 1 or len(daughter1) == 1:
-            continue
-        else:
+        for spot in parent:
 
-            for spot in parent:
-
-                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-                timeList.append(t)
-                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-                cList.append([x, y])
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
             # save the parent part of the track in one database line
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "parent",
-                    "Original Label": originalLabel,
-                    "Spot": parent,
-                }
-            )
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "parent",
+                "Original Label": originalLabel,
+                "Spot": parent,
+            }
+        )
 
-            timeList = []
-            cList = []
+        timeList = []
+        cList = []
 
-            for spot in daughter0:
+        for spot in daughter0:
 
-                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-                timeList.append(t)
-                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-                cList.append([x, y])
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
-            # save the daughter0 part of the track in one database line
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "daughter0",
-                    "Original Label": originalLabel,
-                    "Spot": daughter0,
-                }
-            )
+        # save the daughter0 part of the track in one database line
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "daughter0",
+                "Original Label": originalLabel,
+                "Spot": daughter0,
+            }
+        )
 
-            timeList = []
-            cList = []
+        timeList = []
+        cList = []
 
-            for spot in daughter1:
+        for spot in daughter1:
 
-                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-                timeList.append(t)
-                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-                cList.append([x, y])
+            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+            timeList.append(t)
+            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+            cList.append([x, y])
 
-            # save the daughter1 part of the track in one database line
-            _dfDivisions.append(
-                {
-                    "Label": label,
-                    "Time": timeList,
-                    "Position": cList,
-                    "Chain": "daughter1",
-                    "Original Label": originalLabel,
-                    "Spot": daughter1,
-                }
-            )
+        # save the daughter1 part of the track in one database line
+        _dfDivisions.append(
+            {
+                "Label": label,
+                "Time": timeList,
+                "Position": cList,
+                "Chain": "daughter1",
+                "Original Label": originalLabel,
+                "Spot": daughter1,
+            }
+        )
 
     dfDivisions = pd.DataFrame(_dfDivisions)
 
@@ -727,8 +723,6 @@ for filename in filenames:
 
     # finds the orientation of division
 
-    divOri = []
-
     _dfDivisions3 = []
 
     uniqueLabel = list(set(dfDivisions2["Label"]))
@@ -836,7 +830,7 @@ for filename in filenames:
                 theta = np.pi - phi
             else:
                 theta = phi
-            divOri.append(theta * (180 / np.pi))
+            divOri = theta * (180 / np.pi)
 
             for i in range(3):
                 _dfDivisions3.append(
@@ -872,8 +866,8 @@ for filename in filenames:
         img = 255 - img
         vidLabels.append(sm.measure.label(img, background=0, connectivity=1))
 
-    vidLabels = np.asarray(vidLabels, "uint16")
-    tifffile.imwrite(f"dat/{filename}/vidLabel{filename}.tif", vidLabels)
+    # vidLabels = np.asarray(vidLabels, "uint16")
+    # tifffile.imwrite(f"dat/{filename}/vidLabel{filename}.tif", vidLabels)
 
     _dfDivisions4 = []
 
@@ -1105,7 +1099,7 @@ for filename in filenames:
                         "Label": df4["Label"].iloc[i],
                         "Time": df4["Time"].iloc[i],
                         "Position": df4["Position"].iloc[i],
-                        "Chain": df4["Chain"][i],
+                        "Chain": df4["Chain"].iloc[i],
                         "Shape Factor": df4["Shape Factor"].iloc[i],
                         "Height": df4["Height"].iloc[i],
                         "Necleus Orientation": df4["Necleus Orientation"].iloc[i],

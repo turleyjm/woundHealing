@@ -55,15 +55,20 @@ for filename in filenames:
     vid = sm.io.imread(vidFile).astype(int)
 
     t0 = int(random.uniform(0, 1) * 176)
+    # t0 = int(random.uniform(0, 1) * 56)  # change for woundsite
 
     for i in range(5):
         training.append(vid[t0 + i])
 
     t0 = int(random.uniform(0, 1) * 176)
+    # t0 = int(random.uniform(0, 1) * 56)
 
     for i in range(5):
         training.append(vid[t0 + i])
 
 training = np.asarray(training, "uint8")
 tifffile.imwrite(f"dat/trainingData/trainingDataEcad.tif", training)
+
+# training = np.asarray(training, "uint8")
+# tifffile.imwrite(f"dat/trainingData/trainingDataWound.tif", training)
 

@@ -79,10 +79,14 @@ for filename in filenames:
     height = np.zeros([T, X, Y])
 
     for t in range(T):
-        print(t)
         for x in range(X):
             for y in range(Y):
                 p = variance[t, :, x, y]
+
+                # p = list(p)
+                # p.reverse()
+                # p = np.array(p)
+
                 m = surface(p)
                 h = [i for i, j in enumerate(p) if j == m][0]
 

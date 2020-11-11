@@ -63,13 +63,13 @@ for filename in filenames:
 
         timeVid = []
         for t in times:
-            if t >= 0 and t <= T:
+            if t >= 0 and t <= T - 1:
                 timeVid.append(t)
 
         for t in timeVid:
-            highlightDivisions[t][rr0, cc0, 2] = 255
-            highlightDivisions[t][rr1, cc1, 2] = 255
-            highlightDivisions[t][rr2, cc2, 2] = 255
+            highlightDivisions[t][rr0, cc0, 2] = 200
+            highlightDivisions[t][rr1, cc1, 2] = 200
+            highlightDivisions[t][rr2, cc2, 2] = 200
 
     highlightDivisions = highlightDivisions[:, 20:532, 20:532]
 

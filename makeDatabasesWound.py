@@ -17,6 +17,7 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
+from collections import Counter
 
 import cellProperties as cell
 import findGoodCells as fi
@@ -47,6 +48,16 @@ f = open("pythonText.txt", "r")
 filenames = f.read()
 filenames = filenames.split(", ")
 
+i = 0
+starts = [
+    (256, 256),
+    (256, 256),
+    (256, 256),
+    (200, 266),
+    (256, 256),
+    (256, 256),
+]  # if not all wounds are centred
+
 for filename in filenames:
 
     if "Unwound" in filename:
@@ -54,30 +65,64 @@ for filename in filenames:
     else:
         wound = True
 
-    vidFile = f"dat/{filename}/maskWound{filename}.tif"  # change
+    vidFile = f"dat/{filename}/outPlane{filename}.tif"  # change
 
     vidWound = sm.io.imread(vidFile).astype(int)
 
     (T, X, Y) = vidWound.shape
 
-    # If there is a wound the boundary is found quantified
+    vidLabels = []  # labels all wound and out of plane areas
 
-    if wound == True:
+    for t in range(T):
+        vidLabels.append(sm.measure.label(vidWound[t], background=0, connectivity=1))
+    vidLabels = np.asarray(vidLabels, "uint8")
 
-        vidCurvature = vidWound
+    vidOutPlane = np.zeros([181, 514, 514])
+    vidOutPlane[:, 1:513, 1:513] = vidLabels
 
-        start = (int(Y / 2), int(X / 2))  # change coords
+    for t in range(len(vidWound)):  # removes small areas
+
+        imgLabels = np.unique(vidOutPlane[t])[1:]
+
+        for label in imgLabels:
+            contour = sm.measure.find_contours(vidOutPlane[t] == label, level=0)[0]
+            poly = sm.measure.approximate_polygon(contour, tolerance=1)
+            try:
+                polygon = Polygon(poly)
+                a = cell.area(polygon)
+
+                if a < 250:
+                    vidOutPlane[t][vidOutPlane[t] == label] = 0
+            except:
+                continue
+
+    binary = vidOutPlane[:, 1:513, 1:513]
+
+    binary[binary > 0] = 255
+
+    vidOutPlane = np.asarray(binary, "uint8")
+    tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
+
+    vidLabels = []  # labels all wound and out of plane areas
+
+    for t in range(T):
+        vidLabels.append(sm.measure.label(vidOutPlane[t], background=0, connectivity=1))
+    vidLabels = np.asarray(vidLabels, "uint8")
+
+    if wound == True:  # If there is a wound the boundary is found quantified
+
+        # start = (int(Y / 2), int(X / 2))  # change coords if not all wounds are centred
+        start = starts[i]
+        i += 1
 
         _dfWound = []
 
-        imgWound = vidWound[0]
-        imgLabel = sm.measure.label(imgWound, background=0, connectivity=1)
-        label = imgLabel[start]
-        contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
+        label = vidLabels[0][start]
+        contour = sm.measure.find_contours(vidLabels[0] == label, level=0)[0]
         poly = sm.measure.approximate_polygon(contour, tolerance=1)
         polygon = Polygon(poly)
         (Cx, Cy) = cell.centroid(polygon)
-        vidWound[0][imgLabel != label] = 0
+        vidWound[0][vidLabels[0] != label] = 0
 
         m = 41
 
@@ -85,55 +130,94 @@ for filename in filenames:
 
         _dfWound.append(
             {
-                "name": filename,
-                "polygons": polygon,
-                "centriods": cell.centroid(polygon),
-                "curvature": curvature,
+                "Time": t,
+                "Polygon": polygon,
+                "Centriod": cell.centroid(polygon),
+                "Curvature": curvature,
+                "Contour": contour,
+                "Area": polygon.area,
             }
         )
 
-        n = len(contour)
+        mostLabel = label
+        t = 0
 
-        vidCurvature[0][vidWound[0] >= 0] = 0
+        finished = False
 
-        for i in range(n):  # see contour
-            vidCurvature[0][int(contour[i][0]), int(contour[i][1])] = curvature[i] * 5
+        while t < 180 and finished != True:
 
-        for t in range(T - 1):
-            imgWound = vidWound[t + 1]
+            labels = vidLabels[t + 1][vidLabels[t] == mostLabel]
 
-            imgLabel = sm.measure.label(imgWound, background=0, connectivity=1)
+            uniqueLabels = set(list(labels))
+            if 0 in uniqueLabels:
+                uniqueLabels.remove(0)
 
-            label = imgLabel[int(Cx), int(Cy)]
-            contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            polygon = Polygon(poly)
-            (Cx, Cy) = cell.centroid(polygon)
-            vidWound[t + 1][imgLabel != label] = 0
+            if len(uniqueLabels) == 0:
+                finished = True
+            else:
+                count = Counter(labels)
+                c = []
+                for l in uniqueLabels:
+                    c.append(count[l])
 
-            curvature = np.array(cell.findContourCurvature(contour, m)) * len(contour)
+                uniqueLabels = list(uniqueLabels)
+                mostLabel = uniqueLabels[c.index(max(c))]
+                C = max(c)
 
-            _dfWound.append(
-                {
-                    "name": filename,
-                    "polygon": polygon,
-                    "centriod": cell.centroid(polygon),
-                    "curvature": curvature,
-                    "contour": contour,
-                }
-            )
+                if C < 250:
+                    finished = True
+                else:
+                    contour = sm.measure.find_contours(
+                        vidLabels[t + 1] == mostLabel, level=0
+                    )[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+                    polygon = Polygon(poly)
+                    (Cx, Cy) = cell.centroid(polygon)
+                    vidWound[t + 1][vidLabels[t + 1] != mostLabel] = 0
 
-            n = len(contour)
+                    curvature = np.array(cell.findContourCurvature(contour, m)) * len(
+                        contour
+                    )
 
-            vidCurvature[t + 1][vidWound[t + 1] >= 0] = 0
+                    _dfWound.append(
+                        {
+                            "Time": t,
+                            "Polygon": polygon,
+                            "Centriod": cell.centroid(polygon),
+                            "Curvature": curvature,
+                            "Contour": contour,
+                            "Area": polygon.area,
+                        }
+                    )
 
-            for i in range(n):  # see contour
-                vidCurvature[t + 1][int(contour[i][0]), int(contour[i][1])] = (
-                    curvature[i] * 5
-                )
+                    t += 1
+
+        tf = t
+        for t in range(tf, T - 1):
+            vidWound[t + 1][vidLabels[t + 1] != 256] = 0
+
+        vidWound = np.asarray(vidWound, "uint8")
+        tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
 
         dfWound = pd.DataFrame(_dfWound)
         dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-        vidCurvature = np.asarray(vidCurvature, "uint8")
-        tifffile.imwrite(f"dat/{filename}/curvature{filename}.tif", vidCurvature)
+        vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
+        vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
+
+        vidEcad[vidWound == 255] = 0
+
+        vidEcad = np.asarray(vidEcad, "uint8")
+        tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vidEcad)
+
+        vidH2[vidWound == 255] = 0
+
+        vidH2 = np.asarray(vidH2, "uint8")
+        tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
+
+        vidProb = sm.io.imread(f"dat/{filename}/probBoundary{filename}.tif").astype(int)
+
+        vidProb[vidWound == 255] = 0
+
+        vidProb = np.asarray(vidProb, "float")
+        tifffile.imwrite(f"dat/{filename}/probBoundary{filename}.tif", vidProb)
