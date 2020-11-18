@@ -27,6 +27,8 @@ plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
 
+costLim = 0.5
+
 
 def costFunction(u0, u1):
 
@@ -154,7 +156,7 @@ def importDividingTracks(trackmate_xml_path):
 
     # get spots
 
-    features = ["name", "POSITION_X", "POSITION_Y", "POSITION_T"]
+    features = ["name", "POSITION_X", "POSITION_Y", "FRAME"]
 
     spots = root.find("Model").find("AllSpots")
     objects = []
@@ -168,8 +170,10 @@ def importDividingTracks(trackmate_xml_path):
 
             single_object.append(int(n))
             single_object.append(spot.get("POSITION_X"))
-            single_object.append(spot.get("POSITION_Y"))
-            single_object.append(spot.get("POSITION_T"))
+            single_object.append(
+                511 - float(spot.get("POSITION_Y"))
+            )  # this makes coords xy
+            single_object.append(spot.get("FRAME"))
 
             objects.append(single_object)
 
@@ -189,6 +193,7 @@ def importDividingTracks(trackmate_xml_path):
     for track in tracks:
         # looks for tracks with Divisions
         label = int(track.get("TRACK_ID"))
+
         divisions = int(track.get("NUMBER_SPLITS"))
         objects = []
 
@@ -246,7 +251,7 @@ def importDividingTracks(trackmate_xml_path):
                 # print(cost)
                 # print(label)
 
-                if cost < 0.5:
+                if cost < costLim:
                     spots = start
                     for spot in end:
                         spots.append(spot)
@@ -255,7 +260,7 @@ def importDividingTracks(trackmate_xml_path):
                     for spot in uniqueSpots:
                         df = spotDat[spotDat["name"] == spot]
 
-                        time = int(float(df["POSITION_T"]))
+                        time = int(float(df["FRAME"]))
                         centroid = [float(df["POSITION_X"]), float(df["POSITION_Y"])]
 
                         # save the good tracks
@@ -317,7 +322,7 @@ def importDividingTracks(trackmate_xml_path):
                         # print(cost)
                         # print(label)
 
-                        if cost > 0.5:
+                        if cost > costLim:
 
                             maxDis = max(np.linalg.norm(u0), np.linalg.norm(u1))
                             if np.linalg.norm(u0) == maxDis:
@@ -385,7 +390,7 @@ def importDividingTracks(trackmate_xml_path):
                         for spot in uniqueSpots:
                             df = spotDat[spotDat["name"] == spot]
 
-                            time = int(float(df["POSITION_T"]))
+                            time = int(float(df["FRAME"]))
                             centroid = [
                                 float(df["POSITION_X"]),
                                 float(df["POSITION_Y"]),
@@ -408,14 +413,15 @@ def importDividingTracks(trackmate_xml_path):
 
     trackDat = pd.DataFrame(_trackDat)
 
-    trackDat = trackDat.sort_values(["Label", "Time"], ascending=[True, True])
+    if len(trackDat) > 0:
+        trackDat = trackDat.sort_values(["Label", "Time"], ascending=[True, True])
 
     return trackDat
 
 
 def heightOfMitosis(img, polygon):
 
-    (Cx, Cy) = cell.centroid(polygon)
+    (Cy, Cx) = cell.centroid(polygon)
 
     rList = []
     zList = []
@@ -482,481 +488,476 @@ filenames = filenames.split(", ")
 
 for filename in filenames:
 
-    if "Unwound" in filename:
-        wound = False
-    else:
+    if "Wound" in filename:
         wound = True
+    else:
+        wound = False
 
     # gather xml files
 
     df = importDividingTracks(f"dat/{filename}/mitosisTracks{filename}.xml")
 
-    uniqueLabels = list(set(df["Label"]))
+    if len(df) > 0:
 
-    _dfDivisions = []
+        uniqueLabels = list(set(df["Label"]))
 
-    for label in uniqueLabels:
-        # pick out each division track
-        dfTrack = df.loc[lambda df: df["Label"] == label, :]
+        _dfDivisions = []
 
-        timeList = list(dfTrack["Time"])
-        uniqueTime = list(set(timeList))
-        count = Counter(timeList)
+        for label in uniqueLabels:
+            # pick out each division track
+            dfTrack = df.loc[lambda df: df["Label"] == label, :]
 
-        num = []
-        for t in uniqueTime:
+            timeList = list(dfTrack["Time"])
+            uniqueTime = list(set(timeList))
+            count = Counter(timeList)
 
-            n = count[t]
+            num = []
+            for t in uniqueTime:
 
-            if n == 2:
-                num.append(t)
+                n = count[t]
 
-        divisionTime = min(num)
-        parent = list(dfTrack["Spot"][dfTrack["Time"] < divisionTime])
-        [daughter0, daughter1] = list(dfTrack["Spot"][dfTrack["Time"] == divisionTime])
-        [daughterPos0, daughterPos1] = list(
-            dfTrack["Position"][dfTrack["Time"] == divisionTime]
-        )
-        daughterSpots = list(dfTrack["Spot"][dfTrack["Time"] > divisionTime])
-        daughterPos = list(dfTrack["Position"][dfTrack["Time"] > divisionTime])
+                if n == 2:
+                    num.append(t)
 
-        originalLabel = int(dfTrack["Original Label"][dfTrack["Spot"] == daughter0])
+            divisionTime = min(num)
+            parent = list(dfTrack["Spot"][dfTrack["Time"] < divisionTime])
+            [daughter0, daughter1] = list(
+                dfTrack["Spot"][dfTrack["Time"] == divisionTime]
+            )
+            [daughterPos0, daughterPos1] = list(
+                dfTrack["Position"][dfTrack["Time"] == divisionTime]
+            )
+            daughterSpots = list(dfTrack["Spot"][dfTrack["Time"] > divisionTime])
+            daughterPos = list(dfTrack["Position"][dfTrack["Time"] > divisionTime])
 
-        daughter0 = [daughter0]
-        daughter1 = [daughter1]
-        # build a database of the tracks
-        for i in range(len(daughterSpots)):
-            spot = daughterSpots[i]
-            position = daughterPos[i]
+            originalLabel = int(dfTrack["Original Label"][dfTrack["Spot"] == daughter0])
 
-            r0 = (
-                (daughterPos0[0] - position[0]) ** 2
-                + (daughterPos0[1] - position[1]) ** 2
-            ) ** 0.5
-            r1 = (
-                (daughterPos1[0] - position[0]) ** 2
-                + (daughterPos1[1] - position[1]) ** 2
-            ) ** 0.5
+            daughter0 = [daughter0]
+            daughter1 = [daughter1]
+            # build a database of the tracks
+            for i in range(len(daughterSpots)):
+                spot = daughterSpots[i]
+                position = daughterPos[i]
 
-            if r0 > r1:
-                daughter1.append(spot)
-                daughterPos1 = position
-            else:
-                daughter0.append(spot)
-                daughterPos0 = position
+                r0 = (
+                    (daughterPos0[0] - position[0]) ** 2
+                    + (daughterPos0[1] - position[1]) ** 2
+                ) ** 0.5
+                r1 = (
+                    (daughterPos1[0] - position[0]) ** 2
+                    + (daughterPos1[1] - position[1]) ** 2
+                ) ** 0.5
 
-        timeList = []
-        cList = []
-
-        for spot in parent:
-
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
-
-            # save the parent part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "parent",
-                "Original Label": originalLabel,
-                "Spot": parent,
-            }
-        )
-
-        timeList = []
-        cList = []
-
-        for spot in daughter0:
-
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
-
-        # save the daughter0 part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "daughter0",
-                "Original Label": originalLabel,
-                "Spot": daughter0,
-            }
-        )
-
-        timeList = []
-        cList = []
-
-        for spot in daughter1:
-
-            t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
-            timeList.append(t)
-            [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
-            cList.append([x, y])
-
-        # save the daughter1 part of the track in one database line
-        _dfDivisions.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": "daughter1",
-                "Original Label": originalLabel,
-                "Spot": daughter1,
-            }
-        )
-
-    dfDivisions = pd.DataFrame(_dfDivisions)
-
-    dfDivisions = dfDivisions.sort_values(
-        ["Label", "Original Label"], ascending=[True, True]
-    )
-
-    vidBinary = (
-        sm.io.imread(f"dat/{filename}/probMitosis{filename}.tif").astype(float) * 255
-    )
-
-    T = len(vidBinary)
-
-    vidBinary[vidBinary > 100] = 255
-    vidBinary[vidBinary <= 100] = 0
-
-    for t in range(T):
-        vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
-
-    vidBinary = np.asarray(vidBinary, "uint8")
-    tifffile.imwrite(f"dat/{filename}/binaryMitosis{filename}.tif", vidBinary)
-
-    vidHeight = (
-        sm.io.imread(f"dat/{filename}/height{filename}.tif").astype("float") * 25
-    )
-
-    vidLabels = []
-
-    _dfDivisions2 = []
-
-    T = len(vidBinary)
-
-    # use the boundary of the nuclei and convents to polygons to find there orientation and shape factor
-
-    for t in range(T):
-        # labels all the mitosic nuclei
-        vidLabels.append(sm.measure.label(vidBinary[t], background=0, connectivity=1))
-
-    for i in range(len(dfDivisions)):
-
-        Tm = len((dfDivisions["Time"][i]))
-
-        polygons = []
-        sf = []
-        ori = []
-        h = []
-
-        for t in range(Tm):
-
-            frame = dfDivisions["Time"][i][t]
-            imgLabel = vidLabels[frame]
-            [x, y] = dfDivisions["Position"][i][t]
-
-            x = int(x)
-            y = int(y)
-
-            label = imgLabel[y, x]  # coordenate change
-
-            if label != 0:
-
-                contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
-                poly = sm.measure.approximate_polygon(contour, tolerance=1)
-
-                if LinearRing(poly).is_simple:
-                    polygon = Polygon(poly)
-                    sf.append(cell.shapeFactor(polygon))
-                    ori.append(cell.orientation(polygon))
-                    polygons.append(polygon)
-                    h.append(heightOfMitosis(vidHeight[t], polygon))
+                if r0 > r1:
+                    daughter1.append(spot)
+                    daughterPos1 = position
                 else:
+                    daughter0.append(spot)
+                    daughterPos0 = position
+
+            timeList = []
+            cList = []
+
+            for spot in parent:
+
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
+
+                # save the parent part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "parent",
+                    "Original Label": originalLabel,
+                    "Spot": parent,
+                }
+            )
+
+            timeList = []
+            cList = []
+
+            for spot in daughter0:
+
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
+
+            # save the daughter0 part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "daughter0",
+                    "Original Label": originalLabel,
+                    "Spot": daughter0,
+                }
+            )
+
+            timeList = []
+            cList = []
+
+            for spot in daughter1:
+
+                t = int(dfTrack["Time"][dfTrack["Spot"] == spot])
+                timeList.append(t)
+                [x, y] = list(dfTrack["Position"][dfTrack["Spot"] == spot])[0]
+                cList.append([x, y])
+
+            # save the daughter1 part of the track in one database line
+            _dfDivisions.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": "daughter1",
+                    "Original Label": originalLabel,
+                    "Spot": daughter1,
+                }
+            )
+
+        dfDivisions = pd.DataFrame(_dfDivisions)
+
+        dfDivisions = dfDivisions.sort_values(
+            ["Label", "Original Label"], ascending=[True, True]
+        )
+
+        vidBinary = (
+            sm.io.imread(f"dat/{filename}/probMitosis{filename}.tif").astype(float)
+            * 255
+        )
+
+        T = len(vidBinary)
+
+        vidBinary[vidBinary > 100] = 255
+        vidBinary[vidBinary <= 100] = 0
+
+        for t in range(T):
+            vidBinary[t] = sp.signal.medfilt(vidBinary[t], kernel_size=5)
+
+        vidBinary = np.asarray(vidBinary, "uint8")
+        tifffile.imwrite(f"dat/{filename}/binaryMitosis{filename}.tif", vidBinary)
+
+        vidHeight = (
+            sm.io.imread(f"dat/{filename}/height{filename}.tif").astype("float") * 30
+        )
+
+        vidLabels = []
+
+        _dfDivisions2 = []
+
+        T = len(vidBinary)
+
+        # use the boundary of the nuclei and convents to polygons to find there orientation and shape factor
+
+        for t in range(T):
+            # labels all the mitosic nuclei
+            img = sm.measure.label(vidBinary[t], background=0, connectivity=1)
+            imgxy = fi.imgrcxy(img)
+            vidLabels.append(imgxy)
+            vidHeight[t] = fi.imgrcxy(vidHeight[t])  # changes both to xy coords
+
+        for i in range(len(dfDivisions)):
+
+            M = len((dfDivisions["Time"][i]))
+
+            polygons = []
+            sf = []
+            ori = []
+            h = []
+
+            for j in range(M):
+
+                frame = dfDivisions["Time"][i][j]
+                imgLabel = vidLabels[frame]
+                [x, y] = dfDivisions["Position"][i][j]
+
+                x = int(x)
+                y = int(y)
+
+                label = imgLabel[x, y]
+
+                if label != 0:
+
+                    contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+
+                    if LinearRing(poly).is_simple:
+                        polygon = Polygon(poly)
+                        sf.append(cell.shapeFactor(polygon))
+                        ori.append(cell.orientation(polygon))
+                        polygons.append(polygon)
+                        h.append(heightOfMitosis(vidHeight[frame], polygon))
+                    else:
+                        sf.append(False)
+                        ori.append(False)
+                        polygons.append(False)
+                        h.append(False)
+
+                else:
+
                     sf.append(False)
                     ori.append(False)
                     polygons.append(False)
                     h.append(False)
 
-            else:
+            label = dfDivisions["Label"][i]
+            timeList = dfDivisions["Time"][i]
+            cList = dfDivisions["Position"][i]
+            chain = dfDivisions["Chain"][i]
+            originalLabel = dfDivisions["Original Label"][i]
+            spots = dfDivisions["Spot"][i]
 
-                sf.append(False)
-                ori.append(False)
-                polygons.append(False)
-                h.append(False)
+            _dfDivisions2.append(
+                {
+                    "Label": label,
+                    "Time": timeList,
+                    "Position": cList,
+                    "Chain": chain,
+                    "Shape Factor": sf,
+                    "Height": h,
+                    "Necleus Orientation": ori,
+                    "Polygons": polygons,
+                    "Original Label": originalLabel,
+                    "Spot": spots,
+                }
+            )
 
-        label = dfDivisions["Label"][i]
-        timeList = dfDivisions["Time"][i]
-        cList = dfDivisions["Position"][i]
-        chain = dfDivisions["Chain"][i]
-        originalLabel = dfDivisions["Original Label"][i]
-        spots = dfDivisions["Spot"][i]
-
-        _dfDivisions2.append(
-            {
-                "Label": label,
-                "Time": timeList,
-                "Position": cList,
-                "Chain": chain,
-                "Shape Factor": sf,
-                "Height": h,
-                "Necleus Orientation": ori,
-                "Polygons": polygons,
-                "Original Label": originalLabel,
-                "Spot": spots,
-            }
+        dfDivisions2 = pd.DataFrame(_dfDivisions2)
+        dfDivisions2 = dfDivisions2.sort_values(
+            ["Label", "Original Label"], ascending=[True, True]
         )
 
-    dfDivisions2 = pd.DataFrame(_dfDivisions2)
-    dfDivisions2 = dfDivisions2.sort_values(
-        ["Label", "Original Label"], ascending=[True, True]
-    )
+        # -------
 
-    # -------
+        # finds the orientation of division
 
-    # finds the orientation of division
+        _dfDivisions3 = []
 
-    _dfDivisions3 = []
+        uniqueLabel = list(set(dfDivisions2["Label"]))
 
-    uniqueLabel = list(set(dfDivisions2["Label"]))
+        if wound == True:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-    if wound == True:
-        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            dist = []
 
-        dist = []
+            tw = len(dfWound)
+
+            for label in uniqueLabel:
+                df3 = dfDivisions2.loc[
+                    lambda dfDivisions2: dfDivisions2["Label"] == label, :
+                ]
+
+                tm = df3["Time"].iloc[1][0]
+
+                if len(df3["Time"].iloc[1]) > 2:
+                    delta_t0 = 2
+                    t0 = df3["Time"].iloc[1][2]
+                elif len(df3["Time"].iloc[1]) > 1:
+                    delta_t0 = 1
+                    t0 = df3["Time"].iloc[1][1]
+                else:
+                    delta_t0 = 0
+                    t0 = df3["Time"].iloc[1][0]
+
+                if len(df3["Time"].iloc[2]) > 2:
+                    delta_t1 = 2
+                    t0 = df3["Time"].iloc[2][2]
+                elif len(df3["Time"].iloc[2]) > 1:
+                    delta_t1 = 1
+                    t0 = df3["Time"].iloc[2][1]
+                else:
+                    delta_t1 = 0
+                    t0 = df3["Time"].iloc[2][0]
+
+                if tw > t0:
+
+                    (Cy, Cx) = dfWound["Centriod"][t0]  # change ord
+                    woundPolygon = dfWound["Polygon"][t0]
+                    r = (woundPolygon.area / np.pi) ** 0.5
+                    [x0, y0] = df3["Position"].iloc[1][delta_t0]
+                    [x1, y1] = df3["Position"].iloc[2][delta_t1]
+
+                    xm = (x0 + x1) / 2
+                    ym = (y0 + y1) / 2
+                    v = np.array([x0 - x1, y0 - y1])
+                    w = np.array([xm - Cx, ym - Cy])
+
+                    phi = np.arccos(
+                        np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w))
+                    )
+
+                    if phi > np.pi / 2:
+                        theta = np.pi - phi
+                    else:
+                        theta = phi
+                    divOri = theta * (180 / np.pi)
+                    dist = np.linalg.norm(w) - r
+
+                    for i in range(3):
+                        _dfDivisions3.append(
+                            {
+                                "Label": df3["Label"].iloc[i],
+                                "Time": df3["Time"].iloc[i],
+                                "Position": df3["Position"].iloc[i],
+                                "Chain": df3["Chain"].iloc[i],
+                                "Shape Factor": df3["Shape Factor"].iloc[i],
+                                "Height": df3["Height"].iloc[i],
+                                "Necleus Orientation": df3["Necleus Orientation"].iloc[
+                                    i
+                                ],
+                                "Polygons": df3["Polygons"].iloc[i],
+                                "Division Orientation": divOri,
+                                "Division While Wounded": "Y",
+                                "Original Label": df3["Original Label"].iloc[i],
+                                "Spot": df3["Spot"].iloc[i],
+                            }
+                        )
+
+                else:
+                    [x0, y0] = df3["Position"].iloc[1][delta_t0]
+                    [x1, y1] = df3["Position"].iloc[2][delta_t1]
+
+                    xm = (x0 + x1) / 2
+                    ym = (y0 + y1) / 2
+                    v = np.array([x0 - x1, y0 - y1])
+                    w = np.array([1, 0])
+
+                    phi = np.arccos(
+                        np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w))
+                    )
+
+                    if phi > np.pi:
+                        theta = np.pi - phi
+                    else:
+                        theta = phi
+                    divOri = theta * (180 / np.pi)
+
+                    for i in range(3):
+                        _dfDivisions3.append(
+                            {
+                                "Label": df3["Label"].iloc[i],
+                                "Time": df3["Time"].iloc[i],
+                                "Position": df3["Position"].iloc[i],
+                                "Chain": df3["Chain"].iloc[i],
+                                "Shape Factor": df3["Shape Factor"].iloc[i],
+                                "Height": df3["Height"].iloc[i],
+                                "Necleus Orientation": df3["Necleus Orientation"].iloc[
+                                    i
+                                ],
+                                "Polygons": df3["Polygons"].iloc[i],
+                                "Division Orientation": divOri,
+                                "Division While Wounded": "N",
+                                "Original Label": df3["Original Label"].iloc[i],
+                                "Spot": df3["Spot"].iloc[i],
+                            }
+                        )
+
+        else:
+
+            for label in uniqueLabel:
+                df3 = dfDivisions2.loc[
+                    lambda dfDivisions2: dfDivisions2["Label"] == label, :
+                ]
+
+                if len(df3["Time"].iloc[1]) > 2:
+                    delta_t0 = 2
+                elif len(df3["Time"].iloc[1]) > 1:
+                    delta_t0 = 1
+                else:
+                    delta_t0 = 0
+
+                if len(df3["Time"].iloc[2]) > 2:
+                    delta_t1 = 2
+                elif len(df3["Time"].iloc[2]) > 1:
+                    delta_t1 = 1
+                else:
+                    delta_t1 = 0
+
+                [x0, y0] = df3["Position"].iloc[1][delta_t0]
+                [x1, y1] = df3["Position"].iloc[2][delta_t1]
+
+                v = np.array([x0 - x1, y0 - y1])
+                w = np.array([1, 0])
+
+                phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
+
+                if phi > np.pi:
+                    theta = np.pi - phi
+                else:
+                    theta = phi
+                divOri = theta * (180 / np.pi)
+
+                for i in range(3):
+                    _dfDivisions3.append(
+                        {
+                            "Label": df3["Label"].iloc[i],
+                            "Time": df3["Time"].iloc[i],
+                            "Position": df3["Position"].iloc[i],
+                            "Chain": df3["Chain"].iloc[i],
+                            "Shape Factor": df3["Shape Factor"].iloc[i],
+                            "Height": df3["Height"].iloc[i],
+                            "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
+                            "Polygons": df3["Polygons"].iloc[i],
+                            "Division Orientation": divOri,
+                            "Division While Wounded": "N",
+                            "Original Label": df3["Original Label"].iloc[i],
+                            "Spot": df3["Spot"].iloc[i],
+                        }
+                    )
+
+        dfDivisions3 = pd.DataFrame(_dfDivisions3)
+
+        # links the mitosic cells to there cell boundarys and tracks these cells
+
+        binary = sm.io.imread(f"dat/{filename}/binaryBoundary{filename}.tif").astype(
+            "uint8"
+        )
+        trackBinary = binary
+
+        vidLabels = []
+        T = len(binary)
+
+        for t in range(T):
+            img = binary[t]
+            img = 255 - img
+            vidLabels.append(sm.measure.label(img, background=0, connectivity=1))
+
+        # vidLabels = np.asarray(vidLabels, "uint16")
+        # tifffile.imwrite(f"dat/{filename}/vidLabel{filename}.tif", vidLabels)
+
+        _dfDivisions4 = []
 
         for label in uniqueLabel:
-            df3 = dfDivisions2.loc[
-                lambda dfDivisions2: dfDivisions2["Label"] == label, :
+            df4 = dfDivisions3.loc[
+                lambda dfDivisions3: dfDivisions3["Label"] == label, :
             ]
 
-            if len(df3["Time"].iloc[1]) > 2:
-                delta_t0 = 2
-                t0 = df3["Time"].iloc[1][2]
-            elif len(df3["Time"].iloc[1]) > 1:
-                delta_t0 = 1
-                t0 = df3["Time"].iloc[1][1]
-            else:
-                delta_t0 = 0
-                t0 = df3["Time"].iloc[1][0]
+            polygonsParent = []
+            polygonsDaughter1 = []
+            polygonsDaughter2 = []
 
-            if len(df3["Time"].iloc[2]) > 2:
-                delta_t1 = 2
-                t0 = df3["Time"].iloc[2][2]
-            elif len(df3["Time"].iloc[2]) > 1:
-                delta_t1 = 1
-                t0 = df3["Time"].iloc[2][1]
-            else:
-                delta_t1 = 0
-                t0 = df3["Time"].iloc[2][0]
+            (Cx, Cy) = df4["Position"].iloc[0][-1]
+            tm = df4["Time"].iloc[0][-1]
 
-            (Cy, Cx) = dfWound["centriod"][t0]  # change ord
-            woundPolygon = dfWound["polygon"][t0]
-            r = (woundPolygon.area / np.pi) ** 0.5
-            [x0, y0] = df3["Position"].iloc[1][delta_t0]
-            [x1, y1] = df3["Position"].iloc[2][delta_t1]
+            Cx = int(Cx)
+            Cy = int(Cy)
+            t = tm
 
-            xm = (x0 + x1) / 2
-            ym = (y0 + y1) / 2
-            v = np.array([x0 - x1, y0 - y1])
-            w = np.array([xm - Cx, ym - Cy])
+            parentLabel = vidLabels[tm][Cy, Cx]  # change coord
 
-            phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
+            divided = False
 
-            if phi > np.pi / 2:
-                theta = np.pi - phi
-            else:
-                theta = phi
-            divOri = theta * (180 / np.pi)
-            dist = np.linalg.norm(w) - r
+            # finds the time and position of cytokinesis
 
-            for i in range(3):
-                _dfDivisions3.append(
-                    {
-                        "Label": df3["Label"].iloc[i],
-                        "Time": df3["Time"].iloc[i],
-                        "Position": df3["Position"].iloc[i],
-                        "Chain": df3["Chain"].iloc[i],
-                        "Shape Factor": df3["Shape Factor"].iloc[i],
-                        "Height": df3["Height"].iloc[i],
-                        "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
-                        "Polygons": df3["Polygons"].iloc[i],
-                        "Division Orientation": divOri,
-                        "Original Label": df3["Original Label"].iloc[i],
-                        "Spot": df3["Spot"].iloc[i],
-                    }
-                )
+            while divided == False and (t + 1 < T):
 
-    else:
-
-        for label in uniqueLabel:
-            df3 = dfDivisions2.loc[
-                lambda dfDivisions2: dfDivisions2["Label"] == label, :
-            ]
-
-            if len(df3["Time"].iloc[1]) > 2:
-                delta_t0 = 2
-            elif len(df3["Time"].iloc[1]) > 1:
-                delta_t0 = 1
-            else:
-                delta_t0 = 0
-
-            if len(df3["Time"].iloc[2]) > 2:
-                delta_t1 = 2
-            elif len(df3["Time"].iloc[2]) > 1:
-                delta_t1 = 1
-            else:
-                delta_t1 = 0
-
-            (Cx, Cy) = (0, 1)  # change coord
-            [x0, y0] = df3["Position"].iloc[1][delta_t0]
-            [x1, y1] = df3["Position"].iloc[2][delta_t1]
-
-            xm = (x0 + x1) / 2
-            ym = (y0 + y1) / 2
-            v = np.array([x0 - x1, y0 - y1])
-            w = np.array([xm - Cx, ym - Cy])
-
-            phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
-
-            if phi > np.pi / 2:
-                theta = np.pi - phi
-            else:
-                theta = phi
-            divOri = theta * (180 / np.pi)
-
-            for i in range(3):
-                _dfDivisions3.append(
-                    {
-                        "Label": df3["Label"].iloc[i],
-                        "Time": df3["Time"].iloc[i],
-                        "Position": df3["Position"].iloc[i],
-                        "Chain": df3["Chain"].iloc[i],
-                        "Shape Factor": df3["Shape Factor"].iloc[i],
-                        "Height": df3["Height"].iloc[i],
-                        "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
-                        "Polygons": df3["Polygons"].iloc[i],
-                        "Division Orientation": divOri,
-                        "Original Label": df3["Original Label"].iloc[i],
-                        "Spot": df3["Spot"].iloc[i],
-                    }
-                )
-
-    dfDivisions3 = pd.DataFrame(_dfDivisions3)
-
-    # links the mitosic cells to there cell boundarys and tracks these cells
-
-    binary = sm.io.imread(f"dat/{filename}/binaryBoundary{filename}.tif").astype(
-        "uint8"
-    )
-    trackBinary = binary
-
-    vidLabels = []
-    T = len(binary)
-
-    for t in range(T):
-        img = binary[t]
-        img = 255 - img
-        vidLabels.append(sm.measure.label(img, background=0, connectivity=1))
-
-    # vidLabels = np.asarray(vidLabels, "uint16")
-    # tifffile.imwrite(f"dat/{filename}/vidLabel{filename}.tif", vidLabels)
-
-    _dfDivisions4 = []
-
-    for label in uniqueLabel:
-        df4 = dfDivisions3.loc[lambda dfDivisions3: dfDivisions3["Label"] == label, :]
-
-        polygonsParent = []
-        polygonsDaughter1 = []
-        polygonsDaughter2 = []
-
-        (Cx, Cy) = df4["Position"].iloc[0][-1]
-        tm = df4["Time"].iloc[0][-1]
-
-        Cx = int(Cx)
-        Cy = int(Cy)
-        t = tm
-
-        parentLabel = vidLabels[tm][Cy, Cx]  # change coord
-
-        divided = False
-
-        # finds the time and position of cytokinesis
-
-        while divided == False and (t + 1 < T):
-
-            labels = vidLabels[t + 1][vidLabels[t] == parentLabel]
-
-            uniqueLabels = set(list(labels))
-            if 0 in uniqueLabels:
-                uniqueLabels.remove(0)
-
-            count = Counter(labels)
-            c = []
-            for l in uniqueLabels:
-                c.append(count[l])
-
-            uniqueLabels = list(uniqueLabels)
-            mostLabel = uniqueLabels[c.index(max(c))]
-            C = max(c)
-
-            c.remove(max(c))
-            uniqueLabels.remove(mostLabel)
-
-            if c == []:
-                Cdash = 0
-            else:
-                mostLabel2nd = uniqueLabels[c.index(max(c))]
-                Cdash = max(c)
-
-            if Cdash / C > 0.3:
-                divided = True
-                daughterLabel1 = mostLabel
-                daughterLabel2 = mostLabel2nd
-            else:
-                t += 1
-                parentLabel = mostLabel
-
-        # tracks the cell forwards and backwards in time
-
-        if divided == True:
-
-            tc = t  # time of cytokinesis
-
-            if len(vidLabels) > tc + 11:
-                tFinal = 9
-            else:
-                tFinal = len(vidLabels) - tc - 2
-
-            trackBinary[tc + 1][vidLabels[tc + 1] == daughterLabel1] = 200
-
-            contour = sm.measure.find_contours(
-                vidLabels[tc + 1] == daughterLabel1, level=0
-            )[0]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            polygonsDaughter1.append(poly)
-
-            # --
-
-            trackBinary[tc + 1][vidLabels[tc + 1] == daughterLabel2] = 150
-
-            contour = sm.measure.find_contours(
-                vidLabels[tc + 1] == daughterLabel2, level=0
-            )[0]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            polygonsDaughter2.append(poly)
-
-            for i in range(tFinal):
-
-                labels = vidLabels[tc + 2 + i][vidLabels[tc + 1 + i] == daughterLabel1]
+                labels = vidLabels[t + 1][vidLabels[t] == parentLabel]
 
                 uniqueLabels = set(list(labels))
                 if 0 in uniqueLabels:
@@ -968,155 +969,285 @@ for filename in filenames:
                     c.append(count[l])
 
                 uniqueLabels = list(uniqueLabels)
-                daughterLabel1 = uniqueLabels[c.index(max(c))]
+                mostLabel = uniqueLabels[c.index(max(c))]
+                C = max(c)
 
-                trackBinary[tc + 2 + i][vidLabels[tc + 2 + i] == daughterLabel1] = 200
+                c.remove(max(c))
+                uniqueLabels.remove(mostLabel)
+
+                if c == []:
+                    Cdash = 0
+                else:
+                    mostLabel2nd = uniqueLabels[c.index(max(c))]
+                    Cdash = max(c)
+
+                if Cdash / C > 0.3:
+                    divided = True
+                    daughterLabel1 = mostLabel
+                    daughterLabel2 = mostLabel2nd
+                else:
+                    t += 1
+                    parentLabel = mostLabel
+
+            # tracks the cell forwards and backwards in time
+
+            if divided == True:
+
+                tc = t  # time of cytokinesis
+
+                if len(vidLabels) > tc + 11:
+                    tFinal = 9
+                else:
+                    tFinal = len(vidLabels) - tc - 2
+
+                trackBinary[tc + 1][vidLabels[tc + 1] == daughterLabel1] = 200
 
                 contour = sm.measure.find_contours(
-                    vidLabels[tc + 2 + i] == daughterLabel1, level=0
+                    vidLabels[tc + 1] == daughterLabel1, level=0
                 )[0]
                 poly = sm.measure.approximate_polygon(contour, tolerance=1)
                 polygonsDaughter1.append(poly)
 
-                # ----
+                # --
 
-                labels = vidLabels[tc + 2 + i][vidLabels[tc + 1 + i] == daughterLabel2]
-
-                uniqueLabels = set(list(labels))
-                if 0 in uniqueLabels:
-                    uniqueLabels.remove(0)
-
-                count = Counter(labels)
-                c = []
-                for l in uniqueLabels:
-                    c.append(count[l])
-
-                uniqueLabels = list(uniqueLabels)
-                daughterLabel2 = uniqueLabels[c.index(max(c))]
-
-                trackBinary[tc + 2 + i][vidLabels[tc + 2 + i] == daughterLabel2] = 150
+                trackBinary[tc + 1][vidLabels[tc + 1] == daughterLabel2] = 150
 
                 contour = sm.measure.find_contours(
-                    vidLabels[tc + 2 + i] == daughterLabel2, level=0
+                    vidLabels[tc + 1] == daughterLabel2, level=0
                 )[0]
                 poly = sm.measure.approximate_polygon(contour, tolerance=1)
                 polygonsDaughter2.append(poly)
 
-            if 0 < tc - 10:
-                tMitosis = 9
-            else:
-                tMitosis = tc
+                for i in range(tFinal):
 
-            trackBinary[tc][vidLabels[tc] == parentLabel] = 100
-            contour = sm.measure.find_contours(vidLabels[tc] == parentLabel, level=0)[0]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            polygonsParent.append(poly)
+                    labels = vidLabels[tc + 2 + i][
+                        vidLabels[tc + 1 + i] == daughterLabel1
+                    ]
 
-            for i in range(tMitosis):
-                labels = vidLabels[tc - i - 1][vidLabels[tc - i] == parentLabel]
+                    uniqueLabels = set(list(labels))
+                    if 0 in uniqueLabels:
+                        uniqueLabels.remove(0)
 
-                uniqueLabels = set(list(labels))
-                if 0 in uniqueLabels:
-                    uniqueLabels.remove(0)
+                    count = Counter(labels)
+                    c = []
+                    for l in uniqueLabels:
+                        c.append(count[l])
 
-                count = Counter(labels)
-                c = []
-                for l in uniqueLabels:
-                    c.append(count[l])
+                    uniqueLabels = list(uniqueLabels)
+                    daughterLabel1 = uniqueLabels[c.index(max(c))]
 
-                uniqueLabels = list(uniqueLabels)
-                parentLabel = uniqueLabels[c.index(max(c))]
+                    trackBinary[tc + 2 + i][
+                        vidLabels[tc + 2 + i] == daughterLabel1
+                    ] = 200
 
-                trackBinary[tc - i - 1][vidLabels[tc - i - 1] == parentLabel] = 100
+                    contour = sm.measure.find_contours(
+                        vidLabels[tc + 2 + i] == daughterLabel1, level=0
+                    )[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+                    polygonsDaughter1.append(poly)
 
+                    # ----
+
+                    labels = vidLabels[tc + 2 + i][
+                        vidLabels[tc + 1 + i] == daughterLabel2
+                    ]
+
+                    uniqueLabels = set(list(labels))
+                    if 0 in uniqueLabels:
+                        uniqueLabels.remove(0)
+
+                    count = Counter(labels)
+                    c = []
+                    for l in uniqueLabels:
+                        c.append(count[l])
+
+                    uniqueLabels = list(uniqueLabels)
+                    daughterLabel2 = uniqueLabels[c.index(max(c))]
+
+                    trackBinary[tc + 2 + i][
+                        vidLabels[tc + 2 + i] == daughterLabel2
+                    ] = 150
+
+                    contour = sm.measure.find_contours(
+                        vidLabels[tc + 2 + i] == daughterLabel2, level=0
+                    )[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+                    polygonsDaughter2.append(poly)
+
+                if 0 < tc - 10:
+                    tMitosis = 9
+                else:
+                    tMitosis = tc
+
+                trackBinary[tc][vidLabels[tc] == parentLabel] = 100
                 contour = sm.measure.find_contours(
-                    vidLabels[tc - i - 1] == parentLabel, level=0
+                    vidLabels[tc] == parentLabel, level=0
                 )[0]
                 poly = sm.measure.approximate_polygon(contour, tolerance=1)
                 polygonsParent.append(poly)
 
-            _dfDivisions4.append(
-                {
-                    "Label": df4["Label"].iloc[0],
-                    "Time": df4["Time"].iloc[0],
-                    "Position": df4["Position"].iloc[0],
-                    "Chain": df4["Chain"].iloc[0],
-                    "Shape Factor": df4["Shape Factor"].iloc[0],
-                    "Height": df4["Height"].iloc[0],
-                    "Necleus Orientation": df4["Necleus Orientation"].iloc[0],
-                    "Polygons": df4["Polygons"].iloc[0],
-                    "Division Orientation": df4["Division Orientation"].iloc[0],
-                    "Boundary Polygons": polygonsParent,
-                    "Cytokineses time": tc,
-                    "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"].iloc[0],
-                    "Spot": df4["Spot"].iloc[0],
-                }
-            )
+                for i in range(tMitosis):
+                    labels = vidLabels[tc - i - 1][vidLabels[tc - i] == parentLabel]
 
-            _dfDivisions4.append(
-                {
-                    "Label": df4["Label"].iloc[1],
-                    "Time": df4["Time"].iloc[1],
-                    "Position": df4["Position"].iloc[1],
-                    "Chain": df4["Chain"].iloc[1],
-                    "Shape Factor": df4["Shape Factor"].iloc[1],
-                    "Height": df4["Height"].iloc[1],
-                    "Necleus Orientation": df4["Necleus Orientation"].iloc[1],
-                    "Polygons": df4["Polygons"].iloc[1],
-                    "Division Orientation": df4["Division Orientation"].iloc[1],
-                    "Boundary Polygons": polygonsDaughter1,
-                    "Cytokineses time": tc,
-                    "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"].iloc[1],
-                    "Spot": df4["Spot"].iloc[1],
-                }
-            )
+                    uniqueLabels = set(list(labels))
+                    if 0 in uniqueLabels:
+                        uniqueLabels.remove(0)
 
-            _dfDivisions4.append(
-                {
-                    "Label": df4["Label"].iloc[2],
-                    "Time": df4["Time"].iloc[2],
-                    "Position": df4["Position"].iloc[2],
-                    "Chain": df4["Chain"].iloc[2],
-                    "Shape Factor": df4["Shape Factor"].iloc[2],
-                    "Height": df4["Height"].iloc[2],
-                    "Necleus Orientation": df4["Necleus Orientation"].iloc[2],
-                    "Polygons": df4["Polygons"].iloc[2],
-                    "Division Orientation": df4["Division Orientation"].iloc[2],
-                    "Boundary Polygons": polygonsDaughter2,
-                    "Cytokineses time": tc,
-                    "Time difference": tc - tm,
-                    "Original Label": df4["Original Label"].iloc[2],
-                    "Spot": df4["Spot"].iloc[2],
-                }
-            )
+                    count = Counter(labels)
+                    c = []
+                    for l in uniqueLabels:
+                        c.append(count[l])
 
-        else:
-            for i in range(3):
+                    uniqueLabels = list(uniqueLabels)
+                    parentLabel = uniqueLabels[c.index(max(c))]
+
+                    trackBinary[tc - i - 1][vidLabels[tc - i - 1] == parentLabel] = 100
+
+                    contour = sm.measure.find_contours(
+                        vidLabels[tc - i - 1] == parentLabel, level=0
+                    )[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+                    polygonsParent.append(poly)
+
                 _dfDivisions4.append(
                     {
-                        "Label": df4["Label"].iloc[i],
-                        "Time": df4["Time"].iloc[i],
-                        "Position": df4["Position"].iloc[i],
-                        "Chain": df4["Chain"].iloc[i],
-                        "Shape Factor": df4["Shape Factor"].iloc[i],
-                        "Height": df4["Height"].iloc[i],
-                        "Necleus Orientation": df4["Necleus Orientation"].iloc[i],
-                        "Polygons": df4["Polygons"].iloc[i],
-                        "Division Orientation": df4["Division Orientation"].iloc[i],
-                        "Original Label": df4["Original Label"].iloc[i],
-                        "Spot": df4["Spot"].iloc[i],
+                        "Label": df4["Label"].iloc[0],
+                        "Time": df4["Time"].iloc[0],
+                        "Position": df4["Position"].iloc[0],
+                        "Chain": df4["Chain"].iloc[0],
+                        "Shape Factor": df4["Shape Factor"].iloc[0],
+                        "Height": df4["Height"].iloc[0],
+                        "Necleus Orientation": df4["Necleus Orientation"].iloc[0],
+                        "Polygons": df4["Polygons"].iloc[0],
+                        "Division Orientation": df4["Division Orientation"].iloc[0],
+                        "Division While Wounded": df4["Division While Wounded"].iloc[0],
+                        "Boundary Polygons": polygonsParent,
+                        "Cytokineses time": tc,
+                        "Time difference": tc - tm,
+                        "Original Label": df4["Original Label"].iloc[0],
+                        "Spot": df4["Spot"].iloc[0],
                     }
                 )
 
-    dfDivisions4 = pd.DataFrame(_dfDivisions4)
+                _dfDivisions4.append(
+                    {
+                        "Label": df4["Label"].iloc[1],
+                        "Time": df4["Time"].iloc[1],
+                        "Position": df4["Position"].iloc[1],
+                        "Chain": df4["Chain"].iloc[1],
+                        "Shape Factor": df4["Shape Factor"].iloc[1],
+                        "Height": df4["Height"].iloc[1],
+                        "Necleus Orientation": df4["Necleus Orientation"].iloc[1],
+                        "Polygons": df4["Polygons"].iloc[1],
+                        "Division Orientation": df4["Division Orientation"].iloc[1],
+                        "Division While Wounded": df4["Division While Wounded"].iloc[1],
+                        "Boundary Polygons": polygonsDaughter1,
+                        "Cytokineses time": tc,
+                        "Time difference": tc - tm,
+                        "Original Label": df4["Original Label"].iloc[1],
+                        "Spot": df4["Spot"].iloc[1],
+                    }
+                )
 
-    dfDivisions4 = dfDivisions4.sort_values(
-        ["Label", "Original Label"], ascending=[True, True]
-    )
+                _dfDivisions4.append(
+                    {
+                        "Label": df4["Label"].iloc[2],
+                        "Time": df4["Time"].iloc[2],
+                        "Position": df4["Position"].iloc[2],
+                        "Chain": df4["Chain"].iloc[2],
+                        "Shape Factor": df4["Shape Factor"].iloc[2],
+                        "Height": df4["Height"].iloc[2],
+                        "Necleus Orientation": df4["Necleus Orientation"].iloc[2],
+                        "Polygons": df4["Polygons"].iloc[2],
+                        "Division Orientation": df4["Division Orientation"].iloc[2],
+                        "Division While Wounded": df4["Division While Wounded"].iloc[2],
+                        "Boundary Polygons": polygonsDaughter2,
+                        "Cytokineses time": tc,
+                        "Time difference": tc - tm,
+                        "Original Label": df4["Original Label"].iloc[2],
+                        "Spot": df4["Spot"].iloc[2],
+                    }
+                )
 
-    dfDivisions4.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+            else:
+                for i in range(3):
+                    _dfDivisions4.append(
+                        {
+                            "Label": df4["Label"].iloc[i],
+                            "Time": df4["Time"].iloc[i],
+                            "Position": df4["Position"].iloc[i],
+                            "Chain": df4["Chain"].iloc[i],
+                            "Shape Factor": df4["Shape Factor"].iloc[i],
+                            "Height": df4["Height"].iloc[i],
+                            "Necleus Orientation": df4["Necleus Orientation"].iloc[i],
+                            "Polygons": df4["Polygons"].iloc[i],
+                            "Division Orientation": df4["Division Orientation"].iloc[i],
+                            "Division While Wounded": df4[
+                                "Division While Wounded"
+                            ].iloc[i],
+                            "Original Label": df4["Original Label"].iloc[i],
+                            "Spot": df4["Spot"].iloc[i],
+                        }
+                    )
 
-    trackBinary = np.asarray(trackBinary, "uint8")
-    tifffile.imwrite(f"dat/{filename}/tracks{filename}.tif", trackBinary)
+        dfDivisions4 = pd.DataFrame(_dfDivisions4)
+
+        dfDivisions4 = dfDivisions4.sort_values(
+            ["Label", "Original Label"], ascending=[True, True]
+        )
+
+        dfDivisions4.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+
+        trackBinary = np.asarray(trackBinary, "uint8")
+        tifffile.imwrite(f"dat/{filename}/tracks{filename}.tif", trackBinary)
+
+        # display divisions
+
+        vid = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
+
+        [T, X, Y, rgb] = vid.shape
+
+        highlightDivisions = np.zeros([T, 552, 552, 3])
+
+        for x in range(X):
+            for y in range(Y):
+                highlightDivisions[:, 20 + x, 20 + y, :] = vid[:, x, y, :]
+
+        uniqueLabels = list(set(dfDivisions4["Label"]))
+
+        for label in uniqueLabels:
+
+            if label == 52:
+                print("d")
+
+            dfTrack = dfDivisions4.loc[
+                lambda dfDivisions4: dfDivisions4["Label"] == label, :
+            ]
+
+            t0 = dfTrack.iloc[0]["Time"][-1]
+            [x, y] = dfTrack.iloc[0]["Position"][-1]
+            x = int(x)
+            y = int(y)
+
+            [rr0, cc0] = circle_perimeter(
+                551 - (y + 20), x + 20, 13
+            )  # change to column row coord
+            [rr1, cc1] = circle_perimeter(551 - (y + 20), x + 20, 14)
+            [rr2, cc2] = circle_perimeter(551 - (y + 20), x + 20, 15)
+
+            times = range(t0 - 5, t0 + 5)
+
+            timeVid = []
+            for t in times:
+                if t >= 0 and t <= T - 1:
+                    timeVid.append(t)
+
+            for t in timeVid:
+                highlightDivisions[t][rr0, cc0, 2] = 200
+                highlightDivisions[t][rr1, cc1, 2] = 200
+                highlightDivisions[t][rr2, cc2, 2] = 200
+
+        highlightDivisions = highlightDivisions[:, 20:532, 20:532]
+
+        highlightDivisions = np.asarray(highlightDivisions, "uint8")
+        tifffile.imwrite(f"dat/{filename}/divisions{filename}.tif", highlightDivisions)

@@ -163,7 +163,7 @@ for filename in filenames:
 
         for i in range(len(df)):
             x.append(df.iloc[i, 2])
-            y.append(df.iloc[i, 3])
+            y.append(511 - df.iloc[i, 3])  # this makes coords xy
             z.append(df.iloc[i, 4])
             t.append(df.iloc[i, 1])
 
@@ -212,11 +212,11 @@ for filename in filenames:
     for i in range(len(dfTracks)):
         for j in range(len(dfTracks["x"][i])):
             t = int(dfTracks["t"][i][j])
-            x = int(dfTracks["x"][i][j])
-            y = int(dfTracks["y"][i][j])
+            c = int(dfTracks["x"][i][j])  # changes coord to row column
+            r = int(511 - dfTracks["y"][i][j])
             z = dfTracks["z"][i][j]
 
-            height[t, y, x] = z / 25
+            height[t, r, c] = z / 30
 
     height = np.asarray(height, "float32")
     tifffile.imwrite(f"dat/{filename}/height{filename}.tif", height)

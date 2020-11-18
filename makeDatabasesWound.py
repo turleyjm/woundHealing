@@ -50,12 +50,12 @@ filenames = filenames.split(", ")
 
 i = 0
 starts = [
-    (256, 256),
-    (256, 256),
-    (256, 256),
-    (200, 266),
-    (256, 256),
-    (256, 256),
+    # (256, 256),
+    # (256, 256),
+    # (256, 256),
+    (256, 300),
+    # (256, 256),
+    # (256, 256),
 ]  # if not all wounds are centred
 
 for filename in filenames:
@@ -74,7 +74,9 @@ for filename in filenames:
     vidLabels = []  # labels all wound and out of plane areas
 
     for t in range(T):
-        vidLabels.append(sm.measure.label(vidWound[t], background=0, connectivity=1))
+        img = sm.measure.label(vidWound[t], background=0, connectivity=1)
+        imgxy = fi.imgrcxy(img)
+        vidLabels.append(imgxy)
     vidLabels = np.asarray(vidLabels, "uint8")
 
     vidOutPlane = np.zeros([181, 514, 514])
@@ -100,18 +102,23 @@ for filename in filenames:
 
     binary[binary > 0] = 255
 
+    for t in range(T):
+        binary[t] = fi.imgxyrc(binary[t])
+
     vidOutPlane = np.asarray(binary, "uint8")
     tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
 
     vidLabels = []  # labels all wound and out of plane areas
 
     for t in range(T):
-        vidLabels.append(sm.measure.label(vidOutPlane[t], background=0, connectivity=1))
+        img = sm.measure.label(vidOutPlane[t], background=0, connectivity=1)
+        imgxy = fi.imgrcxy(img)
+        vidLabels.append(imgxy)
     vidLabels = np.asarray(vidLabels, "uint8")
 
     if wound == True:  # If there is a wound the boundary is found quantified
 
-        # start = (int(Y / 2), int(X / 2))  # change coords if not all wounds are centred
+        # start = (int(X / 2), int(Y / 2))  # change coords if not all wounds are centred
         start = starts[i]
         i += 1
 
@@ -127,7 +134,7 @@ for filename in filenames:
         m = 41
 
         curvature = np.array(cell.findContourCurvature(contour, m)) * len(contour)
-
+        t = 0
         _dfWound.append(
             {
                 "Time": t,
@@ -140,7 +147,6 @@ for filename in filenames:
         )
 
         mostLabel = label
-        t = 0
 
         finished = False
 
@@ -179,6 +185,8 @@ for filename in filenames:
                         contour
                     )
 
+                    t += 1
+
                     _dfWound.append(
                         {
                             "Time": t,
@@ -190,11 +198,12 @@ for filename in filenames:
                         }
                     )
 
-                    t += 1
-
         tf = t
         for t in range(tf, T - 1):
             vidWound[t + 1][vidLabels[t + 1] != 256] = 0
+
+        for t in range(T):
+            vidWound[t] = fi.imgxyrc(vidWound[t])
 
         vidWound = np.asarray(vidWound, "uint8")
         tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
@@ -215,9 +224,3 @@ for filename in filenames:
         vidH2 = np.asarray(vidH2, "uint8")
         tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
 
-        vidProb = sm.io.imread(f"dat/{filename}/probBoundary{filename}.tif").astype(int)
-
-        vidProb[vidWound == 255] = 0
-
-        vidProb = np.asarray(vidProb, "float")
-        tifffile.imwrite(f"dat/{filename}/probBoundary{filename}.tif", vidProb)
