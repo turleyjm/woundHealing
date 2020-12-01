@@ -50,12 +50,10 @@ filenames = filenames.split(", ")
 
 i = 0
 starts = [
-    # (256, 256),
-    # (256, 256),
-    # (256, 256),
+    (256, 256),
     (256, 300),
-    # (256, 256),
-    # (256, 256),
+    (256, 256),
+    (256, 256),
 ]  # if not all wounds are centred
 
 for filename in filenames:
@@ -139,7 +137,7 @@ for filename in filenames:
             {
                 "Time": t,
                 "Polygon": polygon,
-                "Centriod": cell.centroid(polygon),
+                "Centroid": (Cx, Cy),
                 "Curvature": curvature,
                 "Contour": contour,
                 "Area": polygon.area,
@@ -191,7 +189,7 @@ for filename in filenames:
                         {
                             "Time": t,
                             "Polygon": polygon,
-                            "Centriod": cell.centroid(polygon),
+                            "Centroid": cell.centroid(polygon),
                             "Curvature": curvature,
                             "Contour": contour,
                             "Area": polygon.area,

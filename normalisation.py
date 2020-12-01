@@ -22,36 +22,38 @@ import statistics
 import cellProperties as cell
 import findGoodCells as fi
 
-filenames = ["PrewoundL18h01"]
+f = open("pythonText.txt", "r")
+
+filenames = f.read()
+filenames = filenames.split(", ")
 
 background = 0
 
 for filename in filenames:
 
-    vidFile = f"dat/{filename}/bleachedH2{filename}.tif"
+    # vidFile = f"dat/{filename}/bleachedH2{filename}.tif"
 
-    vid = sm.io.imread(vidFile).astype(
-        int
-    )  # loads the bleachH2 stack you make have to change file location
+    # vid = sm.io.imread(vidFile).astype(
+    #     int
+    # )  # loads the bleachH2 stack you make have to change file location
 
-    (T, X, Y) = vid.shape
+    # (T, X, Y) = vid.shape
 
-    # normalises the each images
-    mu0 = 30
+    # mu0 = 30
 
-    for t in range(T):
-        mu = vid[t][vid[t] > background]
-        vid[t][vid[t] <= background] = 0
+    # for t in range(T):   # normalises the each images
+    #     mu = vid[t][vid[t] > background]
+    #     vid[t][vid[t] <= background] = 0
 
-        mu = np.quantile(mu, 0.75)
+    #     mu = np.quantile(mu, 0.75)
 
-        ratio = mu0 / mu
+    #     ratio = mu0 / mu
 
-        vid[t] = vid[t] * ratio
-        vid[t][vid[t] > 255] = 255
+    #     vid[t] = vid[t] * ratio
+    #     vid[t][vid[t] > 255] = 255
 
-    vid = np.asarray(vid, "uint8")
-    tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vid)  # saves the focusH2
+    # vid = np.asarray(vid, "uint8")
+    # tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vid)  # saves the focusH2
 
     # ---------
 

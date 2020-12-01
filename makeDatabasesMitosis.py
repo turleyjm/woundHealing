@@ -360,10 +360,25 @@ def importDividingTracks(trackmate_xml_path):
                     graphKeys = list(graph.keys())
 
                     divisionNum = 0
+                    divisionKeys = []
                     for graphKey in graphKeys:
                         if len(graph[graphKey]) == 2:
-                            divisionNum += 0
+                            divisionNum += 1
+                            divisionKeys.append(graphKey)
                     # check if there are still multi division
+                    # if divisionNum == 2:
+                    #     key0 = divisionKeys[0]
+                    #     key1 = divisionKeys[1]
+                    #     if key0 > key1: #make key0 smallest
+                    #         key = key1
+                    #         key1 = key0
+                    #         key0 = key
+
+                    #     [graph, graph1] = splitGraph(graph, falseSpot)
+                    #     dictGraph[key] = graph
+                    #     dictGraph[f"graph{a}"] = graph1
+                    #     a += 1
+
                     if divisionNum > 1:
                         print("Fuck")
 

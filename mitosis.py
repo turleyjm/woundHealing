@@ -61,7 +61,39 @@ for filename in filenames:
 
     plt.close("all")
 
+
+mu = []
+for filename in filenames:
+
     functionTitle = "Division Orientation"
+
+    df = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+
+    n = int(len(df) / 3)
+
+    for i in range(n):
+        prop = list(df["Time"][df["Chain"] == "parent"])[i][-1]
+        if prop > 90:
+            prop = 180 - prop
+        mu.append(prop)
+
+fig, ax = plt.subplots()
+plt.gcf().subplots_adjust(bottom=0.15)
+plt.xlabel("Orientation")
+ax.hist(mu, density=False, bins=18)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.set_xlim([0, 90])
+fig.savefig(
+    f"results/{functionTitle} of Unwounded", dpi=200, transparent=True,
+)
+
+plt.close("all")
+
+# ------------------------------
+
+mu = []
+for filename in filenames:
 
     if "Wound" in filename:
         wound = True
@@ -83,7 +115,6 @@ for filename in filenames:
         m = int(len(dfSub) / 3)
 
         distance = []
-        mu = []
 
         for i in range(m):
             prop = list(dfSub[functionTitle][dfSub["Chain"] == "parent"])[i]
@@ -99,64 +130,19 @@ for filename in filenames:
                 prop = 180 - prop
             mu.append(prop)
 
-            if dist[t, Cx, Cy] < 100:
-                muAll.append(prop)
+if "Wound" in filename:
+    wound = True
+else:
+    wound = False
 
-        fig, ax = plt.subplots()
-        plt.gcf().subplots_adjust(bottom=0.15)
-        plt.xlabel("Degrees")
-        ax.hist(mu, density=False, bins=9)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.set_xlim([0, 90])
-        fig.savefig(
-            f"results/{functionTitle} of {filename}", dpi=200, transparent=True,
-        )
-
-        plt.close("all")
-
-        fig, ax = plt.subplots()
-        plt.gcf().subplots_adjust(bottom=0.15)
-        plt.xlabel("Distance")
-        ax.hist(distance, density=False, bins=20)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        fig.savefig(
-            f"results/Divsion Distance of {filename}", dpi=200, transparent=True,
-        )
-
-        plt.close("all")
-
-    else:
-
-        for i in range(n):
-            prop = list(df[functionTitle][df["Chain"] == "parent"])[i]
-
-            if prop > 90:
-                prop = 180 - prop
-            mu.append(prop)
-
-        fig, ax = plt.subplots()
-        plt.gcf().subplots_adjust(bottom=0.15)
-        plt.xlabel("Degrees")
-        ax.hist(mu, density=False, bins=9)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.set_xlim([0, 90])
-        fig.savefig(
-            f"results/{functionTitle} of {filename}", dpi=200, transparent=True,
-        )
-
-        plt.close("all")
-
-
-fig, ax = plt.subplots()
-plt.gcf().subplots_adjust(bottom=0.15)
-plt.xlabel("Degrees")
-ax.hist(muAll, density=False, bins=9)
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
-ax.set_xlim([0, 90])
-fig.savefig(
-    f"results/{functionTitle} of All Videos", dpi=200, transparent=True,
-)
+if wound == True:
+    fig, ax = plt.subplots()
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.xlabel("Degrees")
+    ax.hist(mu, density=False, bins=9)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.set_xlim([0, 90])
+    fig.savefig(
+        f"results/{functionTitle} of Wounded", dpi=200, transparent=True,
+    )
