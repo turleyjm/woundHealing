@@ -37,6 +37,40 @@ def costFunction(u0, u1):
     return cost
 
 
+def mapDivision(graph):
+
+    graphD = {}
+    graphKeys = list(graph.keys())
+
+    divisionKeys = []
+    for graphKey in graphKeys:
+        if len(graph[graphKey]) == 2:
+            divisionKeys.append(graphKey)
+
+    origin = min(divisionKeys)
+    pathStarts = list(graph[origin])
+
+    while pathStarts != []:
+        start = pathStarts[0]
+        spot = start
+
+        finished = False
+        while finished != True:
+            try:
+                spot = graph[spot][0]
+                if spot in divisionKeys:
+                    graphD[start] = spot
+                    pathStarts.append(graph[spot][0])
+                    pathStarts.append(graph[spot][1])
+                    finished = True
+            except:
+                finished = True
+
+        pathStarts.remove(start)
+
+    return graphD
+
+
 def splitGraph(graph, spot):
 
     keys = list(graph.keys())
@@ -380,7 +414,55 @@ def importDividingTracks(trackmate_xml_path):
                     #     a += 1
 
                     if divisionNum > 1:
-                        print("Fuck")
+                        graphD = mapDivision(graph)
+                        divisionKeys = list(graphD.keys())
+                        divisionKeys.reverse()
+
+                        for key in divisionKeys:
+                            end = graphD[key]
+                            spot = key
+                            spots = (
+                                []
+                            )  # note that the first 2 links in the track are missed out on perpese
+                            finished = False
+                            while finished != True:
+                                try:
+                                    spot = graph[spot][0]
+                                    if end == spot:
+                                        spots.append(spot)
+                                        finished = True
+                                    else:
+                                        spots.append(spot)
+                                except:
+                                    finished = True
+
+                            n = len(spots)
+                            length = []
+                            for i in range(n - 1):
+                                spot0 = spots[i]
+                                spot1 = spots[i + 1]
+                                df0 = spotDat[spotDat["name"] == spot0]
+                                df1 = spotDat[spotDat["name"] == spot1]
+                                l = (
+                                    (
+                                        float(df0["POSITION_X"])
+                                        - float(df1["POSITION_X"])
+                                    )
+                                    ** 2
+                                    + (
+                                        float(df0["POSITION_Y"])
+                                        - float(df1["POSITION_Y"])
+                                    )
+                                    ** 2
+                                ) ** 0.5
+                                length.append(l)
+                            m = max(length)
+                            index = length.index(m) + 1
+                            falseSpot = spots[index]
+                            [graph, graph1] = splitGraph(graph, falseSpot)
+                            dictGraph[key] = graph
+                            dictGraph[f"graph{a}"] = graph1
+                            a += 1
 
                 keys = list(dictGraph.keys())
                 for key in keys:

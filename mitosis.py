@@ -77,18 +77,18 @@ for filename in filenames:
             prop = 180 - prop
         mu.append(prop)
 
-fig, ax = plt.subplots()
-plt.gcf().subplots_adjust(bottom=0.15)
-plt.xlabel("Orientation")
-ax.hist(mu, density=False, bins=18)
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
-ax.set_xlim([0, 90])
-fig.savefig(
-    f"results/{functionTitle} of Unwounded", dpi=200, transparent=True,
-)
+# fig, ax = plt.subplots()
+# plt.gcf().subplots_adjust(bottom=0.15)
+# plt.xlabel("Orientation")
+# ax.hist(mu, density=False, bins=18)
+# ax.spines["top"].set_visible(False)
+# ax.spines["right"].set_visible(False)
+# ax.set_xlim([0, 90])
+# fig.savefig(
+#     f"results/{functionTitle} of Unwounded", dpi=200, transparent=True,
+# )
 
-plt.close("all")
+# plt.close("all")
 
 # ------------------------------
 
@@ -109,6 +109,8 @@ for filename in filenames:
             img = 255 - wound[t]
             img = sp.ndimage.morphology.distance_transform_edt(img)
             dist[t] = fi.imgrcxy(img)
+
+        df = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
 
         dfSub = df[df["Division While Wounded"] == "Y"]
 
