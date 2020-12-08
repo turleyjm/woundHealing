@@ -32,6 +32,8 @@ background = 0
 
 for filename in filenames:
 
+    print(filename)
+
     vidFile = f"dat/{filename}/bleachedH2{filename}.tif"
 
     vid = sm.io.imread(vidFile).astype(int)

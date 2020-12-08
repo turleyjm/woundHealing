@@ -67,20 +67,18 @@ for video in range(num_videos):
             Q[i] = df["Q"].iloc[i][0]
 
         heatmap, xedges, yedges = np.histogram2d(
-            Q[:, 0], Q[:, 1], range=[[-0.3, 0.3], [-0.3, 0.3]], bins=30
+            Q[:, 0], Q[:, 1], range=[[-0.3, 0.3], [-0.3, 0.3]], bins=60
         )
-        if filename == "df_of_sample06_01.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(f"results/entropy histogram sample06_01.tif", data)
-        if filename == "df_of_sample06_14.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(f"results/entropy histogram sample06_14.tif", data)
-        if filename == "df_of_sample07_01.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(f"results/entropy histogram sample07_01.tif", data)
-        if filename == "df_of_sample07_14.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(f"results/entropy histogram sample07_14.tif", data)
+
+        # if filename == "df_of_sample06_01.pkl":
+        #     data = np.asarray(heatmap, "uint8")
+        #     tifffile.imwrite(f"results/entropy histogram sample06_01.tif", data)
+        # if filename == "df_of_sample06_07.pkl":
+        #     data = np.asarray(heatmap, "uint8")
+        #     tifffile.imwrite(f"results/entropy histogram sample06_07.tif", data)
+        # if filename == "df_of_sample06_14.pkl":
+        #     data = np.asarray(heatmap, "uint8")
+        #     tifffile.imwrite(f"results/entropy histogram sample06_14.tif", data)
 
         prob = heatmap / m
         prob[prob != 0]
@@ -102,7 +100,7 @@ for video in range(num_videos):
             Q[i, 1] = y
 
         heatmap, xedges, yedges = np.histogram2d(
-            Q[:, 0], Q[:, 1], range=[[-0.15, 0.15], [-0.15, 0.15]], bins=30
+            Q[:, 0], Q[:, 1], range=[[-0.15, 0.15], [-0.15, 0.15]], bins=60
         )
 
         prob = heatmap / m
@@ -175,60 +173,6 @@ plt.close("all")
 
 # ---------------------------
 
-x = range(14)
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.xlabel("Time")
-plt.ylabel(f"Entropy Polar")
-plt.gcf().subplots_adjust(bottom=0.2)
-i = 1
-
-for video in range(num_videos):
-    mu = []
-    err = []
-    df = dfEntropy[dfEntropy["video"] == video]
-    for frame in range(num_frames):
-        prop = list(df["Entropy Polar"][df["Time"] == frame])
-        mu.append(cell.mean(prop))
-        err.append(cell.sd(prop) / (len(prop) ** 0.5))
-
-    plt.errorbar(x, mu, yerr=err, label=f"{i}")
-    i += 1
-
-fig.savefig(
-    f"results/Entropy Polar all vid", dpi=300, transparent=True,
-)
-plt.close("all")
-
-# ---------------------------
-
-x = range(14)
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.xlabel("Time")
-plt.ylabel(f"Entropy Q")
-plt.gcf().subplots_adjust(bottom=0.2)
-i = 1
-
-for video in range(num_videos):
-    mu = []
-    err = []
-    df = dfEntropy[dfEntropy["video"] == video]
-    for frame in range(num_frames):
-        prop = list(df["Entropy Q"][df["Time"] == frame])
-        mu.append(cell.mean(prop))
-        err.append(cell.sd(prop) / (len(prop) ** 0.5))
-
-    plt.errorbar(x, mu, yerr=err, label=f"{i}")
-    i += 1
-
-fig.savefig(
-    f"results/EntropyQ all vid", dpi=300, transparent=True,
-)
-plt.close("all")
-
-# ---------------------------
-
 mag = []
 for video in range(num_videos):
     df = dfEntropy[dfEntropy["video"] == video]
@@ -245,7 +189,6 @@ sigma = round_sig(sigma, sig=2)
 
 fig, ax = plt.subplots()
 plt.gcf().subplots_adjust(bottom=0.15)
-plt.ylabel("gradient of lines of best fit")
 plt.title(f"mean={mu}, sd={sigma}")
 ax.hist(mag, density=True, bins=10)
 ax.axvline(mu, c="k", label="mean")
@@ -275,7 +218,6 @@ sigma = round_sig(sigma, sig=2)
 
 fig, ax = plt.subplots()
 plt.gcf().subplots_adjust(bottom=0.15)
-plt.ylabel("gradient of lines of best fit")
 plt.title(f"mean={mu}, sd={sigma}")
 ax.hist(mag, density=True, bins=10)
 ax.axvline(mu, c="k", label="mean")
@@ -289,111 +231,3 @@ fig.savefig(
 )
 plt.close("all")
 
-# ---------------------------- entropy in polar coordates
-
-_dfEntropyPolar = []
-
-j = 0
-Q = np.zeros([m, 2])
-
-for video in range(num_videos):
-
-    for frame in range(num_frames):
-        filename = filenames[14 * video + frame]
-
-        df = pd.read_pickle(f"dat_databases/{filename}")
-        m = len(df)
-        S = cell.mean(df["Q"])
-
-        Q = np.zeros([m, 2])
-        for i in range(m):
-            q = (df["Q"].iloc[i] - S)[0]
-
-            c = (q[0] ** 2 + q[1] ** 2) ** 0.5
-            theta = 0.5 * np.arctan2(q[0] / c, q[1] / c)
-            Q[i, 0] = c
-            Q[i, 1] = theta
-
-        heatmap, xedges, yedges = np.histogram2d(
-            Q[:, 0], Q[:, 1], range=[[0, 0.3], [-np.pi / 2, np.pi / 2]], bins=30
-        )
-        if filename == "df_of_sample06_01.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(
-                f"results/entropy histogram polar coord sample06_01.tif", data
-            )
-        if filename == "df_of_sample06_14.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(
-                f"results/entropy histogram polar coord sample06_14.tif", data
-            )
-        if filename == "df_of_sample07_01.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(
-                f"results/entropy histogram polar coord sample07_01.tif", data
-            )
-        if filename == "df_of_sample07_14.pkl":
-            data = np.asarray(heatmap, "uint8")
-            tifffile.imwrite(
-                f"results/entropy histogram polar coord sample07_14.tif", data
-            )
-
-        prob = heatmap / m
-        prob[prob != 0]
-        p = prob[prob != 0]
-
-        entropy = p * np.log(p)
-        entropyQ = -sum(entropy)
-        _dfEntropyPolar.append(
-            {"filename": filename, "Time": frame, "Entropy Q": entropyQ, "video": j,}
-        )
-    j += 1
-
-dfEntropyPolar = pd.DataFrame(_dfEntropyPolar)
-
-mu = []
-err = []
-
-for frame in range(num_frames):
-    prop = list(dfEntropyPolar["Entropy Q"][dfEntropyPolar["Time"] == frame])
-    mu.append(cell.mean(prop))
-    err.append(cell.sd(prop) / (len(prop) ** 0.5))
-
-x = range(14)
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, mu, yerr=err, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"Entropy Q")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/EntropyQ Polar coord", dpi=300, transparent=True,
-)
-plt.close("all")
-
-x = range(14)
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.xlabel("Time")
-plt.ylabel(f"Entropy Q")
-plt.gcf().subplots_adjust(bottom=0.2)
-i = 1
-
-for video in range(num_videos):
-    mu = []
-    err = []
-    df = dfEntropyPolar[dfEntropyPolar["video"] == video]
-    for frame in range(num_frames):
-        prop = list(df["Entropy Q"][df["Time"] == frame])
-        mu.append(cell.mean(prop))
-        err.append(cell.sd(prop) / (len(prop) ** 0.5))
-
-    plt.errorbar(x, mu, yerr=err, label=f"{i}")
-    i += 1
-
-fig.savefig(
-    f"results/EntropyQ all vid Polar coord", dpi=300, transparent=True,
-)
-plt.close("all")

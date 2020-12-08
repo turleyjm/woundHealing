@@ -32,11 +32,10 @@ filenames = filenames.split(", ")
 
 T = 181
 
-smooth = 5
 
 for filename in filenames:
 
-    functionTitle = "Migration Speed"
+    functionTitle = "Migration Velocity"
 
     df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 
@@ -47,23 +46,25 @@ for filename in filenames:
         x = df["x"][i]
         y = df["y"][i]
 
-        m = len(t) - smooth
+        m = len(t)
 
-        if m > 0:
-            for j in range(m):
-                v = (
-                    np.array([x[j + smooth] - x[j], -(y[j + smooth] - y[j])]) / smooth
-                )  # -y as coord change
-                _df2.append(
-                    {"v": v, "Time": t[j],}
-                )
+        for j in range(m - 1):
+            v = np.array([x[j + 1] - x[j], -(y[j + 1] - y[j])])  # -y as coord change
+
+            s = ((v[0]) ** 2 + (v[1]) ** 2) ** 0.5
+
+            _df2.append(
+                {"v": v, "Speed": s, "Time": t[j],}
+            )
 
     df2 = pd.DataFrame(_df2)
 
     iso = []
     V = []
     mu = []
-    for t in range(T - smooth - 1):
+    S = []
+    errS = []
+    for t in range(T - 1):
         prop = list(df2[f"v"][df2["Time"] == t])
         V.append(cell.mean(prop))
         mu.append(((cell.mean(prop)[0] ** 2 + cell.mean(prop)[1] ** 2) ** 0.5))
@@ -94,7 +95,11 @@ for filename in filenames:
 
         iso.append(rho / OriSigma)
 
-    x = range(T - smooth - 1)
+        prop = list(df2[f"Speed"][df2["Time"] == t])
+        S.append(cell.mean(prop))
+        errS.append(cell.sd(prop) / len(prop) ** 0.5)
+
+    x = range(T - 1)
     fig = plt.figure(1, figsize=(9, 8))
     plt.gcf().subplots_adjust(left=0.2)
     plt.plot(x, mu)
@@ -109,7 +114,7 @@ for filename in filenames:
 
     functionTitle = "Migration Isotopy"
 
-    x = range(T - smooth - 1)
+    x = range(T - 1)
     fig = plt.figure(1, figsize=(9, 8))
     plt.gcf().subplots_adjust(left=0.2)
     plt.plot(x, iso)
@@ -119,5 +124,19 @@ for filename in filenames:
     plt.gcf().subplots_adjust(bottom=0.2)
     fig.savefig(
         f"results/{functionTitle} of {filename}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    # ------------------------
+
+    x = range(T - 1)
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.gcf().subplots_adjust(left=0.2)
+    plt.errorbar(x, mu, yerr=errS, fmt=".")
+    plt.xlabel("Time")
+    plt.ylabel(f"Speed")
+    plt.gcf().subplots_adjust(bottom=0.2)
+    fig.savefig(
+        f"results/Migration Speed of {filename}", dpi=300, transparent=True,
     )
     plt.close("all")
