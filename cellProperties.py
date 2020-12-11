@@ -127,26 +127,15 @@ def inertia(polygon):
     return I
 
 
-def shapeTensor(polygon):
+def qTensor(polygon):
 
-    S = inertia(polygon)
+    S = -inertia(polygon)
     TrS = S[0, 0] + S[1, 1]
     I = np.zeros(shape=(2, 2))
     I[0, 0] = 1
     I[1, 1] = 1
     Q = S - TrS * I / 2
     return Q
-
-
-def shapeTensorq(polygon):
-
-    S = inertia(polygon)
-    TrS = S[0, 0] + S[1, 1]
-    I = np.zeros(shape=(2, 2))
-    I[0, 0] = 1
-    I[1, 1] = 1
-    q = S / TrS - I / 2
-    return q
 
 
 # ----------------------------------------------------
@@ -229,18 +218,10 @@ def traceS(polygon):
 
 def traceQQ(polygon):
 
-    Q = shapeTensor(polygon)
+    Q = qTensor(polygon)
     QQ = np.dot(Q, Q)
     TrQQ = QQ[0, 0] + QQ[1, 1]
     return TrQQ
-
-
-def traceqq(polygon):
-
-    q = shapeTensorq(polygon)
-    qq = np.dot(q, q)
-    Trqq = qq[0, 0] + qq[1, 1]
-    return Trqq
 
 
 def polarisation(polygon):

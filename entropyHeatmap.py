@@ -1,4 +1,5 @@
 import os
+import shutil
 from math import floor, log10
 
 import cv2
@@ -21,6 +22,14 @@ import cellProperties as cell
 import findGoodCells as fi
 
 plt.rcParams.update({"font.size": 20})
+
+
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print("Error: Creating directory. " + directory)
 
 
 def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name="shiftedcmap"):
@@ -72,11 +81,39 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name="shiftedcmap"):
     return newcmap
 
 
-file1 = f"dat/entropy histogram sample06_01.tif"
-file2 = f"dat/entropy histogram sample06_07.tif"
-file3 = f"dat/entropy histogram sample06_14.tif"
+# -------- shiftedColorMap
 
-heatmap = sm.io.imread(file1).astype(int)
+# heatmap = sm.io.imread(file3).astype(int)
+# heatmap = heatmap / sum(sum(heatmap))
+# heatmap[0, 0] = -0.08
+
+# # make these smaller to increase the resolution
+# dx, dy = 0.01, 0.01
+
+# # generate 2 2d grids for the x & y bounds
+# y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+# heatmap.max()
+
+# z_min, z_max = -0.08, heatmap.max()
+# midpoint = 1 - z_max / (z_max + abs(z_min))
+
+# orig_cmap = matplotlib.cm.seismic
+# shifted_cmap = shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+# fig, ax = plt.subplots()
+# c = ax.pcolor(x, y, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+# fig.colorbar(c, ax=ax)
+# fig.savefig(
+#     f"results/prob dist q t=11", dpi=300, transparent=True,
+# )
+# plt.close("all")
+
+
+# ------------------------------------------------------
+
+createFolder("results/video/")
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_01.tif").astype(int)
 heatmap = heatmap / sum(sum(heatmap))
 
 # make these smaller to increase the resolution
@@ -85,7 +122,7 @@ dx, dy = 0.01, 0.01
 # generate 2 2d grids for the x & y bounds
 y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
 
-z_min, z_max = 0, heatmap.max()
+z_min, z_max = 0, 0.05
 
 fig, ax = plt.subplots()
 c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
@@ -93,11 +130,14 @@ fig.colorbar(c, ax=ax)
 fig.savefig(
     f"results/prob dist q t=0", dpi=300, transparent=True,
 )
+fig.savefig(
+    f"results/video/prob dist q t=0", dpi=300, transparent=True,
+)
 plt.close("all")
 
-# --------
+# -----------
 
-heatmap = sm.io.imread(file2).astype(int)
+heatmap = sm.io.imread("dat/entropy histogram sample06_02.tif").astype(int)
 heatmap = heatmap / sum(sum(heatmap))
 
 # make these smaller to increase the resolution
@@ -106,7 +146,127 @@ dx, dy = 0.01, 0.01
 # generate 2 2d grids for the x & y bounds
 y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
 
-z_min, z_max = 0, heatmap.max()
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=1", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=1", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_03.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=2", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=2", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_04.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=3", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=3", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_05.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=4", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=4", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_06.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=5", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=5", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_07.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
 
 fig, ax = plt.subplots()
 c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
@@ -114,11 +274,14 @@ fig.colorbar(c, ax=ax)
 fig.savefig(
     f"results/prob dist q t=6", dpi=300, transparent=True,
 )
+fig.savefig(
+    f"results/video/prob dist q t=6", dpi=300, transparent=True,
+)
 plt.close("all")
 
-# --------
+# -----------
 
-heatmap = sm.io.imread(file3).astype(int)
+heatmap = sm.io.imread("dat/entropy histogram sample06_08.tif").astype(int)
 heatmap = heatmap / sum(sum(heatmap))
 
 # make these smaller to increase the resolution
@@ -127,7 +290,153 @@ dx, dy = 0.01, 0.01
 # generate 2 2d grids for the x & y bounds
 y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
 
-z_min, z_max = 0, heatmap.max()
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=7", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=7", dpi=300, transparent=True,
+)
+plt.close("all")
+
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_09.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=8", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=8", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_10.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=9", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=9", dpi=300, transparent=True,
+)
+plt.close("all")
+
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_11.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=10", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=10", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_12.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=11", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=11", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_13.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/prob dist q t=12", dpi=300, transparent=True,
+)
+fig.savefig(
+    f"results/video/prob dist q t=12", dpi=300, transparent=True,
+)
+plt.close("all")
+
+# -----------
+
+heatmap = sm.io.imread("dat/entropy histogram sample06_14.tif").astype(int)
+heatmap = heatmap / sum(sum(heatmap))
+
+# make these smaller to increase the resolution
+dx, dy = 0.01, 0.01
+
+# generate 2 2d grids for the x & y bounds
+y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
+
+z_min, z_max = 0, 0.05
 
 fig, ax = plt.subplots()
 c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
@@ -135,32 +444,31 @@ fig.colorbar(c, ax=ax)
 fig.savefig(
     f"results/prob dist q t=13", dpi=300, transparent=True,
 )
-plt.close("all")
-
-
-# -------- shiftedColorMap
-
-heatmap = sm.io.imread(file3).astype(int)
-heatmap = heatmap / sum(sum(heatmap))
-heatmap[0, 0] = -0.08
-
-# make these smaller to increase the resolution
-dx, dy = 0.01, 0.01
-
-# generate 2 2d grids for the x & y bounds
-y, x = np.mgrid[-0.15:0.15:dy, -0.15:0.15:dx]
-
-heatmap.max()
-
-z_min, z_max = -0.08, heatmap.max()
-midpoint = 1 - z_max / (z_max + abs(z_min))
-
-orig_cmap = matplotlib.cm.seismic
-shifted_cmap = shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
-fig, ax = plt.subplots()
-c = ax.pcolor(x, y, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
-fig.colorbar(c, ax=ax)
 fig.savefig(
-    f"results/prob dist q t=11", dpi=300, transparent=True,
+    f"results/video/prob dist q t=13", dpi=300, transparent=True,
 )
 plt.close("all")
+
+# ------- Video Heatmap
+
+img_array = []
+
+createFolder("results/video/")
+
+for i in range(14):
+    img = cv2.imread(f"results/video/prob dist q t={i}.png")
+    height, width, layers = img.shape
+    size = (width, height)
+    img_array.append(img)
+
+
+out = cv2.VideoWriter(
+    "results/heatmapVideoSample06.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size
+)
+for i in range(len(img_array)):
+    out.write(img_array[i])
+
+out.release()
+cv2.destroyAllWindows()
+
+shutil.rmtree("results/video")

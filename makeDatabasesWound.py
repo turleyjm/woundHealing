@@ -107,12 +107,12 @@ for filename in filenames:
     tifffile.imwrite(f"dat/{filename}/outPlane{filename}.tif", vidOutPlane)
 
     vidLabels = []  # labels all wound and out of plane areas
-
+    vidLabelsrc = []
     for t in range(T):
         img = sm.measure.label(vidOutPlane[t], background=0, connectivity=1)
         imgxy = fi.imgrcxy(img)
+        vidLabelsrc.append(img)
         vidLabels.append(imgxy)
-    vidLabels = np.asarray(vidLabels, "uint8")
 
     if wound == True:  # If there is a wound the boundary is found quantified
 
@@ -127,7 +127,7 @@ for filename in filenames:
         poly = sm.measure.approximate_polygon(contour, tolerance=1)
         polygon = Polygon(poly)
         (Cx, Cy) = cell.centroid(polygon)
-        vidWound[0][vidLabels[0] != label] = 0
+        vidWound[0][vidLabelsrc[0] != label] = 0
 
         m = 41
 
@@ -177,7 +177,7 @@ for filename in filenames:
                     poly = sm.measure.approximate_polygon(contour, tolerance=1)
                     polygon = Polygon(poly)
                     (Cx, Cy) = cell.centroid(polygon)
-                    vidWound[t + 1][vidLabels[t + 1] != mostLabel] = 0
+                    vidWound[t + 1][vidLabelsrc[t + 1] != mostLabel] = 0
 
                     curvature = np.array(cell.findContourCurvature(contour, m)) * len(
                         contour
@@ -199,9 +199,6 @@ for filename in filenames:
         tf = t
         for t in range(tf, T - 1):
             vidWound[t + 1][vidLabels[t + 1] != 256] = 0
-
-        for t in range(T):
-            vidWound[t] = fi.imgxyrc(vidWound[t])
 
         vidWound = np.asarray(vidWound, "uint8")
         tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)

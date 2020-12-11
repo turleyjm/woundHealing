@@ -1,4 +1,5 @@
 import os
+import shutil
 from math import floor, log10
 
 import cv2
@@ -26,6 +27,19 @@ plt.ioff()
 pd.set_option("display.width", 1000)
 
 scale = 147.91 / 512
+bandWidth = 20  # in microns
+pixelWidth = bandWidth / scale
+
+
+def sortBand(dfRadial, band, pixelWidth):
+
+    if band == 1:
+        df = dfRadial[dfRadial["Wound Edge Distance"] < pixelWidth]
+    else:
+        df2 = dfRadial[dfRadial["Wound Edge Distance"] < band * pixelWidth]
+        df = df2[df2["Wound Edge Distance"] >= (band - 1) * pixelWidth]
+
+    return df
 
 
 def rotation_matrix(theta):
@@ -34,6 +48,78 @@ def rotation_matrix(theta):
 
     return R
 
+
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print("Error: Creating directory. " + directory)
+
+
+def qVideoHeatmap(df, band):
+
+    createFolder("results/video/")
+    uniqueTimes = list(set(df["Time"]))
+    uniqueTimes = sorted(uniqueTimes)
+    uniqueTimes = uniqueTimes[0:25]
+
+    q1 = df["q1"]
+    q1Max = max(max(q1), -min(q1))
+    q2 = df["q2"]
+    q2Max = max(max(q2), -min(q2))
+
+    heatmaps = np.zeros([len(uniqueTimes), 30, 30])
+
+    for t in uniqueTimes:
+        df2 = df[df["Time"] == t]
+
+        q1 = list(df2["q1"])
+        q2 = list(df2["q2"])
+
+        heatmap, xedges, yedges = np.histogram2d(
+            q1, q2, range=[[-q1Max, q1Max], [-q2Max, q2Max]], bins=30
+        )
+        m = len(df2)
+        heatmaps[t] = heatmap / m
+
+    zMax = heatmaps.max()
+    zMin = 0
+    dx, dy = q1Max / 15, q2Max / 15
+    x, y = np.mgrid[-q1Max:q1Max:dx, -q2Max:q2Max:dy]
+
+    for t in uniqueTimes:
+
+        heatmap = heatmaps[t]
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=zMin, vmax=zMax)
+        fig.colorbar(c, ax=ax)
+        fig.savefig(
+            f"results/video/heatmap{t}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+    img_array = []
+    for t in uniqueTimes:
+        img = cv2.imread(f"results/video/heatmap{t}.png")
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/qHeatmapBand{band}.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+
+# ---------------------------
 
 f = open("pythonText.txt", "r")
 
@@ -49,10 +135,10 @@ for filename in filenames:
 
     wound = sm.io.imread(f"dat/{filename}/woundsite{filename}.tif").astype("uint8")
 
-    dist = np.zeros([T, 512, 512])
+    dist = []
     for t in range(T):
-        img = fi.imgrcxy(wound[t])
-        dist[t] = sp.ndimage.morphology.distance_transform_edt(img)
+        img = 255 - fi.imgrcxy(wound[t])
+        dist.append(sp.ndimage.morphology.distance_transform_edt(img))
 
     mu = []
     err = []
@@ -64,6 +150,8 @@ for filename in filenames:
             area = df2["Area"].iloc[i]
             (x, y) = df2["Centroid"].iloc[i]
             sf = df2["Shape Factor"].iloc[i]
+            TrS = df2["Trace(S)"].iloc[i]
+
             x = int(x)
             y = int(y)
             distance = dist[t][x, y]
@@ -78,250 +166,120 @@ for filename in filenames:
             _dfRadial.append(
                 {
                     "Wound Oriented Q": Qw,
+                    "q1": Qw[0, 0],
+                    "q2": Qw[0, 1],
                     "Centroid": (x, y),
                     "Time": t,
                     "Area": area,
                     "Wound Edge Distance": distance,
                     "filename": filename,
                     "Shape Factor": sf,
+                    "TrS": TrS,
                 }
             )
 
 dfRadial = pd.DataFrame(_dfRadial)
 
-df = dfRadial[dfRadial["Wound Edge Distance"] < 50]
+finished = False
+band = 1
+while finished != True:
+    df = sortBand(dfRadial, band, pixelWidth)
 
-uniqueTimes = list(set(df["Time"]))
+    if len(df) == 0:
+        finished = True
+    else:
+        uniqueTimes = list(set(df["Time"]))
+        uniqueTimes = sorted(uniqueTimes)
 
-uniqueTimes = sorted(uniqueTimes)
-q1 = []
-errq1 = []
-q2 = []
-errq2 = []
-sf = []
-errsf = []
-theta = []
-area = []
-errA = []
-for t in uniqueTimes:
+        qVideoHeatmap(df, band)
 
-    prop = df["Wound Oriented Q"][df["Time"] == t]
+        theta = []
+        sf = []
+        errsf = []
+        area = []
+        errA = []
+        TrS = []
+        errTrS = []
+        for t in uniqueTimes:
 
-    Q = cell.mean(list(prop))
-    sd = cell.sd(list(prop))
-    q1.append(Q[0, 0])
-    # errq1.append(sd[0, 0] / (len(prop) ** 0.5))
-    q2.append(Q[1, 0])
-    # errq2.append(sd[1, 0] / (len(prop) ** 0.5))
-    phi = np.arctan2(Q[1, 0], Q[0, 0]) / 2
-    if phi > np.pi / 2:
-        phi = np.pi / 2 - phi
-    theta.append(phi)
+            prop = df["Wound Oriented Q"][df["Time"] == t]
+            Q = cell.mean(list(prop))
+            phi = np.arctan2(Q[1, 0], Q[0, 0]) / 2
+            if phi > np.pi / 2:
+                phi = np.pi / 2 - phi
+            elif phi < 0:
+                phi = -phi
+            theta.append(phi)
 
-    prop = df["Area"][df["Time"] == t] * (scale ** 2)
-    area.append(cell.mean(list(prop)))
-    errA.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
+            prop = df["Shape Factor"][df["Time"] == t]
+            sf.append(cell.mean(list(prop)))
+            errsf.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
 
-    prop = df["Shape Factor"][df["Time"] == t]
-    sf.append(cell.mean(list(prop)))
-    errsf.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
+            prop = df["Area"][df["Time"] == t] * (scale ** 2)
+            area.append(cell.mean(list(prop)))
+            errA.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
 
-x = range(len(uniqueTimes))
+            prop = df["TrS"][df["Time"] == t] * (scale ** 2)
+            TrS.append(cell.mean(list(prop)))
+            errTrS.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
 
-# -------------------
+        x = range(len(uniqueTimes))
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.plot(x, theta)
+        # -------------------
 
-plt.xlabel("Time")
-plt.ylabel(f"theta")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/theta close to wound", dpi=300, transparent=True,
-)
-plt.close("all")
+        fig = plt.figure(1, figsize=(9, 8))
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.plot(x, theta)
 
-# -------------------
+        plt.xlabel("Time")
+        plt.ylabel(f"theta")
+        plt.gcf().subplots_adjust(bottom=0.2)
+        fig.savefig(
+            f"results/theta close to wound band{band}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, area, yerr=errA, fmt="o")
+        # -------------------
 
-plt.xlabel("Time")
-plt.ylabel(f"Area")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/Area close to wound", dpi=300, transparent=True,
-)
-plt.close("all")
+        fig = plt.figure(1, figsize=(9, 8))
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.errorbar(x, sf, yerr=errsf, fmt="o")
 
-# -------------------
+        plt.xlabel("Time")
+        plt.ylabel(f"sf")
+        plt.gcf().subplots_adjust(bottom=0.2)
+        fig.savefig(
+            f"results/sf close to wound band{band}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q1, yerr=errq1, fmt="o")
+        # -------------------
 
-plt.xlabel("Time")
-plt.ylabel(f"q1")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q1 close to wound", dpi=300, transparent=True,
-)
-plt.close("all")
+        fig = plt.figure(1, figsize=(9, 8))
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.errorbar(x, area, yerr=errA, fmt="o")
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q2, yerr=errq2, fmt="o")
+        plt.xlabel("Time")
+        plt.ylabel(f"Area")
+        plt.gcf().subplots_adjust(bottom=0.2)
+        fig.savefig(
+            f"results/Area close to wound band{band}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-plt.xlabel("Time")
-plt.ylabel(f"q2")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q2 close to wound", dpi=300, transparent=True,
-)
-plt.close("all")
+        # -------------------
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, sf, yerr=errsf, fmt="o")
+        fig = plt.figure(1, figsize=(9, 8))
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.errorbar(x, TrS, yerr=errTrS, fmt="o")
 
-plt.xlabel("Time")
-plt.ylabel(f"sf")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/sf close to wound", dpi=300, transparent=True,
-)
-plt.close("all")
+        plt.xlabel("Time")
+        plt.ylabel(f"TrS")
+        plt.gcf().subplots_adjust(bottom=0.2)
+        fig.savefig(
+            f"results/TrS close to wound band{band}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-# ----------------------------
+        band += 1
 
-df2 = dfRadial[dfRadial["Wound Edge Distance"] < 100]
-df = df2[df2["Wound Edge Distance"] > 50]
-
-uniqueTimes = list(set(df["Time"]))
-
-uniqueTimes = sorted(uniqueTimes)
-q1 = []
-errq1 = []
-q2 = []
-errq2 = []
-sf = []
-errsf = []
-for t in uniqueTimes:
-
-    prop = df["Wound Oriented Q"][df["Time"] == t]
-    Q = cell.mean(list(prop))
-    sd = cell.sd(list(prop))
-    q1.append(Q[0, 0])
-    errq1.append(sd[0, 0] / (len(prop) ** 0.5))
-    q2.append(Q[1, 0])
-    errq2.append(sd[1, 0] / (len(prop) ** 0.5))
-
-    prop = df["Shape Factor"][df["Time"] == t]
-    sf.append(cell.mean(list(prop)))
-    errsf.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
-
-x = range(len(uniqueTimes))
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q1, yerr=errq1, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"q1")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q1 close to wound band 2", dpi=300, transparent=True,
-)
-plt.close("all")
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q2, yerr=errq2, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"q2")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q2 close to wound band 2", dpi=300, transparent=True,
-)
-plt.close("all")
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, sf, yerr=errsf, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"sf")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/sf close to wound band 2", dpi=300, transparent=True,
-)
-plt.close("all")
-
-# ----------------------------
-
-df2 = dfRadial[dfRadial["Wound Edge Distance"] < 150]
-df = df2[df2["Wound Edge Distance"] > 100]
-
-uniqueTimes = list(set(df["Time"]))
-
-uniqueTimes = sorted(uniqueTimes)
-q1 = []
-errq1 = []
-q2 = []
-errq2 = []
-sf = []
-errsf = []
-for t in uniqueTimes:
-
-    prop = df["Wound Oriented Q"][df["Time"] == t]
-    Q = cell.mean(list(prop))
-    sd = cell.sd(list(prop))
-    q1.append(Q[0, 0])
-    errq1.append(sd[0, 0] / (len(prop) ** 0.5))
-    q2.append(Q[1, 0])
-    errq2.append(sd[1, 0] / (len(prop) ** 0.5))
-
-    prop = df["Shape Factor"][df["Time"] == t]
-    sf.append(cell.mean(list(prop)))
-    errsf.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
-
-x = range(len(uniqueTimes))
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q1, yerr=errq1, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"q1")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q1 close to wound band 3", dpi=300, transparent=True,
-)
-plt.close("all")
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, q2, yerr=errq2, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"q2")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/q2 close to wound band 3", dpi=300, transparent=True,
-)
-plt.close("all")
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.gcf().subplots_adjust(left=0.2)
-plt.errorbar(x, sf, yerr=errsf, fmt="o")
-
-plt.xlabel("Time")
-plt.ylabel(f"sf")
-plt.gcf().subplots_adjust(bottom=0.2)
-fig.savefig(
-    f"results/sf close to wound band 3", dpi=300, transparent=True,
-)
-plt.close("all")

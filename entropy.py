@@ -70,16 +70,6 @@ for video in range(num_videos):
             Q[:, 0], Q[:, 1], range=[[-0.3, 0.3], [-0.3, 0.3]], bins=60
         )
 
-        # if filename == "df_of_sample06_01.pkl":
-        #     data = np.asarray(heatmap, "uint8")
-        #     tifffile.imwrite(f"results/entropy histogram sample06_01.tif", data)
-        # if filename == "df_of_sample06_07.pkl":
-        #     data = np.asarray(heatmap, "uint8")
-        #     tifffile.imwrite(f"results/entropy histogram sample06_07.tif", data)
-        # if filename == "df_of_sample06_14.pkl":
-        #     data = np.asarray(heatmap, "uint8")
-        #     tifffile.imwrite(f"results/entropy histogram sample06_14.tif", data)
-
         prob = heatmap / m
         prob[prob != 0]
         p = prob[prob != 0]
