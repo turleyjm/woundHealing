@@ -78,22 +78,16 @@ for filename in filenames:
                 {
                     "Time": t,
                     "Polygon": polygon,
-                    # "Contour": contour,
-                    # "Curvature": cell.findContourCurvature(contour, 11),
                     "Centroid": cell.centroid(polygon),
                     "Area": cell.area(polygon),
                     "Perimeter": cell.perimeter(polygon),
                     "Orientation": cell.orientation(polygon),
-                    # "Circularity": cell.circularity(polygon),
-                    # "Ellipticity": cell.ellipticity(polygon),
                     "Shape Factor": cell.shapeFactor(polygon),
-                    "Q": cell.qTensor(polygon),
+                    "q": cell.qTensor(polygon),
                     "Trace(S)": cell.traceS(polygon),
-                    # "Trace(QQ)": cell.traceQQ(polygon),
-                    "Polar_x": cell.mayorPolar(polygon),
-                    "Polar_y": cell.minorPolar(polygon),
-                    "Polarisation Orientation": cell.polarOri(polygon),
-                    "Polarisation Magnitude": cell.polarMag(polygon),
+                    "Polar": np.array(
+                        cell.mayorPolar(polygon), cell.minorPolar(polygon)
+                    ),
                 }
             )
 

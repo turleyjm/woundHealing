@@ -155,19 +155,19 @@ for filename in filenames:
             x = int(x)
             y = int(y)
             distance = dist[t][x, y]
-            Q = -df2["Q"].iloc[i]
+            q = -df2["q"].iloc[i]
             phi = np.arctan2(y - Cy, x - Cx)
 
             R = rotation_matrix(-phi)
 
-            Qr = np.matmul(Q, R.transpose())
-            Qw = np.matmul(R, Qr)
+            qr = np.matmul(q, R.transpose())
+            qw = np.matmul(R, qr)
 
             _dfRadial.append(
                 {
-                    "Wound Oriented Q": Qw,
-                    "q1": Qw[0, 0],
-                    "q2": Qw[0, 1],
+                    "Wound Oriented ": qw,
+                    "q1": qw[0, 0],
+                    "q2": qw[0, 1],
                     "Centroid": (x, y),
                     "Time": t,
                     "Area": area,
@@ -202,9 +202,9 @@ while finished != True:
         errTrS = []
         for t in uniqueTimes:
 
-            prop = df["Wound Oriented Q"][df["Time"] == t]
-            Q = cell.mean(list(prop))
-            phi = np.arctan2(Q[1, 0], Q[0, 0]) / 2
+            prop = df["Wound Oriented q"][df["Time"] == t]
+            q = cell.mean(list(prop))
+            phi = np.arctan2(q[1, 0], q[0, 0]) / 2
             if phi > np.pi / 2:
                 phi = np.pi / 2 - phi
             elif phi < 0:
