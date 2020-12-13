@@ -50,10 +50,7 @@ filenames = filenames.split(", ")
 
 i = 0
 starts = [
-    (256, 256),
-    (256, 300),
-    (256, 256),
-    (256, 256),
+    (230, 250),
 ]  # if not all wounds are centred
 
 for filename in filenames:

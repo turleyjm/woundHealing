@@ -61,7 +61,7 @@ for filename in filenames:
     filename = filename.replace("probBoundary", "")
 
     data = np.asarray(binary_vid, "uint8")
-    tifffile.imwrite(f"dat/{filename}/flash{filename}.tif", data)
+    tifffile.imwrite(f"dat/{filename}/binaryBoundary{filename}.tif", data)
 
     data = np.asarray(track_vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/track{filename}.tif", data)
