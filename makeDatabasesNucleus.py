@@ -143,6 +143,8 @@ filenames = filenames.split(", ")
 
 for filename in filenames:
 
+    print(filename)
+
     # gather databases from tracking .xml file
     dfNucleus = trackmate_vertices_import(
         f"dat/{filename}/nucleiTracks{filename}.xml", get_tracks=True

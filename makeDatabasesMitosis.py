@@ -1348,3 +1348,6 @@ for filename in filenames:
 
         highlightDivisions = np.asarray(highlightDivisions, "uint8")
         tifffile.imwrite(f"dat/{filename}/divisions{filename}.tif", highlightDivisions)
+
+    else:
+        df.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")

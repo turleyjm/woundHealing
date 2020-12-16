@@ -216,3 +216,12 @@ for filename in filenames:
         vidH2 = np.asarray(vidH2, "uint8")
         tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
 
+        # display Wound
+
+        vid = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
+
+        vid[:, :, :, 2][vidWound == 255] = 150
+
+        vid = np.asarray(vid, "uint8")
+        tifffile.imwrite(f"dat/{filename}/highlightWound{filename}.tif", vid)
+

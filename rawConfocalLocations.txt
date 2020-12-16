@@ -33,12 +33,12 @@ WoundS18h04 - woundWingTissue18h141020.lif
 
 WoundS18h05 - woundWingTissue18h281120.lif
 WoundS18h06 - woundWingTissue18h281120.lif
-WoundS18h07 - woundWingTissue18h291120.lif
 WoundL18h03 - woundWingTissue18h281120.lif
 WoundL18h04 - woundWingTissue18h291120.lif
+WoundL18h05 - woundWingTissue18h291120.lif
 
 Unwound18h07 - UnwoundWingissue18h011220.lif
 
+WoundS18h07 - woundWingTissue18h021220.lif
 WoundS18h08 - woundWingTissue18h021220.lif
-WoundS18h09 - woundWingTissue18h021220.lif
 
