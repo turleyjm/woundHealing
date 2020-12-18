@@ -1,4 +1,5 @@
 import os
+import shutil
 from math import floor, log10
 
 import cv2
@@ -14,147 +15,115 @@ import skimage.io
 import skimage.measure
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import LinearRing
+import tifffile
+from skimage.draw import circle_perimeter
+from scipy import optimize
 
 import cellProperties as cell
 import findGoodCells as fi
-import getFunctions as gf
 
-plt.rcParams.update({"font.size": 18})
-
+plt.rcParams.update({"font.size": 20})
 plt.ioff()
 pd.set_option("display.width", 1000)
 
-folder = "dat_binary"
-FIGDIR = "fig"
 
-cwd = os.getcwd()
-
-
-# ----------------------------------------------------
-
-
-def image_to_poly_labels(img_file):
-    """Takes a image file and produces an arrey of vertex add the polygons labels to be used 
-    in the making of the heat plot"""
-
-    img = sm.io.imread(img_file).astype(int)
-    # mu = cell.mean(cell.mean(img))
-    # if mu < 130:
-    #     img = img
-    #     img = np.invert(img - 255) + 1
-
-    img_xy = fi.img_rc_to_xy(img)
-
-    img_label = sm.measure.label(img_xy, background=0, connectivity=1)
-    img_labels = np.unique(img_label)[1:]
-    all_polys = []
-    all_contours = []
-
-    for label in img_labels:
-        contour = sm.measure.find_contours(img_label == label, level=0)[0]
-        polygon = sm.measure.approximate_polygon(contour, tolerance=1)
-        all_contours.append(contour)
-        all_polys.append(polygon)
-
-    return (all_polys, img_label, img_labels)
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        print("Error: Creating directory. " + directory)
 
 
-def heat_map(img_file, function, function_title, lim, radians):
+scale = 147.91 / 512
 
-    img = sm.io.imread(img_file).astype(int)
-    mu = cell.mean(cell.mean(img))
-    if mu < 130:
-        img = np.invert(img - 255) + 1
+createFolder("results/video/")
 
-    (all_polys, img_label, img_labels) = image_to_poly_labels(img_file)
-    filename = img_file.replace("dat_binary/", "")
-    filename = filename.replace(".tiff", "")
+f = open("pythonText.txt", "r")
 
-    _all_polys = fi.remove_cells(all_polys)
-    _df = []
-    for poly in _all_polys:
-        try:
+filenames = f.read()
+filenames = filenames.split(", ")
+
+for filename in filenames:
+
+    vidFile = f"dat/{filename}/binaryBoundary{filename}.tif"
+
+    vid = sm.io.imread(vidFile).astype(int)
+
+    T = len(vid)
+
+    for t in range(T):
+
+        img_rc = 255 - vid[t]
+
+        img = fi.imgrcxy(img_rc)
+
+        img_label = sm.measure.label(img, background=0, connectivity=1)
+        img_label = img_label.astype("float16")
+        img_labels = np.unique(img_label)[1:]
+        all_polys = []
+        all_contours = []
+
+        for label in img_labels:
+            contour = sm.measure.find_contours(img_label == label, level=0)[0]
+            polygon = sm.measure.approximate_polygon(contour, tolerance=1)
+            all_contours.append(contour)
+            all_polys.append(polygon)
+
+        q = []
+        for poly in all_polys:
+            try:
+                polygon = Polygon(poly)
+                q.append(cell.qTensor(polygon))
+            except:
+                continue
+
+        Q = cell.mean(q)
+
+        Q = Q / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5
+
+        for label in img_labels:
+            contour = sm.measure.find_contours(img_label == label, level=0)[0]
+            poly = sm.measure.approximate_polygon(contour, tolerance=1)
             polygon = Polygon(poly)
-            _df.append({"QQ": function(polygon)})
+            try:
+                q = cell.qTensor(polygon)
+                q = q / (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5
 
-        except:
-            continue
-    df = pd.DataFrame(_df)
+                cor = np.dot(Q[0], q[0])
+                img_label[img_label == label] = cor
+            except:
+                img_label[img_label == label] = 0
+                continue
 
-    mu = cell.mean(df.QQ)
-    sigma = cell.sd(df.QQ)
+        x, y = np.mgrid[0 : 512 * scale : 1 * scale, 0 : 512 * scale : 1 * scale]
 
-    if 0 > mu - 2 * sigma:
-        y = 0
-    else:
-        y = mu - 2 * sigma
-    z = mu + 2 * sigma
+        z_min, z_max = -1, 1
 
-    if radians == "Y":
-        y = lim[0]
-        z = lim[1]
-    n = len(img)
-    img_xy = np.zeros(shape=(n, n)) + y
+        heatmap = img_label
 
-    for idx, label in enumerate(img_labels):
+        fig, ax = plt.subplots()
+        c = ax.pcolor(x, y, heatmap, cmap="coolwarm", vmin=z_min, vmax=z_max)
+        fig.colorbar(c, ax=ax)
+        fig.savefig(
+            f"results/video/{filename} t={t}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-        try:
-            poly = all_polys[label - 1]
-            polygon = Polygon(poly)
-            x = function(polygon)
+    img_array = []
+    for t in range(T):
+        img = cv2.imread(f"results/video/{filename} t={t}.png")
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
 
-            if y < x < z:
-                img_xy[img_label == label] = x
-            elif x > z:
-                img_xy[img_label == label] = z
-            else:
-                img_xy[img_label == label] = y
-        except:
-            continue
-
-    img = fi.img_xy_to_rc(img_xy)
-    img_x = fi.img_x_axis(img)
-
-    fig, ax = plt.subplots()
-
-    if radians == "Y":
-        pos = ax.imshow(img_x, origin=["lower"], cmap=plt.get_cmap("hsv"))
-    else:
-        pos = ax.imshow(img_x, origin=["lower"])
-
-    fig.colorbar(pos)
-    fig.suptitle(f"")
-    # plt.title(f"Heat map of {function_title}")
-    fig.savefig(
-        "results/heatmaps/" + FIGDIR + f"_{function_title}_{filename}.png",
-        dpi=300,
-        transparent=True,
+    out = cv2.VideoWriter(
+        f"results/heatmapOriCor{filename}.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size
     )
-    plt.close()
+    for t in range(T):
+        out.write(img_array[t])
 
+    out.release()
+    cv2.destroyAllWindows()
 
-# ----------------------------------------------------
-
-
-(function, function_title, function_name, lim, radians) = gf.Get_Functions()
-
-files = os.listdir(cwd + f"/{folder}")
-img_list = []
-files = sorted(files)
-n = len(files) - 1  # because for the .DS_Store file
-
-for i in range(n):
-    img_file = f"{folder}/" + files[1 + i]  # because for the .DS_Store file
-    img_list.append(img_file)
-
-
-m = len(function)
-
-
-for i in range(n):
-    img_file = img_list[i]
-
-    for j in range(m):
-        heat_map(img_file, function[j], function_title[j], lim[j], radians[j])
-
-# ----------------------------------------------------
+    shutil.rmtree("results/video")

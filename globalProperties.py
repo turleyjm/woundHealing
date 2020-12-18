@@ -108,3 +108,4 @@ for filename in filenames:
         f"results/{functionTitle} of {filename}", dpi=300, transparent=True,
     )
     plt.close("all")
+
