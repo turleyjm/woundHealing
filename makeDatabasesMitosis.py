@@ -456,13 +456,20 @@ def importDividingTracks(trackmate_xml_path):
                                     ** 2
                                 ) ** 0.5
                                 length.append(l)
-                            m = max(length)
-                            index = length.index(m) + 1
-                            falseSpot = spots[index]
-                            [graph, graph1] = splitGraph(graph, falseSpot)
-                            dictGraph[key] = graph
-                            dictGraph[f"graph{a}"] = graph1
-                            a += 1
+                            if length == []:
+                                falseSpot = spots[0]
+                                [graph, graph1] = splitGraph(graph, falseSpot)
+                                dictGraph[key] = graph
+                                dictGraph[f"graph{a}"] = graph1
+                                a += 1
+                            else:
+                                m = max(length)
+                                index = length.index(m) + 1
+                                falseSpot = spots[index]
+                                [graph, graph1] = splitGraph(graph, falseSpot)
+                                dictGraph[key] = graph
+                                dictGraph[f"graph{a}"] = graph1
+                                a += 1
 
                 keys = list(dictGraph.keys())
                 for key in keys:
@@ -874,7 +881,7 @@ for filename in filenames:
 
                 if tw > t0:
 
-                    (Cy, Cx) = dfWound["Centriod"][t0]  # change ord
+                    (Cy, Cx) = dfWound["Centroid"][t0]  # change ord
                     woundPolygon = dfWound["Polygon"][t0]
                     r = (woundPolygon.area / np.pi) ** 0.5
                     [x0, y0] = df3["Position"].iloc[1][delta_t0]

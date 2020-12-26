@@ -50,15 +50,15 @@ filenames = filenames.split(", ")
 
 i = 0
 starts = [
-    (230, 250),
+    (250, 300),
 ]  # if not all wounds are centred
 
 for filename in filenames:
 
-    if "Unwound" in filename:
-        wound = False
-    else:
+    if "Wound" in filename:
         wound = True
+    else:
+        wound = False
 
     vidFile = f"dat/{filename}/outPlane{filename}.tif"  # change
 

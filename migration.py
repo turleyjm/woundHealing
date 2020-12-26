@@ -115,7 +115,10 @@ for i in range(grid):
         y = [(512 / grid) * i, (512 / grid) * i + 512 / grid]
         dfxy = sortGrid(dfVelocity, x, y)
         a[i][j] = list(dfxy["velocity"])
-        a[i][j] = cell.mean(a[i][j])
+        if a[i][j] == []:
+            a[i][j] = np.array([0, 0])
+        else:
+            a[i][j] = cell.mean(a[i][j])
 
 x, y = np.meshgrid(np.linspace(0, 512 * scale, grid), np.linspace(0, 512 * scale, grid))
 

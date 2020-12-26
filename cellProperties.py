@@ -40,38 +40,6 @@ def sd(x):
     return sigma
 
 
-def periodicMean(theta, lim):
-
-    n = len(theta)
-    scale = (2 * np.pi) / lim
-
-    V = []
-    for i in range(n):
-        phi = theta[i] * scale
-        v = np.array([np.cos(phi), np.sin(phi)])
-        V.append(v)
-
-    Vhat = mean(V)
-
-    return Vhat
-
-
-def periodicSD(theta, lim):
-
-    n = len(theta)
-    Vhat = periodicMean(theta, lim)
-    scale = (2 * np.pi) / lim
-
-    s = 0
-    for i in range(n):
-        phi = theta[i] * scale
-        v = np.array([np.cos(phi), np.sin(phi)])
-        s = s + sum((v - Vhat) ** 2)
-    sigma = (s / n) ** 0.5
-
-    return sigma
-
-
 def centroid(polygon):
     """takes polygon and finds the certre of mass in (x,y)"""
 
@@ -134,8 +102,8 @@ def qTensor(polygon):
     I = np.zeros(shape=(2, 2))
     I[0, 0] = 1
     I[1, 1] = 1
-    Q = S - TrS * I / 2
-    return Q
+    q = S - TrS * I / 2
+    return q
 
 
 # ----------------------------------------------------

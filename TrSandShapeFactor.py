@@ -48,10 +48,15 @@ for filename in filenames:
         TrS.append(df2["Trace(S)"].iloc[i])
         sf.append(df2["Shape Factor"].iloc[i])
 
+# sf_a = np.linspace(0, 0.98, 9800)
+
+# TrS_a = (0.1 - 0.1*(1 - sf_a)**0.5) / (1 - sf_a)**0.5 + 1/(2*np.pi)
+
 fig = plt.figure(1, figsize=(9, 8))
 plt.scatter(
     sf, TrS, s=1,
 )
+# plt.plot(sf_a, TrS_a, 'r')
 plt.xlabel("sf")
 plt.ylabel(f"TrS")
 fig.savefig(

@@ -155,7 +155,7 @@ for filename in filenames:
             x = int(x)
             y = int(y)
             distance = dist[t][x, y]
-            q = -df2["q"].iloc[i]
+            q = df2["q"].iloc[i]
             phi = np.arctan2(y - Cy, x - Cx)
 
             R = rotation_matrix(-phi)
