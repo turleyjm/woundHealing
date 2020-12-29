@@ -27,6 +27,22 @@ plt.ioff()
 pd.set_option("display.width", 1000)
 
 
+def sortGrid(dfVelocity, x, y):
+
+    xMin = x[0]
+    xMax = x[1]
+    yMin = y[0]
+    yMax = y[1]
+
+    dfxmin = dfVelocity[dfVelocity["X"] > xMin]
+    dfx = dfxmin[dfxmin["X"] < xMax]
+
+    dfymin = dfx[dfx["Y"] > yMin]
+    df = dfymin[dfymin["Y"] < yMax]
+
+    return df
+
+
 # Apply code for an example
 # x = np.r_[36, 36, 19, 18, 33, 26]
 # y = np.r_[14, 10, 28, 31, 18, 26]
@@ -50,7 +66,7 @@ filenames = filenames.split(", ")
 
 i = 0
 starts = [
-    (250, 300),
+    (256, 256),
 ]  # if not all wounds are centred
 
 for filename in filenames:
@@ -197,11 +213,7 @@ for filename in filenames:
         for t in range(tf, T - 1):
             vidWound[t + 1][vidLabels[t + 1] != 256] = 0
 
-        vidWound = np.asarray(vidWound, "uint8")
-        tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
-
         dfWound = pd.DataFrame(_dfWound)
-        dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
         vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
@@ -215,6 +227,87 @@ for filename in filenames:
 
         vidH2 = np.asarray(vidH2, "uint8")
         tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
+
+        # find the woundsite after epithelialisation
+
+        tf = dfWound["Time"].iloc[-1] + 1
+        xf = dfWound["Centroid"].iloc[-1][0]
+        yf = dfWound["Centroid"].iloc[-1][1]
+
+        dfNucleus = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        _df2 = []
+
+        for i in range(len(dfNucleus)):
+            t = dfNucleus["t"][i]
+            x = dfNucleus["x"][i]
+            y = dfNucleus["y"][i]
+            label = dfNucleus["Label"][i]
+
+            m = len(t)
+            tMax = t[-1]
+
+            if m > 1:
+                for j in range(m - 1):
+                    t0 = t[j]
+                    x0 = x[j]
+                    y0 = y[j]
+
+                    tdelta = tMax - t0
+                    if tdelta > 5:
+                        t5 = t[j + 5]
+                        x5 = x[j + 5]
+                        y5 = y[j + 5]
+
+                        v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
+
+                        _df2.append(
+                            {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v,}
+                        )
+                    else:
+                        tEnd = t[-1]
+                        xEnd = x[-1]
+                        yEnd = y[-1]
+
+                        v = np.array(
+                            [(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)]
+                        )
+
+                        _df2.append(
+                            {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v,}
+                        )
+
+        dfVelocity = pd.DataFrame(_df2)
+
+        for t in range(tf, T - 1):
+
+            x = [xf - 100, xf + 100]
+            y = [yf - 100, yf + 100]
+            dfxy = sortGrid(dfVelocity[dfVelocity["T"] == t], x, y)
+
+            v = cell.mean(list(dfxy["velocity"]))
+
+            xf = xf + v[0]
+            yf = yf + v[1]
+
+            _dfWound.append(
+                {"Time": t, "Centroid": [xf, yf],}
+            )
+
+            x = 512 - int(yf)  # change coord
+            y = int(xf)
+            vidWound[t][x - 6 : x + 6, y - 6 : y + 6] = 255
+
+        vidWound[T - 1][x - 6 : x + 6, y - 6 : y + 6] = 255
+        _dfWound.append(
+            {"Time": T - 1, "Centroid": [xf, yf],}
+        )
+
+        dfWound = pd.DataFrame(_dfWound)
+
+        vidWound = np.asarray(vidWound, "uint8")
+        tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
+
+        dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         # display Wound
 

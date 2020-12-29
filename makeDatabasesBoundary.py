@@ -36,12 +36,6 @@ for filename in filenames:
     if "Wound" in filename:
         wound = True
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-        Tw = dfWound["Time"].iloc[-1]
-        wound = sm.io.imread(f"dat/{filename}/woundsite{filename}.tif").astype("uint8")
-        dist = []
-        for t in range(Tw):
-            img = 255 - fi.imgrcxy(wound[t])
-            dist.append(sp.ndimage.morphology.distance_transform_edt(img))
 
     else:
         wound = False
@@ -56,7 +50,7 @@ for filename in filenames:
 
     for t in range(T):
 
-        if t + 1 > Tw:
+        if wound != True:
 
             print(f"{filename} {t}")
 
@@ -144,12 +138,8 @@ for filename in filenames:
                     {
                         "Time": t,
                         "Polygon": polygon,
-                        "RWCo x": wx - cell.centroid(polygon)[0],
-                        "RWCo y": wy - cell.centroid(polygon)[1],
-                        "RWCo r": dist[t][
-                            int(cell.centroid(polygon)[0]),
-                            int(cell.centroid(polygon)[1]),
-                        ],
+                        "RWCo x": cell.centroid(polygon)[0] - wx,
+                        "RWCo y": cell.centroid(polygon)[1] - wy,
                         "Centroid": cell.centroid(polygon),
                         "Area": cell.area(polygon),
                         "Perimeter": cell.perimeter(polygon),

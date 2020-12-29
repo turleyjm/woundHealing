@@ -62,7 +62,6 @@ def qVideoHeatmap(df, band):
     createFolder("results/video/")
     uniqueTimes = list(set(df["Time"]))
     uniqueTimes = sorted(uniqueTimes)
-    uniqueTimes = uniqueTimes[0:25]
 
     q1 = df["q1"]
     q1Max = max(max(q1), -min(q1))

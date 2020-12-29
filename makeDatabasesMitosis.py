@@ -850,8 +850,6 @@ for filename in filenames:
 
             dist = []
 
-            tw = len(dfWound)
-
             for label in uniqueLabel:
                 df3 = dfDivisions2.loc[
                     lambda dfDivisions2: dfDivisions2["Label"] == label, :
@@ -879,88 +877,39 @@ for filename in filenames:
                     delta_t1 = 0
                     t0 = df3["Time"].iloc[2][0]
 
-                if tw > t0:
+                (Cx, Cy) = dfWound["Centroid"][t0]
+                [x0, y0] = df3["Position"].iloc[1][delta_t0]
+                [x1, y1] = df3["Position"].iloc[2][delta_t1]
 
-                    (Cy, Cx) = dfWound["Centroid"][t0]  # change ord
-                    woundPolygon = dfWound["Polygon"][t0]
-                    r = (woundPolygon.area / np.pi) ** 0.5
-                    [x0, y0] = df3["Position"].iloc[1][delta_t0]
-                    [x1, y1] = df3["Position"].iloc[2][delta_t1]
+                xm = (x0 + x1) / 2
+                ym = (y0 + y1) / 2
+                v = np.array([x0 - x1, y0 - y1])
+                w = np.array([xm - Cx, ym - Cy])
 
-                    xm = (x0 + x1) / 2
-                    ym = (y0 + y1) / 2
-                    v = np.array([x0 - x1, y0 - y1])
-                    w = np.array([xm - Cx, ym - Cy])
+                phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
 
-                    phi = np.arccos(
-                        np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w))
-                    )
-
-                    if phi > np.pi / 2:
-                        theta = np.pi - phi
-                    else:
-                        theta = phi
-                    divOri = theta * (180 / np.pi)
-                    dist = np.linalg.norm(w) - r
-
-                    for i in range(3):
-                        _dfDivisions3.append(
-                            {
-                                "Label": df3["Label"].iloc[i],
-                                "Time": df3["Time"].iloc[i],
-                                "Position": df3["Position"].iloc[i],
-                                "Chain": df3["Chain"].iloc[i],
-                                "Shape Factor": df3["Shape Factor"].iloc[i],
-                                "Height": df3["Height"].iloc[i],
-                                "Necleus Orientation": df3["Necleus Orientation"].iloc[
-                                    i
-                                ],
-                                "Polygons": df3["Polygons"].iloc[i],
-                                "Division Orientation": divOri,
-                                "Division While Wounded": "Y",
-                                "Original Label": df3["Original Label"].iloc[i],
-                                "Spot": df3["Spot"].iloc[i],
-                            }
-                        )
-
+                if phi > np.pi / 2:
+                    theta = np.pi - phi
                 else:
-                    [x0, y0] = df3["Position"].iloc[1][delta_t0]
-                    [x1, y1] = df3["Position"].iloc[2][delta_t1]
+                    theta = phi
+                divOri = theta * (180 / np.pi)
 
-                    xm = (x0 + x1) / 2
-                    ym = (y0 + y1) / 2
-                    v = np.array([x0 - x1, y0 - y1])
-                    w = np.array([1, 0])
-
-                    phi = np.arccos(
-                        np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w))
+                for i in range(3):
+                    _dfDivisions3.append(
+                        {
+                            "Label": df3["Label"].iloc[i],
+                            "Time": df3["Time"].iloc[i],
+                            "Position": df3["Position"].iloc[i],
+                            "Chain": df3["Chain"].iloc[i],
+                            "Shape Factor": df3["Shape Factor"].iloc[i],
+                            "Height": df3["Height"].iloc[i],
+                            "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
+                            "Polygons": df3["Polygons"].iloc[i],
+                            "Division Orientation": divOri,
+                            "Original Label": df3["Original Label"].iloc[i],
+                            "Spot": df3["Spot"].iloc[i],
+                        }
                     )
-
-                    if phi > np.pi:
-                        theta = np.pi - phi
-                    else:
-                        theta = phi
-                    divOri = theta * (180 / np.pi)
-
-                    for i in range(3):
-                        _dfDivisions3.append(
-                            {
-                                "Label": df3["Label"].iloc[i],
-                                "Time": df3["Time"].iloc[i],
-                                "Position": df3["Position"].iloc[i],
-                                "Chain": df3["Chain"].iloc[i],
-                                "Shape Factor": df3["Shape Factor"].iloc[i],
-                                "Height": df3["Height"].iloc[i],
-                                "Necleus Orientation": df3["Necleus Orientation"].iloc[
-                                    i
-                                ],
-                                "Polygons": df3["Polygons"].iloc[i],
-                                "Division Orientation": divOri,
-                                "Division While Wounded": "N",
-                                "Original Label": df3["Original Label"].iloc[i],
-                                "Spot": df3["Spot"].iloc[i],
-                            }
-                        )
 
         else:
 
@@ -1009,7 +958,6 @@ for filename in filenames:
                             "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
                             "Polygons": df3["Polygons"].iloc[i],
                             "Division Orientation": divOri,
-                            "Division While Wounded": "N",
                             "Original Label": df3["Original Label"].iloc[i],
                             "Spot": df3["Spot"].iloc[i],
                         }
@@ -1224,7 +1172,6 @@ for filename in filenames:
                         "Necleus Orientation": df4["Necleus Orientation"].iloc[0],
                         "Polygons": df4["Polygons"].iloc[0],
                         "Division Orientation": df4["Division Orientation"].iloc[0],
-                        "Division While Wounded": df4["Division While Wounded"].iloc[0],
                         "Boundary Polygons": polygonsParent,
                         "Cytokineses time": tc,
                         "Time difference": tc - tm,
@@ -1244,7 +1191,6 @@ for filename in filenames:
                         "Necleus Orientation": df4["Necleus Orientation"].iloc[1],
                         "Polygons": df4["Polygons"].iloc[1],
                         "Division Orientation": df4["Division Orientation"].iloc[1],
-                        "Division While Wounded": df4["Division While Wounded"].iloc[1],
                         "Boundary Polygons": polygonsDaughter1,
                         "Cytokineses time": tc,
                         "Time difference": tc - tm,
@@ -1264,7 +1210,6 @@ for filename in filenames:
                         "Necleus Orientation": df4["Necleus Orientation"].iloc[2],
                         "Polygons": df4["Polygons"].iloc[2],
                         "Division Orientation": df4["Division Orientation"].iloc[2],
-                        "Division While Wounded": df4["Division While Wounded"].iloc[2],
                         "Boundary Polygons": polygonsDaughter2,
                         "Cytokineses time": tc,
                         "Time difference": tc - tm,
@@ -1285,10 +1230,6 @@ for filename in filenames:
                             "Height": df4["Height"].iloc[i],
                             "Necleus Orientation": df4["Necleus Orientation"].iloc[i],
                             "Polygons": df4["Polygons"].iloc[i],
-                            "Division Orientation": df4["Division Orientation"].iloc[i],
-                            "Division While Wounded": df4[
-                                "Division While Wounded"
-                            ].iloc[i],
                             "Original Label": df4["Original Label"].iloc[i],
                             "Spot": df4["Spot"].iloc[i],
                         }

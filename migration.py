@@ -100,12 +100,19 @@ for filename in filenames:
                     v = np.array([(xEnd - x0) / tEnd, (yEnd - y0) / tEnd])
 
                     _df2.append(
-                        {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v}
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "T": int(t0),
+                            "X": x0,
+                            "Y": y0,
+                            "velocity": v,
+                        }
                     )
 
 dfVelocity = pd.DataFrame(_df2)
 
-dfVelocity = dfVelocity[dfVelocity["T"] < 10]
+dfVelocity10 = dfVelocity[dfVelocity["T"] < 10]
 
 a = ThreeD(grid)
 
@@ -113,7 +120,7 @@ for i in range(grid):
     for j in range(grid):
         x = [(512 / grid) * j, (512 / grid) * j + 512 / grid]
         y = [(512 / grid) * i, (512 / grid) * i + 512 / grid]
-        dfxy = sortGrid(dfVelocity, x, y)
+        dfxy = sortGrid(dfVelocity10, x, y)
         a[i][j] = list(dfxy["velocity"])
         if a[i][j] == []:
             a[i][j] = np.array([0, 0])
@@ -137,3 +144,28 @@ fig.savefig(
 )
 plt.close("all")
 
+fig = plt.figure(1, figsize=(9, 8))
+
+for filename in filenames:
+
+    dft = dfVelocity[dfVelocity["Filename"] == filename]
+    x = []
+    y = []
+    xt = 0
+    yt = 0
+    for t in range(T - 1):
+        df = dft[dft["T"] == t]
+        v = cell.mean(list(df["velocity"]))
+        xt += v[0]
+        yt += v[1]
+        x.append(xt)
+        y.append(yt)
+
+    plt.plot(x, y)
+
+plt.xlabel("x")
+plt.ylabel(f"y")
+fig.savefig(
+    f"results/migration", dpi=300, transparent=True,
+)
+plt.close("all")
