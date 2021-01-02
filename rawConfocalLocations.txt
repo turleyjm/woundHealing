@@ -45,3 +45,5 @@ WoundS18h08 - woundWingTissue18h021220.lif
 Unwound18h08 - UnwoundWingissue18h161220.lif
 Unwound18h09 - UnwoundWingissue18h161220.lif
 
+WoundS18h09 - woundWingTissue18h181220.lif
+WoundS18h10 - woundWingTissue18h181220.lif

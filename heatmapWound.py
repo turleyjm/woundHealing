@@ -114,61 +114,64 @@ for filename in filenames:
 
 dfCells = pd.DataFrame(_dfCells)
 
-# heatmaps = np.zeros([T, grid, grid])
+heatmaps = np.zeros([T, grid, grid])
 
-# createFolder("results/video/")
-# for t in range(T):
+createFolder("results/video/")
+for t in range(T):
 
-#     heatmap = np.zeros([grid, grid])
+    heatmap = np.zeros([grid, grid])
 
-#     for i in range(grid):
-#         for j in range(grid):
-#             x = [160/grid * j - 80, 160/grid * j - 70]
-#             y = [160/grid * i - 80, 160/grid * i - 70]
-#             dfxy = sortGrid(dfCells[dfCells["Time"] == t], x, y)
-#             a = list(dfxy["Shape Factor"])
-#             if a == []:
-#                 heatmap[i][j] = 0
-#                 heatmaps[t][i][j] = 0
-#             else:
-#                 heatmap[i][j] = cell.mean(a)
-#                 heatmaps[t][i][j] = cell.mean(a)
+    for i in range(grid):
+        for j in range(grid):
+            x = [160 / grid * j - 80, 160 / grid * j - 70]
+            y = [160 / grid * i - 80, 160 / grid * i - 70]
+            dfxy = sortGrid(dfCells[dfCells["Time"] == t], x, y)
+            a = list(dfxy["Shape Factor"])
+            if a == []:
+                heatmap[i][j] = 0
+                heatmaps[t][i][j] = 0
+            else:
+                heatmap[i][j] = cell.mean(a)
+                heatmaps[t][i][j] = cell.mean(a)
 
-#     # generate 2 2d grids for the x & y bounds
-#     dx, dy = 160/grid, 160/grid
-#     y, x = np.mgrid[-80:80:dy, -80:80:dx]
-#     z_min, z_max = 0, 1
-#     fig, ax = plt.subplots()
-#     c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
-#     fig.colorbar(c, ax=ax)
-#     fig.savefig(
-#         f"results/video/heatmap shape factor {t}", dpi=300, transparent=True,
-#     )
-#     plt.close("all")
+    # generate 2 2d grids for the x & y bounds
+    dx, dy = 160 / grid, 160 / grid
+    y, x = np.mgrid[-80:80:dy, -80:80:dx]
+    z_min, z_max = 0, 1
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/video/heatmap shape factor {t}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
-# heatmaps = np.asarray(heatmaps, "float")
-# tifffile.imwrite(f"results/heatmapShapeFactor{fileType}.tif", heatmaps)
+heatmaps = np.asarray(heatmaps, "float")
+tifffile.imwrite(f"results/heatmapShapeFactor{fileType}.tif", heatmaps)
 
-# # make video
-# img_array = []
+# make video
+img_array = []
 
-# for t in range(T):
-#     img = cv2.imread(f"results/video/heatmap shape factor {t}.png")
-#     height, width, layers = img.shape
-#     size = (width, height)
-#     img_array.append(img)
+for t in range(T):
+    img = cv2.imread(f"results/video/heatmap shape factor {t}.png")
+    height, width, layers = img.shape
+    size = (width, height)
+    img_array.append(img)
 
 
-# out = cv2.VideoWriter(
-#     "results/heatmap shape factor.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size
-# )
-# for i in range(len(img_array)):
-#     out.write(img_array[i])
+out = cv2.VideoWriter(
+    f"results/heatmap shape factor {fileType}.mp4",
+    cv2.VideoWriter_fourcc(*"DIVX"),
+    10,
+    size,
+)
+for i in range(len(img_array)):
+    out.write(img_array[i])
 
-# out.release()
-# cv2.destroyAllWindows()
+out.release()
+cv2.destroyAllWindows()
 
-# shutil.rmtree("results/video")
+shutil.rmtree("results/video")
 
 
 # kymograph
@@ -194,6 +197,6 @@ fig, ax = plt.subplots()
 c = ax.pcolor(t, r, heatmap, cmap="Reds", vmin=z_min, vmax=z_max)
 fig.colorbar(c, ax=ax)
 fig.savefig(
-    f"results/shape factor kymograph", dpi=300, transparent=True,
+    f"results/shape factor kymograph {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")

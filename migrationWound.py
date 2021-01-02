@@ -60,8 +60,15 @@ def createFolder(directory):
 
 f = open("pythonText.txt", "r")
 
-filenames = f.read()
-filenames = filenames.split(", ")
+fileType = f.read()
+cwd = os.getcwd()
+Fullfilenames = os.listdir(cwd + "/dat")
+filenames = []
+for filename in Fullfilenames:
+    if fileType in filename:
+        filenames.append(filename)
+
+filenames.sort()
 
 T = 181
 scale = 147.91 / 512
@@ -196,7 +203,10 @@ for t in range(T - 1):
 
 
 out = cv2.VideoWriter(
-    "results/Velocity field wound centred.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size
+    f"results/Velocity field wound centred {fileType}.mp4",
+    cv2.VideoWriter_fourcc(*"DIVX"),
+    10,
+    size,
 )
 for i in range(len(img_array)):
     out.write(img_array[i])

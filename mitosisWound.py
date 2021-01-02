@@ -28,8 +28,15 @@ pixelWidth = bandWidth / scale
 
 f = open("pythonText.txt", "r")
 
-filenames = f.read()
-filenames = filenames.split(", ")
+fileType = f.read()
+cwd = os.getcwd()
+Fullfilenames = os.listdir(cwd + "/dat")
+filenames = []
+for filename in Fullfilenames:
+    if fileType in filename:
+        filenames.append(filename)
+
+filenames.sort()
 
 _df2 = []
 
@@ -72,7 +79,7 @@ fig = plt.figure(1, figsize=(9, 8))
 plt.hist(time, 18)
 plt.xlabel("Time")
 fig.savefig(
-    f"results/Division time after wounding", dpi=300, transparent=True,
+    f"results/Division time after wounding {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
@@ -80,7 +87,7 @@ fig = plt.figure(1, figsize=(9, 8))
 plt.hist(orientation, 9)
 plt.xlabel("Orientation")
 fig.savefig(
-    f"results/Division Orientation", dpi=300, transparent=True,
+    f"results/Division Orientation {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
@@ -91,7 +98,7 @@ plt.scatter(
 plt.xlabel("Time")
 plt.ylabel(f"Radius")
 fig.savefig(
-    f"results/Time and Radius", dpi=300, transparent=True,
+    f"results/Time and Radius {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
@@ -103,6 +110,6 @@ plt.colorbar()
 plt.xlabel("Time")
 plt.ylabel(f"Radius")
 fig.savefig(
-    f"results/Time, Orientation and Radius", dpi=300, transparent=True,
+    f"results/Time, Orientation and Radius {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
