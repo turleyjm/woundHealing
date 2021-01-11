@@ -22,6 +22,10 @@ from scipy import optimize
 import cellProperties as cell
 import findGoodCells as fi
 
+plt.rcParams.update({"font.size": 24})
+plt.ioff()
+pd.set_option("display.width", 1000)
+
 scale = 147.91 / 512
 bandWidth = 20  # in microns
 pixelWidth = bandWidth / scale
@@ -76,40 +80,24 @@ radius = dfDivisions["R"]
 orientation = dfDivisions["Wound Orientation"]
 
 fig = plt.figure(1, figsize=(9, 8))
-plt.hist(time, 18)
-plt.xlabel("Time")
+plt.hist(time, 18, density=True)
+plt.ylabel("Number of Divisons")
+plt.xlabel("Time (mins)")
+plt.title(f"Division time")
+plt.ylim([0, 0.01])
 fig.savefig(
     f"results/Division time after wounding {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
 fig = plt.figure(1, figsize=(9, 8))
-plt.hist(orientation, 9)
+plt.hist(orientation, 9, density=True)
+plt.ylabel("Number of Divisons")
 plt.xlabel("Orientation")
+plt.title(f"Division Orientation")
+plt.ylim([0, 0.015])
 fig.savefig(
     f"results/Division Orientation {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.scatter(
-    time, radius, s=10,
-)
-plt.xlabel("Time")
-plt.ylabel(f"Radius")
-fig.savefig(
-    f"results/Time and Radius {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.scatter(
-    time, radius, c=orientation, s=10,
-)
-plt.colorbar()
-plt.xlabel("Time")
-plt.ylabel(f"Radius")
-fig.savefig(
-    f"results/Time, Orientation and Radius {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")

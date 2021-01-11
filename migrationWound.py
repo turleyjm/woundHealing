@@ -23,8 +23,6 @@ import cellProperties as cell
 import findGoodCells as fi
 
 plt.rcParams.update({"font.size": 20})
-plt.ioff()
-pd.set_option("display.width", 1000)
 
 
 def ThreeD(a):
@@ -73,6 +71,21 @@ filenames.sort()
 T = 181
 scale = 147.91 / 512
 grid = 10
+
+
+finish = []
+for filename in filenames:
+
+    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+    area = np.array(dfWound["Area"]) * (scale) ** 2
+    t = 0
+    while pd.notnull(area[t]):
+        t += 1
+
+    finish.append(t - 1)
+
+meanFinish = int(min(finish))
 
 
 _df2 = []
@@ -155,7 +168,7 @@ for filename in filenames:
 dfVelocity = pd.DataFrame(_dfVelocity)
 
 createFolder("results/video/")
-for t in range(T - 1):
+for t in range(meanFinish):
     dfVelocityT = dfVelocity[dfVelocity["T"] == t]
 
     a = ThreeD(grid)
@@ -186,6 +199,7 @@ for t in range(T - 1):
 
     fig = plt.figure(1, figsize=(9, 8))
     plt.quiver(x, y, u, v)
+    plt.title(f"time = {t}")
     fig.savefig(
         f"results/video/Velocity field wound centred {t}", dpi=300, transparent=True,
     )
@@ -195,7 +209,7 @@ for t in range(T - 1):
 # make video
 img_array = []
 
-for t in range(T - 1):
+for t in range(meanFinish):
     img = cv2.imread(f"results/video/Velocity field wound centred {t}.png")
     height, width, layers = img.shape
     size = (width, height)
@@ -215,3 +229,4 @@ out.release()
 cv2.destroyAllWindows()
 
 shutil.rmtree("results/video")
+

@@ -1,4 +1,5 @@
 import os
+import shutil
 from math import floor, log10
 
 import cv2
@@ -21,130 +22,70 @@ from scipy import optimize
 import cellProperties as cell
 import findGoodCells as fi
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 24})
 plt.ioff()
 pd.set_option("display.width", 1000)
 
+scale = 147.91 / 512
+bandWidth = 20  # in microns
+pixelWidth = bandWidth / scale
+
 f = open("pythonText.txt", "r")
 
-filenames = f.read()
-filenames = filenames.split(", ")
+fileType = f.read()
+cwd = os.getcwd()
+Fullfilenames = os.listdir(cwd + "/dat")
+filenames = []
+for filename in Fullfilenames:
+    if fileType in filename:
+        filenames.append(filename)
 
-T = 181
+filenames.sort()
 
-muAll = []
+_df2 = []
 
 for filename in filenames:
 
-    functionTitle = "Division time"
-
-    df = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
-
-    n = int(len(df) / 3)
-
-    mu = []
+    dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+    df = dfDivisions[dfDivisions["Chain"] == "parent"]
+    n = int(len(df))
 
     for i in range(n):
-        prop = list(df["Time"][df["Chain"] == "parent"])[i][-1]
-        mu.append(prop)
 
-    fig, ax = plt.subplots()
-    plt.gcf().subplots_adjust(bottom=0.15)
-    plt.xlabel("Time")
-    ax.hist(mu, density=False, bins=18)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.set_xlim([0, 180])
-    fig.savefig(
-        f"results/{functionTitle} of {filename}", dpi=200, transparent=True,
-    )
+        label = df["Label"].iloc[i]
+        ori = df["Division Orientation"].iloc[i]
+        if ori > 90:
+            ori = 180 - ori
+        T = df["Time"].iloc[i]
+        t = T[-1]
+        _df2.append(
+            {"Filename": filename, "Label": label, "Orientation": ori, "T": t,}
+        )
 
-    plt.close("all")
+dfDivisions = pd.DataFrame(_df2)
 
+time = dfDivisions["T"]
+orientation = dfDivisions["Orientation"]
 
-mu = []
-for filename in filenames:
+fig = plt.figure(1, figsize=(9, 8))
+plt.hist(time, 18, density=True)
+plt.ylabel("Number of Divisons")
+plt.xlabel("Time (mins)")
+plt.title(f"Division time unwounded")
+plt.ylim([0, 0.01])
+fig.savefig(
+    f"results/Division time {fileType}", dpi=300, transparent=True,
+)
+plt.close("all")
 
-    functionTitle = "Division Orientation"
+fig = plt.figure(1, figsize=(9, 8))
+plt.hist(orientation, 9, density=True)
+plt.ylabel("Number of Divisons")
+plt.xlabel("Orientation")
+plt.title(f"Division Orientation")
+plt.ylim([0, 0.015])
+fig.savefig(
+    f"results/Division Orientation {fileType}", dpi=300, transparent=True,
+)
+plt.close("all")
 
-    df = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
-
-    n = int(len(df) / 3)
-
-    for i in range(n):
-        prop = list(df["Time"][df["Chain"] == "parent"])[i][-1]
-        if prop > 90:
-            prop = 180 - prop
-        mu.append(prop)
-
-# fig, ax = plt.subplots()
-# plt.gcf().subplots_adjust(bottom=0.15)
-# plt.xlabel("Orientation")
-# ax.hist(mu, density=False, bins=18)
-# ax.spines["top"].set_visible(False)
-# ax.spines["right"].set_visible(False)
-# ax.set_xlim([0, 90])
-# fig.savefig(
-#     f"results/{functionTitle} of Unwounded", dpi=200, transparent=True,
-# )
-
-# plt.close("all")
-
-# ------------------------------
-
-mu = []
-for filename in filenames:
-
-    if "Wound" in filename:
-        wound = True
-    else:
-        wound = False
-
-    if wound == True:
-
-        wound = sm.io.imread(f"dat/{filename}/woundsite{filename}.tif").astype("uint8")
-
-        dist = np.zeros([T, 512, 512])
-        for t in range(T):
-            img = 255 - wound[t]
-            img = sp.ndimage.morphology.distance_transform_edt(img)
-            dist[t] = fi.imgrcxy(img)
-
-        df = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
-
-        dfSub = df[df["Division While Wounded"] == "Y"]
-
-        m = int(len(dfSub) / 3)
-
-        distance = []
-
-        for i in range(m):
-            prop = list(dfSub[functionTitle][dfSub["Chain"] == "parent"])[i]
-            (Cx, Cy) = dfSub["Position"][dfSub["Chain"] == "parent"].iloc[i][-1]
-            t = list(dfSub["Time"][dfSub["Chain"] == "parent"])[i][-1]
-
-            Cx = int(Cx)
-            Cy = int(Cy)
-
-            distance.append(dist[t, Cx, Cy])
-
-            if prop > 90:
-                prop = 180 - prop
-            mu.append(prop)
-
-if "Wound" in filename:
-    wound = True
-else:
-    wound = False
-
-if wound == True:
-    fig, ax = plt.subplots()
-    plt.gcf().subplots_adjust(bottom=0.15)
-    plt.xlabel("Degrees")
-    ax.hist(mu, density=False, bins=9)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.set_xlim([0, 90])
-    fig.savefig(
-        f"results/{functionTitle} of Wounded", dpi=200, transparent=True,
-    )

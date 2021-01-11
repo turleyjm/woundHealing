@@ -122,8 +122,15 @@ def qVideoHeatmap(df, band):
 
 f = open("pythonText.txt", "r")
 
-filenames = f.read()
-filenames = filenames.split(", ")
+fileType = f.read()
+cwd = os.getcwd()
+Fullfilenames = os.listdir(cwd + "/dat")
+filenames = []
+for filename in Fullfilenames:
+    if fileType in filename:
+        filenames.append(filename)
+
+filenames.sort()
 
 _dfRadial = []
 for filename in filenames:
@@ -164,7 +171,7 @@ for filename in filenames:
 
             _dfRadial.append(
                 {
-                    "Wound Oriented ": qw,
+                    "Wound Oriented q": qw,
                     "q1": qw[0, 0],
                     "q2": qw[0, 1],
                     "Centroid": (x, y),
@@ -190,7 +197,7 @@ while finished != True:
         uniqueTimes = list(set(df["Time"]))
         uniqueTimes = sorted(uniqueTimes)
 
-        qVideoHeatmap(df, band)
+        # qVideoHeatmap(df, band)
 
         theta = []
         sf = []
@@ -230,11 +237,13 @@ while finished != True:
         plt.gcf().subplots_adjust(left=0.2)
         plt.plot(x, theta)
 
-        plt.xlabel("Time")
+        plt.xlabel("Time (mins)")
         plt.ylabel(f"theta")
         plt.gcf().subplots_adjust(bottom=0.2)
         fig.savefig(
-            f"results/theta close to wound band{band}", dpi=300, transparent=True,
+            f"results/theta close to wound band{band} {fileType}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
@@ -244,11 +253,13 @@ while finished != True:
         plt.gcf().subplots_adjust(left=0.2)
         plt.errorbar(x, sf, yerr=errsf, fmt="o")
 
-        plt.xlabel("Time")
+        plt.xlabel("Time (mins)")
         plt.ylabel(f"sf")
         plt.gcf().subplots_adjust(bottom=0.2)
         fig.savefig(
-            f"results/sf close to wound band{band}", dpi=300, transparent=True,
+            f"results/sf close to wound band{band} {fileType}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
@@ -258,11 +269,13 @@ while finished != True:
         plt.gcf().subplots_adjust(left=0.2)
         plt.errorbar(x, area, yerr=errA, fmt="o")
 
-        plt.xlabel("Time")
-        plt.ylabel(f"Area")
+        plt.xlabel("Time (mins)")
+        plt.ylabel(r"Area ($\mu m^2$)")
         plt.gcf().subplots_adjust(bottom=0.2)
         fig.savefig(
-            f"results/Area close to wound band{band}", dpi=300, transparent=True,
+            f"results/Area close to wound band{band} {fileType}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
@@ -272,11 +285,13 @@ while finished != True:
         plt.gcf().subplots_adjust(left=0.2)
         plt.errorbar(x, TrS, yerr=errTrS, fmt="o")
 
-        plt.xlabel("Time")
+        plt.xlabel("Time (mins)")
         plt.ylabel(f"TrS")
         plt.gcf().subplots_adjust(bottom=0.2)
         fig.savefig(
-            f"results/TrS close to wound band{band}", dpi=300, transparent=True,
+            f"results/TrS close to wound band{band} {fileType}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
