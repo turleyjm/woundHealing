@@ -198,13 +198,12 @@ for t in range(meanFinish):
             v[i, j] = a[i][j][1]
 
     fig = plt.figure(1, figsize=(9, 8))
-    plt.quiver(x, y, u, v)
+    plt.quiver(x, y, u, v, scale=10)
     plt.title(f"time = {t}")
     fig.savefig(
         f"results/video/Velocity field wound centred {t}", dpi=300, transparent=True,
     )
     plt.close("all")
-
 
 # make video
 img_array = []
@@ -215,11 +214,10 @@ for t in range(meanFinish):
     size = (width, height)
     img_array.append(img)
 
-
 out = cv2.VideoWriter(
     f"results/Velocity field wound centred {fileType}.mp4",
     cv2.VideoWriter_fourcc(*"DIVX"),
-    10,
+    3,
     size,
 )
 for i in range(len(img_array)):

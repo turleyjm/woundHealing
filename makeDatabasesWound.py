@@ -253,3 +253,10 @@ vid[:, :, :, 2][vidWound == 255] = 255
 vid = np.asarray(vid, "uint8")
 tifffile.imwrite(f"dat/{filename}/highlightWound{filename}.tif", vid)
 
+dist = []
+for t in range(T):
+    img = 255 - fi.imgrcxy(vidWound[t])
+    dist.append(sp.ndimage.morphology.distance_transform_edt(img))
+
+dist = np.asarray(dist, "uint16")
+tifffile.imwrite(f"dat/{filename}/distanceWound{filename}.tif", dist)
