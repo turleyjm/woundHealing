@@ -219,7 +219,7 @@ for t in range(tf, T - 1):
     y = [yf - 100, yf + 100]
     dfxy = sortGrid(dfVelocity[dfVelocity["T"] == t], x, y)
 
-    v = cell.mean(list(dfxy["velocity"]))
+    v = np.mean(list(dfxy["velocity"]))
 
     xf = xf + v[0]
     yf = yf + v[1]
@@ -260,3 +260,4 @@ for t in range(T):
 
 dist = np.asarray(dist, "uint16")
 tifffile.imwrite(f"dat/{filename}/distanceWound{filename}.tif", dist)
+

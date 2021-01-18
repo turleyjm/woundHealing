@@ -117,8 +117,8 @@ def meanSdArea(allPolys):
     for i in range(n):
         polygon = Polygon(allPolys[i])
         area.append(polygon.area)
-    muArea = cell.mean(area)
-    sdArea = cell.sd(area)
+    muArea = np.mean(area)
+    sdArea = np.std(area)
     return (muArea, sdArea)
 
 

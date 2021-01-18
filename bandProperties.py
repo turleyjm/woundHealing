@@ -209,7 +209,7 @@ while finished != True:
         for t in uniqueTimes:
 
             prop = df["Wound Oriented q"][df["Time"] == t]
-            q = cell.mean(list(prop))
+            q = np.mean(list(prop))
             phi = np.arctan2(q[1, 0], q[0, 0]) / 2
             if phi > np.pi / 2:
                 phi = np.pi / 2 - phi
@@ -218,16 +218,16 @@ while finished != True:
             theta.append(phi)
 
             prop = df["Shape Factor"][df["Time"] == t]
-            sf.append(cell.mean(list(prop)))
-            errsf.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
+            sf.append(np.mean(list(prop)))
+            errsf.append(np.std(list(prop)) / (len(prop) ** 0.5))
 
             prop = df["Area"][df["Time"] == t] * (scale ** 2)
-            area.append(cell.mean(list(prop)))
-            errA.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
+            area.append(np.mean(list(prop)))
+            errA.append(np.std(list(prop)) / (len(prop) ** 0.5))
 
             prop = df["TrS"][df["Time"] == t] * (scale ** 2)
-            TrS.append(cell.mean(list(prop)))
-            errTrS.append(cell.sd(list(prop)) / (len(prop) ** 0.5))
+            TrS.append(np.mean(list(prop)))
+            errTrS.append(np.std(list(prop)) / (len(prop) ** 0.5))
 
         x = range(len(uniqueTimes))
 

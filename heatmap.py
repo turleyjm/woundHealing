@@ -78,7 +78,7 @@ for filename in filenames:
             except:
                 continue
 
-        Q = cell.mean(q)
+        Q = np.mean(q)
 
         Q = Q / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5
 

@@ -576,7 +576,7 @@ def heightOfMitosis(img, polygon):
                 rMin = r
                 mitosisHeight = zList[i]
 
-    meanHeight = cell.mean(height)
+    meanHeight = np.mean(height)
 
     deltaHeight = mitosisHeight - meanHeight
 

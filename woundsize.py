@@ -59,6 +59,7 @@ for filename in filenames:
 
     plt.plot(time, area)
 
+plt.gcf().subplots_adjust(left=0.2)
 plt.xlabel("Time")
 plt.ylabel(r"Area ($\mu m ^2$)")
 fig.savefig(
@@ -68,8 +69,8 @@ plt.close("all")
 
 err = []
 for t in range(T):
-    err.append(cell.sd(R[t]) / (len(R[t]) ** 0.5))
-    R[t] = cell.mean(R[t])
+    err.append(np.std(R[t]) / (len(R[t]) ** 0.5))
+    R[t] = np.mean(R[t])
 
 meanFinish = []
 for filename in filenames:
@@ -83,13 +84,13 @@ for filename in filenames:
 
     meanFinish.append(t - 1)
 
-meanFinish = cell.mean(meanFinish)
+meanFinish = np.mean(meanFinish)
 
 fig = plt.figure(1, figsize=(9, 8))
 plt.errorbar(time, R, yerr=err)
-plt.gcf().subplots_adjust(left=0.15)
+plt.gcf().subplots_adjust(left=0.2)
 plt.title(f"Mean finish time = {meanFinish}")
-plt.suptitle("Wound Radius")
+plt.suptitle("Wound Area")
 plt.xlabel("Time (mins)")
 plt.ylabel(r"Area ($\mu m ^2$)")
 fig.savefig(

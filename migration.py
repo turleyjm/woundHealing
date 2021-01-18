@@ -125,7 +125,7 @@ for i in range(grid):
         if a[i][j] == []:
             a[i][j] = np.array([0, 0])
         else:
-            a[i][j] = cell.mean(a[i][j])
+            a[i][j] = np.mean(a[i][j])
 
 x, y = np.meshgrid(np.linspace(0, 512 * scale, grid), np.linspace(0, 512 * scale, grid))
 
@@ -155,7 +155,7 @@ for filename in filenames:
     yt = 0
     for t in range(T - 1):
         df = dft[dft["T"] == t]
-        v = cell.mean(list(df["velocity"]))
+        v = np.mean(list(df["velocity"]))
         xt += v[0]
         yt += v[1]
         x.append(xt)

@@ -43,8 +43,8 @@ for filename in filenames:
 
     for t in range(T):
         prop = list(df[f"{functionTitle}"][df["Time"] == t])
-        mu.append(cell.mean(prop))
-        err.append(cell.sd(prop) / len(prop) ** 0.5)
+        mu.append(np.mean(prop))
+        err.append(np.std(prop) / len(prop) ** 0.5)
 
     x = range(T)
 

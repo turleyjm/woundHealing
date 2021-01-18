@@ -176,7 +176,7 @@ for i in range(18):
         df = sortBand(dfRadial, r, t)
 
         prop = df["Wound Oriented q"]
-        q = cell.mean(list(prop))
+        q = np.mean(list(prop))
         phi = np.arctan2(q[1, 0], q[0, 0]) / 2
         if phi > np.pi / 2:
             phi = np.pi / 2 - phi
@@ -185,10 +185,10 @@ for i in range(18):
         thetaHeatmap[int(t[0] / 5), int(r[0] / 5)] = 180 * phi / np.pi
 
         prop = df["Shape Factor"]
-        sfHeatmap[int(t[0] / 5), int(r[0] / 5)] = cell.mean(list(prop))
+        sfHeatmap[int(t[0] / 5), int(r[0] / 5)] = np.mean(list(prop))
 
         prop = df["Area"] * (scale ** 2)
-        areaHeatmap[int(t[0] / 5), int(r[0] / 5)] = cell.mean(list(prop))
+        areaHeatmap[int(t[0] / 5), int(r[0] / 5)] = np.mean(list(prop))
 
 
 dt, dr = 5, 5

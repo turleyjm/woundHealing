@@ -19,27 +19,6 @@ from skimage.draw import circle_perimeter
 from scipy import optimize
 
 
-def mean(x):
-    """the mean of list x"""
-    s = 0
-    for i in range(len(x)):
-        s = s + x[i]
-    mu = s / len(x)
-    return mu
-
-
-def sd(x):
-    """the standard deviation of list x"""
-
-    mu = mean(x)
-    s = 0
-    n = len(x)
-    for i in range(n):
-        s = s + (x[i] - mu) ** 2
-    sigma = (s / n) ** 0.5
-    return sigma
-
-
 def centroid(polygon):
     """takes polygon and finds the certre of mass in (x,y)"""
 
@@ -364,41 +343,4 @@ def findContourCurvature(contour, m):
         else:
             curvature.append(comp_curv.fit(x, y)[0])
     return curvature
-
-
-# ------------------------------------------
-
-
-def findLabel(polygon, imgxy):
-
-    (cx, cy) = centroid(polygon)
-    cx = int(cx)
-    cy = int(cy)
-    label = imgxy[(cx, cy)]
-
-    return label
-
-
-def meanIntensity(polygon, imgxy, imgMAXxy, q=0.75):
-
-    label = findLabel(polygon, imgxy)
-
-    intensity = imgMAXxy[imgxy == label]
-
-    meanInt = np.quantile(intensity, q)
-
-    return meanInt
-
-
-def sdIntensity(polygon, imgxy, imgMAXxy):
-
-    label = findLabel(polygon, imgxy)
-
-    intensity = imgMAXxy[imgxy == label]
-
-    intensity = np.array(intensity)
-
-    sigma = sd(intensity)
-
-    return sigma
 

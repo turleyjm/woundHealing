@@ -153,7 +153,7 @@ for filename in filenames:
     df = dfvelocity[dfvelocity["Filename"] == filename]
     for t in range(T - 1):
         dft = df[df["T"] == t]
-        V = cell.mean(list(dft["Velocity"]))
+        V = np.mean(list(dft["Velocity"]))
         for i in range(len(dft)):
             _dfVelocity.append(
                 {
@@ -182,7 +182,7 @@ for t in range(meanFinish):
             if a[i][j] == []:
                 a[i][j] = np.array([0, 0])
             else:
-                a[i][j] = cell.mean(a[i][j])
+                a[i][j] = np.mean(a[i][j])
 
     x, y = np.meshgrid(
         np.linspace(-256 * scale, 256 * scale, grid),

@@ -70,7 +70,7 @@ for filename in filenames:
         mu = vid[t][vid[t] > background]
         vid[t][vid[t] <= background] = 0
 
-        mu = cell.mean(mu)
+        mu = np.mean(mu)
 
         ratio = mu0 / mu
 
@@ -92,7 +92,7 @@ for filename in filenames:
         mu = vid[t][vid[t] > background]
         vid[t][vid[t] <= background] = 0
 
-        mu = cell.mean(mu)
+        mu = np.mean(mu)
 
         ratio = mu0 / mu
 

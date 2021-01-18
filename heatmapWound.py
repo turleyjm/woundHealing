@@ -181,10 +181,10 @@ for t in range(40):
                 heatmap[i][j] = 0
                 heatmaps[t][i][j] = 0
             else:
-                heatmap[i][j] = cell.mean(a)
-                heatmaps[t][i][j] = cell.mean(a)
+                heatmap[i][j] = np.mean(a)
+                heatmaps[t][i][j] = np.mean(a)
 
-for t 
+for t in range(40):
     heatmap[heatmap == 0] = np.mean(heatmap)
     heatmap = heatmap - np.mean(heatmap)
 
@@ -244,7 +244,7 @@ for i in range(0, 180, 5):
         if list(dfr["Shape Factor"]) == []:
             sf = 0
         else:
-            sf = cell.mean(list(dfr["Shape Factor"]))
+            sf = np.mean(list(dfr["Shape Factor"]))
 
         heatmap[int(i / 5), j] = sf
 
