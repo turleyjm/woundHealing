@@ -25,8 +25,8 @@ import findGoodCells as fi
 def heightScale(z0, z):
 
     # e where scaling starts from the surface and d is the cut off
-    d = 8
-    e = 3
+    d = 10
+    e = 8
 
     if z0 + e > z:
         scale = 1

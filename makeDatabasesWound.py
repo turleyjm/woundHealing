@@ -43,22 +43,6 @@ def sortGrid(dfVelocity, x, y):
     return df
 
 
-# Apply code for an example
-# x = np.r_[36, 36, 19, 18, 33, 26]
-# y = np.r_[14, 10, 28, 31, 18, 26]
-# comp_curv = ComputeCurvature()
-# curvature = comp_curv.fit(x, y)
-
-# theta_fit = np.linspace(-np.pi, np.pi, 180)
-# x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
-# y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
-# plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2)
-# plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
-# plt.xlabel('x')
-# plt.ylabel('y')
-# plt.title('curvature = {:.3e}'.format(curvature))
-# plt.show()
-
 f = open("pythonText.txt", "r")
 
 filename = f.read()

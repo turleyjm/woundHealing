@@ -40,13 +40,13 @@ for filename in filenames:
 
     (T, X, Y) = vid.shape
 
-    mu0 = 30
+    mu0 = 15
 
     for t in range(T):
-        mu = vid[t][vid[t] > background]
+        mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
         vid[t][vid[t] <= background] = 0
 
-        mu = np.quantile(mu, 0.75)
+        mu = np.quantile(mu, 0.5)
 
         ratio = mu0 / mu
 
