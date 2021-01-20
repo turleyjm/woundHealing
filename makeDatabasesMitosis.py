@@ -1,12 +1,14 @@
 import os
+import shutil
 from math import floor, log10
-import xml.etree.ElementTree as et
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -18,14 +20,15 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
-from collections import Counter
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
 plt.rcParams.update({"font.size": 20})
-plt.ioff()
-pd.set_option("display.width", 1000)
+
+# -------------------
 
 costLim = 0.5
 
@@ -583,12 +586,11 @@ def heightOfMitosis(img, polygon):
     return deltaHeight
 
 
-# ----------------------------------------------------
+# -------------------
 
-f = open("pythonText.txt", "r")
+costLim = 0.5
 
-filenames = f.read()
-filenames = filenames.split(", ")
+filenames, fileType = cl.getFilesType()
 
 for filename in filenames:
 

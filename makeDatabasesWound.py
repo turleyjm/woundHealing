@@ -1,11 +1,14 @@
 import os
+import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -17,14 +20,15 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
-from collections import Counter
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
 plt.rcParams.update({"font.size": 20})
-plt.ioff()
-pd.set_option("display.width", 1000)
+
+# -------------------
 
 
 def sortGrid(dfVelocity, x, y):
@@ -77,9 +81,12 @@ _dfWound.append(
     {
         "Time": t,
         "Polygon": polygon,
+        "Position": (Cx, Cy),
         "Centroid": (Cx, Cy),
         "Contour": contour,
         "Area": polygon.area,
+        "Shape Factor": cell.shapeFactor(polygon),
+        "Circularity": cell.circularity(polygon),
     }
 )
 
@@ -87,73 +94,12 @@ mostLabel = label
 
 finished = False
 
-while t < 180 and finished != True:
 
-    labels = vidLabels[t + 1][vidLabels[t] == mostLabel]
+# find the woundsite using migration of cells
 
-    uniqueLabels = set(list(labels))
-    if 0 in uniqueLabels:
-        uniqueLabels.remove(0)
-
-    if len(uniqueLabels) == 0:
-        finished = True
-    else:
-        count = Counter(labels)
-        c = []
-        for l in uniqueLabels:
-            c.append(count[l])
-
-        uniqueLabels = list(uniqueLabels)
-        mostLabel = uniqueLabels[c.index(max(c))]
-        C = max(c)
-
-        if C < 50:
-            finished = True
-        else:
-            contour = sm.measure.find_contours(vidLabels[t + 1] == mostLabel, level=0)[
-                0
-            ]
-            poly = sm.measure.approximate_polygon(contour, tolerance=1)
-            polygon = Polygon(poly)
-            (Cx, Cy) = cell.centroid(polygon)
-            vidWound[t + 1][vidLabelsrc[t + 1] != mostLabel] = 0
-
-            t += 1
-
-            _dfWound.append(
-                {
-                    "Time": t,
-                    "Polygon": polygon,
-                    "Centroid": cell.centroid(polygon),
-                    "Contour": contour,
-                    "Area": polygon.area,
-                }
-            )
-
-tf = t
-for t in range(tf, T - 1):
-    vidWound[t + 1][vidLabels[t + 1] != 256] = 0
-
-dfWound = pd.DataFrame(_dfWound)
-
-vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
-vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
-
-vidEcad[vidWound == 255] = 0
-
-vidEcad = np.asarray(vidEcad, "uint8")
-tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vidEcad)
-
-vidH2[vidWound == 255] = 0
-
-vidH2 = np.asarray(vidH2, "uint8")
-tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vidH2)
-
-# find the woundsite after epithelialisation
-
-tf = dfWound["Time"].iloc[-1] + 1
-xf = dfWound["Centroid"].iloc[-1][0]
-yf = dfWound["Centroid"].iloc[-1][1]
+xf = Cx
+yf = Cy
+position = []
 
 dfNucleus = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 _df2 = []
@@ -197,7 +143,7 @@ for i in range(len(dfNucleus)):
 
 dfVelocity = pd.DataFrame(_df2)
 
-for t in range(tf, T - 1):
+for t in range(T - 1):
 
     x = [xf - 100, xf + 100]
     y = [yf - 100, yf + 100]
@@ -208,31 +154,86 @@ for t in range(tf, T - 1):
     xf = xf + v[0]
     yf = yf + v[1]
 
-    _dfWound.append(
-        {"Time": t, "Centroid": [xf, yf],}
-    )
+    position.append((xf, yf))
 
     x = 512 - int(yf)  # change coord
     y = int(xf)
-    vidWound[t][x - 6 : x + 6, y - 6 : y + 6] = 255
 
-vidWound[T - 1][x - 6 : x + 6, y - 6 : y + 6] = 255
-_dfWound.append(
-    {"Time": T - 1, "Centroid": [xf, yf],}
-)
+position.append((xf, yf))
+
+# track wound with time
+t = 0
+while t < 180 and finished != True:
+
+    labels = vidLabels[t + 1][vidLabels[t] == mostLabel]
+
+    uniqueLabels = set(list(labels))
+    if 0 in uniqueLabels:
+        uniqueLabels.remove(0)
+
+    if len(uniqueLabels) == 0:
+        finished = True
+    else:
+        count = Counter(labels)
+        c = []
+        for l in uniqueLabels:
+            c.append(count[l])
+
+        uniqueLabels = list(uniqueLabels)
+        mostLabel = uniqueLabels[c.index(max(c))]
+        C = max(c)
+
+        if C < 50:
+            finished = True
+        else:
+            contour = sm.measure.find_contours(vidLabels[t + 1] == mostLabel, level=0)[
+                0
+            ]
+            poly = sm.measure.approximate_polygon(contour, tolerance=1)
+            polygon = Polygon(poly)
+            (Cx, Cy) = cell.centroid(polygon)
+            vidWound[t + 1][vidLabelsrc[t + 1] != mostLabel] = 0
+
+            t += 1
+
+            _dfWound.append(
+                {
+                    "Time": t,
+                    "Polygon": polygon,
+                    "Position": position[t - 1],
+                    "Centroid": cell.centroid(polygon),
+                    "Contour": contour,
+                    "Area": polygon.area,
+                    "Shape Factor": cell.shapeFactor(polygon),
+                    "Circularity": cell.circularity(polygon),
+                }
+            )
+
+tf = t
+for t in range(tf, T - 1):
+    vidWound[t + 1][vidLabels[t + 1] != 256] = 0
 
 dfWound = pd.DataFrame(_dfWound)
-
-vidWound = np.asarray(vidWound, "uint8")
-tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
-
 dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
+vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
+
+vidEcad[vidWound == 255] = 0
+
+vidEcad = np.asarray(vidEcad, "uint8")
+tifffile.imwrite(f"dat/{filename}/woundMaskEcad{filename}.tif", vidEcad)
+
+vidH2[vidWound == 255] = 0
+
+vidH2 = np.asarray(vidH2, "uint8")
+tifffile.imwrite(f"dat/{filename}/woundMaskH2{filename}.tif", vidH2)
 
 # display Wound
 
 vid = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
 
-vid[:, :, :, 2][vidWound == 255] = 255
+vid[:, :, :, 2][vidWound == 255] = 100
 
 vid = np.asarray(vid, "uint8")
 tifffile.imwrite(f"dat/{filename}/highlightWound{filename}.tif", vid)

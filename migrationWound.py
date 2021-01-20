@@ -2,11 +2,13 @@ import os
 import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -18,55 +20,17 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
 plt.rcParams.update({"font.size": 20})
 
-
-def ThreeD(a):
-    lst = [[[] for col in range(a)] for col in range(a)]
-    return lst
-
-
-def sortGrid(dfVelocity, x, y):
-
-    xMin = x[0]
-    xMax = x[1]
-    yMin = y[0]
-    yMax = y[1]
-
-    dfxmin = dfVelocity[dfVelocity["X"] > xMin]
-    dfx = dfxmin[dfxmin["X"] < xMax]
-
-    dfymin = dfx[dfx["Y"] > yMin]
-    df = dfymin[dfymin["Y"] < yMax]
-
-    return df
-
-
-def createFolder(directory):
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except OSError:
-        print("Error: Creating directory. " + directory)
-
-
 # -------------------
 
-f = open("pythonText.txt", "r")
-
-fileType = f.read()
-cwd = os.getcwd()
-Fullfilenames = os.listdir(cwd + "/dat")
-filenames = []
-for filename in Fullfilenames:
-    if fileType in filename:
-        filenames.append(filename)
-
-filenames.sort()
+filenames, fileType = cl.getFilesType()
 
 T = 181
 scale = 147.91 / 512
@@ -167,17 +131,17 @@ for filename in filenames:
             )
 dfVelocity = pd.DataFrame(_dfVelocity)
 
-createFolder("results/video/")
+cl.createFolder("results/video/")
 for t in range(meanFinish):
     dfVelocityT = dfVelocity[dfVelocity["T"] == t]
 
-    a = ThreeD(grid)
+    a = cl.ThreeD(grid)
 
     for i in range(grid):
         for j in range(grid):
             x = [(512 / grid) * j - 256, (512 / grid) * j + 512 / grid - 256]
             y = [(512 / grid) * i - 256, (512 / grid) * i + 512 / grid - 256]
-            dfxy = sortGrid(dfVelocityT, x, y)
+            dfxy = cl.sortGrid(dfVelocityT, x, y)
             a[i][j] = list(dfxy["Velocity"])
             if a[i][j] == []:
                 a[i][j] = np.array([0, 0])

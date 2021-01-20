@@ -1,11 +1,14 @@
 import os
+import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -17,17 +20,18 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
-import statistics
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
+
+plt.rcParams.update({"font.size": 20})
+
+# -------------------
 
 
-f = open("pythonText.txt", "r")
-
-filenames = f.read()
-filenames = filenames.split(", ")
-
+filenames, fileType = cl.getFilesType()
 background = 0
 
 for filename in filenames:
@@ -67,7 +71,7 @@ for filename in filenames:
     mu0 = 25
 
     for t in range(T):
-        mu = vid[t][vid[t] > background]
+        mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
         vid[t][vid[t] <= background] = 0
 
         mu = np.mean(mu)
@@ -89,7 +93,7 @@ for filename in filenames:
     mu0 = 25
 
     for t in range(T):
-        mu = vid[t][vid[t] > background]
+        mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
         vid[t][vid[t] <= background] = 0
 
         mu = np.mean(mu)

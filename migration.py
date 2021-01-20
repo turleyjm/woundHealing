@@ -1,11 +1,14 @@
 import os
+import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -17,42 +20,17 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
 plt.rcParams.update({"font.size": 20})
-plt.ioff()
-pd.set_option("display.width", 1000)
-
-
-def ThreeD(a):
-    lst = [[[] for col in range(a)] for col in range(a)]
-    return lst
-
-
-def sortGrid(dfVelocity, x, y):
-
-    xMin = x[0]
-    xMax = x[1]
-    yMin = y[0]
-    yMax = y[1]
-
-    dfxmin = dfVelocity[dfVelocity["X"] > xMin]
-    dfx = dfxmin[dfxmin["X"] < xMax]
-
-    dfymin = dfx[dfx["Y"] > yMin]
-    df = dfymin[dfymin["Y"] < yMax]
-
-    return df
-
 
 # -------------------
 
-f = open("pythonText.txt", "r")
-
-filenames = f.read()
-filenames = filenames.split(", ")
+filenames, fileType = cl.getFilesType()
 
 T = 181
 scale = 147.91 / 512
@@ -87,7 +65,7 @@ for filename in filenames:
                     x5 = x[j + 5]
                     y5 = y[j + 5]
 
-                    v = np.array([(x5 - x0) / t5, (y5 - y0) / t5])
+                    v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
 
                     _df2.append(
                         {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v}
@@ -97,7 +75,7 @@ for filename in filenames:
                     xEnd = x[-1]
                     yEnd = y[-1]
 
-                    v = np.array([(xEnd - x0) / tEnd, (yEnd - y0) / tEnd])
+                    v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
 
                     _df2.append(
                         {
@@ -112,39 +90,64 @@ for filename in filenames:
 
 dfVelocity = pd.DataFrame(_df2)
 
-dfVelocity10 = dfVelocity[dfVelocity["T"] < 10]
+createFolder("results/video/")
+for t in range(T):
+    dfVelocityT = dfVelocity[dfVelocity["T"] == t]
 
-a = ThreeD(grid)
+    a = ThreeD(grid)
 
-for i in range(grid):
-    for j in range(grid):
-        x = [(512 / grid) * j, (512 / grid) * j + 512 / grid]
-        y = [(512 / grid) * i, (512 / grid) * i + 512 / grid]
-        dfxy = sortGrid(dfVelocity10, x, y)
-        a[i][j] = list(dfxy["velocity"])
-        if a[i][j] == []:
-            a[i][j] = np.array([0, 0])
-        else:
-            a[i][j] = np.mean(a[i][j])
+    for i in range(grid):
+        for j in range(grid):
+            x = [(512 / grid) * j, (512 / grid) * j + 512 / grid]
+            y = [(512 / grid) * i, (512 / grid) * i + 512 / grid]
+            dfxy = sortGrid(dfVelocityT, x, y)
+            a[i][j] = list(dfxy["Velocity"])
+            if a[i][j] == []:
+                a[i][j] = np.array([0, 0])
+            else:
+                a[i][j] = np.mean(a[i][j])
 
-x, y = np.meshgrid(np.linspace(0, 512 * scale, grid), np.linspace(0, 512 * scale, grid))
+    x, y = np.meshgrid(
+        np.linspace(0, 512 * scale, grid), np.linspace(0, 512 * scale, grid),
+    )
 
-u = np.zeros([grid, grid])
-v = np.zeros([grid, grid])
+    u = np.zeros([grid, grid])
+    v = np.zeros([grid, grid])
 
-for i in range(grid):
-    for j in range(grid):
-        u[i, j] = a[i][j][0]
-        v[i, j] = a[i][j][1]
+    for i in range(grid):
+        for j in range(grid):
+            u[i, j] = a[i][j][0]
+            v[i, j] = a[i][j][1]
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.quiver(x, y, u, v)
-fig.savefig(
-    f"results/velocity field", dpi=300, transparent=True,
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.quiver(x, y, u, v, scale=10)
+    plt.title(f"time = {t}")
+    fig.savefig(
+        f"results/video/Velocity field{t}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+# make video
+img_array = []
+
+for t in range(T):
+    img = cv2.imread(f"results/video/Velocity field{t}.png")
+    height, width, layers = img.shape
+    size = (width, height)
+    img_array.append(img)
+
+out = cv2.VideoWriter(
+    f"results/Velocity field{fileType}.mp4", cv2.VideoWriter_fourcc(*"DIVX"), 5, size,
 )
-plt.close("all")
+for i in range(len(img_array)):
+    out.write(img_array[i])
 
-fig = plt.figure(1, figsize=(9, 8))
+out.release()
+cv2.destroyAllWindows()
+
+shutil.rmtree("results/video")
+
+# Mean migration
 
 for filename in filenames:
 

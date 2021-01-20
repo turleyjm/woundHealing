@@ -1,11 +1,14 @@
 import os
+import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -17,15 +20,17 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
-import random
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
-f = open("pythonText.txt", "r")
+plt.rcParams.update({"font.size": 20})
 
-filenames = f.read()
-filenames = filenames.split(", ")
+# -------------------
+
+filenames = cl.getFiles()
 
 training = []
 

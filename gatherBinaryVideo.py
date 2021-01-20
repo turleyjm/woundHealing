@@ -1,31 +1,36 @@
 import os
+import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
-from scipy import ndimage as ndi
 import shapely
 import skimage as sm
 import skimage.io
 import skimage.measure
-from skimage.segmentation import watershed
-from skimage.feature import peak_local_max
-from mpl_toolkits.mplot3d import Axes3D
 from shapely.geometry import Polygon
-from shapely.geometry import Point
 from shapely.geometry.polygon import LinearRing
-import findGoodCells as fi
 import tifffile
+from skimage.draw import circle_perimeter
+from scipy import optimize
+import xml.etree.ElementTree as et
 
-f = open("pythonText.txt", "r")
+import cellProperties as cell
+import findGoodCells as fi
+import commonLiberty as cl
 
-filenames = f.read()
-filenames = filenames.split(", ")
+plt.rcParams.update({"font.size": 20})
+
+# -------------------
+
+filenames = cl.getFiles()
 
 for filename in filenames:
 

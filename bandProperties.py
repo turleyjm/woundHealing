@@ -2,11 +2,13 @@ import os
 import shutil
 from math import floor, log10
 
+from collections import Counter
 import cv2
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 import scipy as sp
 import scipy.linalg as linalg
 import shapely
@@ -18,48 +20,24 @@ from shapely.geometry.polygon import LinearRing
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
+import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
+import commonLiberty as cl
 
 plt.rcParams.update({"font.size": 20})
-plt.ioff()
-pd.set_option("display.width", 1000)
+
+# -------------------
 
 scale = 147.91 / 512
 bandWidth = 20  # in microns
 pixelWidth = bandWidth / scale
 
 
-def sortBand(dfRadial, band, pixelWidth):
-
-    if band == 1:
-        df = dfRadial[dfRadial["Wound Edge Distance"] < pixelWidth]
-    else:
-        df2 = dfRadial[dfRadial["Wound Edge Distance"] < band * pixelWidth]
-        df = df2[df2["Wound Edge Distance"] >= (band - 1) * pixelWidth]
-
-    return df
-
-
-def rotation_matrix(theta):
-
-    R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)],])
-
-    return R
-
-
-def createFolder(directory):
-    try:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except OSError:
-        print("Error: Creating directory. " + directory)
-
-
 def qVideoHeatmap(df, band):
 
-    createFolder("results/video/")
+    cl.createFolder("results/video/")
     uniqueTimes = list(set(df["Time"]))
     uniqueTimes = sorted(uniqueTimes)
 
@@ -118,19 +96,9 @@ def qVideoHeatmap(df, band):
     shutil.rmtree("results/video")
 
 
-# ---------------------------
+# -------------------
 
-f = open("pythonText.txt", "r")
-
-fileType = f.read()
-cwd = os.getcwd()
-Fullfilenames = os.listdir(cwd + "/dat")
-filenames = []
-for filename in Fullfilenames:
-    if fileType in filename:
-        filenames.append(filename)
-
-filenames.sort()
+filenames, fileType = cl.getFilesType()
 
 _dfRadial = []
 for filename in filenames:
@@ -164,7 +132,7 @@ for filename in filenames:
             q = df2["q"].iloc[i]
             phi = np.arctan2(y - Cy, x - Cx)
 
-            R = rotation_matrix(-phi)
+            R = cl.rotation_matrix(-phi)
 
             qr = np.matmul(q, R.transpose())
             qw = np.matmul(R, qr)
@@ -189,7 +157,7 @@ dfRadial = pd.DataFrame(_dfRadial)
 finished = False
 band = 1
 while finished != True:
-    df = sortBand(dfRadial, band, pixelWidth)
+    df = cl.sortBand(dfRadial, band, pixelWidth)
 
     if len(df) == 0:
         finished = True
