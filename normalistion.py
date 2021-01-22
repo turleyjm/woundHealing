@@ -4,6 +4,7 @@ from math import floor, log10
 
 from collections import Counter
 import cv2
+import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,24 +85,24 @@ for filename in filenames:
     vid = np.asarray(vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vid)
 
-    vidFile = f"dat/{filename}/3dH2{filename}.tif"
+    # vidFile = f"dat/{filename}/3dH2{filename}.tif"
 
-    vid = sm.io.imread(vidFile).astype(int)
+    # vid = sm.io.imread(vidFile).astype(int)
 
-    (T, Z, X, Y) = vid.shape
+    # (T, Z, X, Y) = vid.shape
 
-    mu0 = 25
+    # mu0 = 25
 
-    for t in range(T):
-        mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
-        vid[t][vid[t] <= background] = 0
+    # for t in range(T):
+    #     mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
+    #     vid[t][vid[t] <= background] = 0
 
-        mu = np.mean(mu)
+    #     mu = np.mean(mu)
 
-        ratio = mu0 / mu
+    #     ratio = mu0 / mu
 
-        vid[t] = vid[t] * ratio
-        vid[t][vid[t] > 255] = 255
+    #     vid[t] = vid[t] * ratio
+    #     vid[t][vid[t] > 255] = 255
 
-    vid = np.asarray(vid, "uint8")
-    tifffile.imwrite(f"dat/{filename}/migration{filename}.tif", vid)
+    # vid = np.asarray(vid, "uint8")
+    # tifffile.imwrite(f"dat/{filename}/migration{filename}.tif", vid)

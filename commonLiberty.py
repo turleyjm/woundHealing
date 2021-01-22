@@ -4,6 +4,7 @@ from math import floor, log10
 
 from collections import Counter
 import cv2
+import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,8 +68,8 @@ def sortRadius(dfVelocity, t, r):
 
     dfrmin = dfVelocity[dfVelocity["R"] > rMin]
     dfr = dfrmin[dfrmin["R"] < rMax]
-    dftmin = dfr[dfr["Time"] > tMin]
-    df = dftmin[dftmin["Time"] < tMax]
+    dftmin = dfr[dfr["Time"] >= tMin]
+    df = dftmin[dftmin["Time"] <= tMax]
 
     return df
 

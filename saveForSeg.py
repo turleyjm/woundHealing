@@ -4,6 +4,7 @@ from math import floor, log10
 
 from collections import Counter
 import cv2
+import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np

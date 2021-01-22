@@ -4,6 +4,7 @@ from math import floor, log10
 
 from collections import Counter
 import cv2
+import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -212,6 +213,9 @@ while t < 180 and finished != True:
 tf = t
 for t in range(tf, T - 1):
     vidWound[t + 1][vidLabels[t + 1] != 256] = 0
+    _dfWound.append(
+        {"Time": t, "Position": position[t - 1],}
+    )
 
 dfWound = pd.DataFrame(_dfWound)
 dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")

@@ -4,6 +4,7 @@ from math import floor, log10
 
 from collections import Counter
 import cv2
+import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -141,7 +142,7 @@ heatmap = np.zeros([int(T / 5), grid])
 
 for i in range(0, 180, 5):
     for j in range(grid):
-        r = [40 / grid * j, 40 / grid * j + 5]
+        r = [40 / grid * j, 40 / grid * j + 4]
         t = [i, i + 5]
         dfr = cl.sortRadius(dfCells, t, r)
         if list(dfr["Shape Factor"]) == []:
