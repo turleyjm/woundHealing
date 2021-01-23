@@ -40,7 +40,7 @@ for filename in filenames:
     vidFile = f"dat/{filename}/focusH2{filename}.tif"
     vid = sm.io.imread(vidFile).astype(int)
 
-    t0 = int(random.uniform(0, 1) * 176)
+    t0 = int(random.uniform(0, 1) * 50)  # for woundsite
 
     for i in range(3):
         training.append(vid[t0 + i])
@@ -51,7 +51,7 @@ for filename in filenames:
         training.append(vid[t0 + i])
 
 training = np.asarray(training, "uint8")
-tifffile.imwrite(f"dat/trainingData/trainingDataH2.tif", training)
+tifffile.imwrite(f"dat/TrainingData/focusH2TrainingData.tif", training)
 
 training = []
 
@@ -60,23 +60,21 @@ for filename in filenames:
     vidFile = f"dat/{filename}/focusEcad{filename}.tif"
     vid = sm.io.imread(vidFile).astype(int)
 
-    t0 = int(random.uniform(0, 1) * 176)
-    # t0 = int(random.uniform(0, 1) * 56)  # change for woundsite
+    t0 = int(random.uniform(0, 1) * 50)  # for woundsite
 
     for i in range(3):
         training.append(vid[t0 + i])
 
     t0 = int(random.uniform(0, 1) * 176)
-    # t0 = int(random.uniform(0, 1) * 56)
 
     for i in range(3):
         training.append(vid[t0 + i])
 
 training = np.asarray(training, "uint8")
-tifffile.imwrite(f"dat/trainingData/trainingDataEcad.tif", training)
+tifffile.imwrite(f"dat/TrainingData/focusH2TrainingData.tif", training)
 
-training = np.asarray(training, "uint8")
-tifffile.imwrite(f"dat/trainingData/trainingDataWound.tif", training)
+# training = np.asarray(training, "uint8")
+# tifffile.imwrite(f"dat/TrainingData/woundTrainingData.tif", training)
 
 # overlay = np.zeros([len(filenames) * 6, 512, 512, 3])
 # deepEcad = []

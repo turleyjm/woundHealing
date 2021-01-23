@@ -52,7 +52,7 @@ f = open("pythonText.txt", "r")
 
 filename = f.read()
 
-start = (256, 256)  # if not all wounds are centred
+start = (256, 306)  # if not all wounds are centred
 
 vidFile = f"dat/{filename}/outPlane{filename}.tif"  # change
 
@@ -146,11 +146,11 @@ dfVelocity = pd.DataFrame(_df2)
 
 for t in range(T - 1):
 
-    x = [xf - 100, xf + 100]
-    y = [yf - 100, yf + 100]
+    x = [xf - 150, xf + 150]
+    y = [yf - 150, yf + 150]
     dfxy = sortGrid(dfVelocity[dfVelocity["T"] == t], x, y)
 
-    v = np.mean(list(dfxy["velocity"]))
+    v = np.mean(list(dfxy["velocity"]), axis=0)
 
     xf = xf + v[0]
     yf = yf + v[1]
@@ -210,16 +210,6 @@ while t < 180 and finished != True:
                 }
             )
 
-tf = t
-for t in range(tf, T - 1):
-    vidWound[t + 1][vidLabels[t + 1] != 256] = 0
-    _dfWound.append(
-        {"Time": t, "Position": position[t - 1],}
-    )
-
-dfWound = pd.DataFrame(_dfWound)
-dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-
 vidEcad = sm.io.imread(f"dat/{filename}/focusEcad{filename}.tif").astype(int)
 vidH2 = sm.io.imread(f"dat/{filename}/focusH2{filename}.tif").astype(int)
 
@@ -232,6 +222,22 @@ vidH2[vidWound == 255] = 0
 
 vidH2 = np.asarray(vidH2, "uint8")
 tifffile.imwrite(f"dat/{filename}/woundMaskH2{filename}.tif", vidH2)
+
+
+tf = t
+for t in range(tf, T - 1):
+    vidWound[t + 1][vidLabels[t + 1] != 256] = 0
+    [x, y] = [int(position[t - 1][0]), int(512 - position[t - 1][1])]
+    vidWound[t + 1][y - 2 : y + 2, x - 2 : x + 2] = 255
+    _dfWound.append(
+        {"Time": t, "Position": position[t - 1],}
+    )
+
+dfWound = pd.DataFrame(_dfWound)
+dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+vidWound = np.asarray(vidWound, "uint8")
+tifffile.imwrite(f"dat/{filename}/woundsite{filename}.tif", vidWound)
 
 # display Wound
 

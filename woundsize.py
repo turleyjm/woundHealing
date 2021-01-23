@@ -61,7 +61,7 @@ plt.gcf().subplots_adjust(left=0.2)
 plt.xlabel("Time")
 plt.ylabel(r"Area ($\mu m ^2$)")
 fig.savefig(
-    f"results/Wound Radius {fileType}", dpi=300, transparent=True,
+    f"results/Wound Area {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
@@ -92,7 +92,38 @@ plt.suptitle("Wound Area")
 plt.xlabel("Time (mins)")
 plt.ylabel(r"Area ($\mu m ^2$)")
 fig.savefig(
-    f"results/Wound Radius Mean {fileType}", dpi=300, transparent=True,
+    f"results/Wound Area Mean {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
 
+#  ------------------- Radius around wound thats fully in frame
+
+run = True
+if run:
+    rList = [[] for col in range(T)]
+    for filename in filenames:
+        dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
+            "uint16"
+        )
+        for t in range(T):
+            Max = dist[t].max()
+            dist[t][1:511] = Max
+            rList[t].append(dist[t].min())
+
+    for t in range(T):
+        rList[t] = np.mean(rList[t])
+
+    t = range(T)
+    rList = np.array(rList) * scale
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.plot(t, rList)
+    plt.ylim([0, 80])
+
+    plt.xlabel(r"Time (mins)")
+    plt.ylabel(r"distance from wound edge to frame edge ($\mu m$)")
+
+    fig.savefig(
+        f"results/max distance from wound edge {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")

@@ -32,7 +32,7 @@ plt.rcParams.update({"font.size": 20})
 # -------------------
 
 
-filenames, fileType = cl.getFilesType()
+filenames = cl.getFiles()
 background = 0
 
 for filename in filenames:
@@ -45,13 +45,13 @@ for filename in filenames:
 
     (T, X, Y) = vid.shape
 
-    mu0 = 15
+    mu0 = 50
 
     for t in range(T):
         mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
         vid[t][vid[t] <= background] = 0
 
-        mu = np.quantile(mu, 0.5)
+        mu = np.quantile(mu, 0.75)
 
         ratio = mu0 / mu
 
@@ -61,7 +61,7 @@ for filename in filenames:
     vid = np.asarray(vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusH2{filename}.tif", vid)
 
-    # ---------
+    # -------------------
 
     vidFile = f"dat/{filename}/bleachedEcad{filename}.tif"
 
@@ -69,7 +69,7 @@ for filename in filenames:
 
     (T, X, Y) = vid.shape
 
-    mu0 = 25
+    mu0 = 40
 
     for t in range(T):
         mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
@@ -85,24 +85,26 @@ for filename in filenames:
     vid = np.asarray(vid, "uint8")
     tifffile.imwrite(f"dat/{filename}/focusEcad{filename}.tif", vid)
 
-    # vidFile = f"dat/{filename}/3dH2{filename}.tif"
+# -------------------
 
-    # vid = sm.io.imread(vidFile).astype(int)
+# vidFile = f"dat/{filename}/3dH2{filename}.tif"
 
-    # (T, Z, X, Y) = vid.shape
+# vid = sm.io.imread(vidFile).astype(int)
 
-    # mu0 = 25
+# (T, Z, X, Y) = vid.shape
 
-    # for t in range(T):
-    #     mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
-    #     vid[t][vid[t] <= background] = 0
+# mu0 = 25
 
-    #     mu = np.mean(mu)
+# for t in range(T):
+#     mu = vid[t, 50:462, 50:462][vid[t, 50:462, 50:462] > background]
+#     vid[t][vid[t] <= background] = 0
 
-    #     ratio = mu0 / mu
+#     mu = np.mean(mu)
 
-    #     vid[t] = vid[t] * ratio
-    #     vid[t][vid[t] > 255] = 255
+#     ratio = mu0 / mu
 
-    # vid = np.asarray(vid, "uint8")
-    # tifffile.imwrite(f"dat/{filename}/migration{filename}.tif", vid)
+#     vid[t] = vid[t] * ratio
+#     vid[t][vid[t] > 255] = 255
+
+# vid = np.asarray(vid, "uint8")
+# tifffile.imwrite(f"dat/{filename}/migration{filename}.tif", vid)

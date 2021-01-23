@@ -169,7 +169,7 @@ if run:
         x.append(xt)
         y.append(yt)
 
-        plt.plot(x, y)
+    plt.plot(x, y)
 
     plt.xlabel("x")
     plt.ylabel(f"y")
@@ -178,3 +178,104 @@ if run:
     )
     plt.close("all")
 
+#  ------------------- Compare migration path of unwounded, wounded and woundsite
+
+run = True
+if run:
+
+    fig = plt.figure(1, figsize=(9, 8))
+
+    fileType = "Unwound"
+    cwd = os.getcwd()
+    Fullfilenames = os.listdir(cwd + "/dat")
+    filenames = []
+    for filename in Fullfilenames:
+        if fileType in filename:
+            filenames.append(filename)
+
+    filenames.sort()
+
+    xList = [[] for col in range(T - 1)]
+    yList = [[] for col in range(T - 1)]
+    for filename in filenames:
+        dfUnwound = dfVelocity[dfVelocity["Filename"] == filename]
+        xt = 0
+        yt = 0
+        for t in range(T - 1):
+            df = dfUnwound[dfUnwound["T"] == t]
+            v = np.mean(list(df["Velocity"]), axis=0)
+            xt += v[0]
+            yt += v[1]
+            xList[t].append(xt)
+            yList[t].append(yt)
+
+    for t in range(T - 1):
+        xList[t] = np.mean(xList[t])
+        yList[t] = np.mean(yList[t])
+
+    xList = np.array(xList) * scale
+    yList = np.array(yList) * scale
+
+    plt.plot(xList, yList)
+
+    fileType = "Wound"
+    cwd = os.getcwd()
+    Fullfilenames = os.listdir(cwd + "/dat")
+    filenames = []
+    for filename in Fullfilenames:
+        if fileType in filename:
+            filenames.append(filename)
+
+    filenames.sort()
+
+    xList = [[] for col in range(T - 1)]
+    yList = [[] for col in range(T - 1)]
+    for filename in filenames:
+        dfUnwound = dfVelocity[dfVelocity["Filename"] == filename]
+        xt = 0
+        yt = 0
+        for t in range(T - 1):
+            df = dfUnwound[dfUnwound["T"] == t]
+            v = np.mean(list(df["Velocity"]), axis=0)
+            xt += v[0]
+            yt += v[1]
+            xList[t].append(xt)
+            yList[t].append(yt)
+
+    for t in range(T - 1):
+        xList[t] = np.mean(xList[t])
+        yList[t] = np.mean(yList[t])
+
+    xList = np.array(xList) * scale
+    yList = np.array(yList) * scale
+
+    plt.plot(xList, yList)
+
+    xList = [[] for col in range(T)]
+    yList = [[] for col in range(T)]
+    for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        x0, y0 = dfWound["Position"].iloc[0]
+        for t in range(T):
+            xList[t].append(dfWound["Position"].iloc[t][0] - x0)
+            yList[t].append(dfWound["Position"].iloc[t][1] - y0)
+
+    for t in range(T):
+        xList[t] = np.mean(xList[t])
+        yList[t] = np.mean(yList[t])
+
+    xList = np.array(xList) * scale
+    yList = np.array(yList) * scale
+
+    plt.plot(xList, yList)
+
+    plt.legend(("Unwounded", "Wounded", "Wounsite"), loc="upper right")
+    plt.xlabel("x")
+    plt.ylabel(f"y")
+
+    fig.savefig(
+        f"results/migration path Unwounded Wounded and Wounsite",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")

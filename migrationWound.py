@@ -340,7 +340,7 @@ if run:
 
     dt, dr = 4, 80 / grid
     t, r = np.mgrid[0:180:dt, 0:80:dr]
-    z_min, z_max = heatmap.min(), heatmap.max()
+    z_min, z_max = -0.5, 0.5
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.seismic
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
