@@ -66,10 +66,10 @@ def sortRadius(dfVelocity, t, r):
     tMin = t[0]
     tMax = t[1]
 
-    dfrmin = dfVelocity[dfVelocity["R"] > rMin]
+    dfrmin = dfVelocity[dfVelocity["R"] >= rMin]
     dfr = dfrmin[dfrmin["R"] < rMax]
     dftmin = dfr[dfr["Time"] >= tMin]
-    df = dftmin[dftmin["Time"] <= tMax]
+    df = dftmin[dftmin["Time"] < tMax]
 
     return df
 

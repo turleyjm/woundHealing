@@ -52,7 +52,8 @@ for filename in filenames:
     finish.append(t - 1)
     woundEdge.append((area[0] / np.pi) ** 0.5)
 
-meanFinish = int(min(finish))
+meanFinish = int(np.mean(finish))
+minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
 
 
@@ -84,7 +85,7 @@ for filename in filenames:
 
                     v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
 
-                    [wx, wy] = dfWound["Centroid"].iloc[int(t0)]
+                    [wx, wy] = dfWound["Position"].iloc[int(t0)]
                     _df2.append(
                         {
                             "Filename": filename,
@@ -104,7 +105,7 @@ for filename in filenames:
 
                     v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
 
-                    [wx, wy] = dfWound["Centroid"].iloc[int(t0)]
+                    [wx, wy] = dfWound["Position"].iloc[int(t0)]
                     _df2.append(
                         {
                             "Filename": filename,
@@ -127,7 +128,7 @@ for filename in filenames:
     df = dfvelocity[dfvelocity["Filename"] == filename]
     for t in range(T - 1):
         dft = df[df["Time"] == t]
-        V = np.mean(list(dft["Velocity"]))
+        V = np.mean(list(dft["Velocity"]), axis=0)
         for i in range(len(dft)):
             _dfVelocity.append(
                 {
@@ -162,7 +163,7 @@ if run:
                 if a[i][j] == []:
                     a[i][j] = np.array([0, 0])
                 else:
-                    a[i][j] = np.mean(a[i][j])
+                    a[i][j] = np.mean(a[i][j], axis=0)
 
         x, y = np.meshgrid(
             np.linspace(-256 * scale, 256 * scale, grid),
@@ -348,6 +349,8 @@ if run:
     c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
     fig.colorbar(c, ax=ax)
     c.set_label(r"Velocity $(\mu m/min)$")
+    plt.axvline(x=meanFinish)
+    plt.axvline(x=minFinish, linestyles="dashed")
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound center $(\mu m)$")
     fig.savefig(
@@ -356,7 +359,7 @@ if run:
     plt.close("all")
 
 
-#  ------------------- Radial Laganian Velocity
+#  ------------------- Radial Migration
 
 run = True
 
@@ -370,7 +373,7 @@ if run:
     for i in range(meanFinish):
         for j in range(grid):
             r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
-            t = [i, i]
+            t = [i, i + 1]
             dfr = cl.sortRadius(dfVelocity, t, r)
             if list(dfr["Velocity"]) == []:
                 Vr = 0
@@ -397,7 +400,7 @@ if run:
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     fig.savefig(
-        f"results/Laganian Migration {fileType}", dpi=300, transparent=True,
+        f"results/Migration {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
 

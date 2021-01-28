@@ -32,7 +32,7 @@ plt.rcParams.update({"font.size": 20})
 # -------------------
 
 
-def divisonsWeight(x, y, distance, scale):
+def divisonsWeight(x, y, distance, scale, outPlane):
 
     background = np.zeros([2512, 2512])
     r0 = int(scale * distance / 10) * 10
@@ -42,7 +42,9 @@ def divisonsWeight(x, y, distance, scale):
     background[rr1, cc1] = 1
     background[rr0, cc0] = 0
 
-    Astar = sum(sum(background[1000:1512, 1000:1512]))
+    background[1000:1512, 1000:1512][outPlane == 255] = 0
+
+    Astar = sum(sum(background[1000:1512, 1000:1512])) * (scale ** 2)
 
     weight = 1 / Astar
 
@@ -58,6 +60,7 @@ _df2 = []
 
 xw = 256
 yw = 256
+outPlane = np.zeros([181, 512, 512])
 
 for filename in filenames:
 
@@ -74,8 +77,9 @@ for filename in filenames:
         T = df["Time"].iloc[i]
         t = T[-1]
         [x, y] = df["Position"].iloc[i][-1]
+
         distance = ((x - xw) ** 2 + (y - yw) ** 2) ** 0.5
-        weight = divisonsWeight(x, y, distance, scale)
+        weight = divisonsWeight(xw, yw, distance, scale, outPlane[t])
         distance = distance * scale
         _df2.append(
             {
@@ -83,6 +87,8 @@ for filename in filenames:
                 "Label": label,
                 "Orientation": ori,
                 "T": t,
+                "X": x,
+                "Y": y,
                 "Distance": distance,
                 "Weight": weight,
             }
@@ -115,16 +121,66 @@ fig.savefig(
 )
 plt.close("all")
 
-weight = dfDivisions["Weight"][dfDivisions["Distance"] < 130]
-distance = dfDivisions["Distance"][dfDivisions["Distance"] < 130]
+# -------------------
+
+density = []
+number = []
+position = np.linspace(0, 120, 13)
+for pos in position:
+    df = dfDivisions[dfDivisions["Distance"] > pos]
+    weight = df["Weight"][df["Distance"] < pos + 10]
+    density.append(sum(weight))
+    number.append(len(weight))
+
 
 fig = plt.figure(1, figsize=(9, 8))
-plt.hist(distance, 13, density=True, weights=weight)
-plt.ylabel("Number of Divisons")
-plt.xlabel("Distance")
+plt.plot(position, density)
+plt.ylabel("Density of Divisons")
+plt.xlabel("Wound Distance")
 plt.title(f"Division Density")
-plt.ylim([0, 0.016])
 fig.savefig(
     f"results/Division Density {fileType}", dpi=300, transparent=True,
 )
 plt.close("all")
+
+
+fig = plt.figure(1, figsize=(9, 8))
+plt.plot(position, number)
+plt.ylabel("Number of Divisons")
+plt.xlabel("Wound Distance")
+plt.title(f"Division number")
+fig.savefig(
+    f"results/Division number {fileType}", dpi=300, transparent=True,
+)
+plt.close("all")
+
+
+# -------------------
+
+# _df2 = []
+# for i in range(10000):
+#     x = int(random.uniform(0, 1) * 512)
+#     y = int(random.uniform(0, 1) * 512)
+#     distance = ((x - xw) ** 2 + (y - yw) ** 2) ** 0.5
+#     weight = divisonsWeight(xw, yw, distance, scale, outPlane[t])
+#     distance = distance * scale
+#     _df2.append(
+#         {"X": x, "Y": y, "Distance": distance, "Weight": weight,}
+#     )
+
+# df2 = pd.DataFrame(_df2)
+
+x = dfDivisions["X"]
+y = dfDivisions["Y"]
+
+heatmap = np.histogram2d(x, y, range=[[0, 512], [0, 512]], bins=20)[0]
+x, y = np.mgrid[0 : 512 : 512 / 20, 0 : 512 : 512 / 20]
+
+fig, ax = plt.subplots()
+c = ax.pcolor(x, y, heatmap, cmap="Reds")
+fig.colorbar(c, ax=ax)
+fig.savefig(
+    f"results/Division heatmap {fileType}", dpi=300, transparent=True,
+)
+plt.close("all")
+

@@ -120,7 +120,7 @@ for filename in filenames:
 
     for t in range(T):
         df2 = df[df["Time"] == t]
-        (Cx, Cy) = dfWound["Centroid"][t]
+        (Cx, Cy) = dfWound["Position"][t]
         for i in range(len(df2)):
             area = df2["Area"].iloc[i]
             (x, y) = df2["Centroid"].iloc[i]
@@ -178,7 +178,7 @@ while finished != True:
         for t in uniqueTimes:
 
             prop = df["Wound Oriented q"][df["Time"] == t]
-            q = np.mean(list(prop))
+            q = np.mean(prop)
             phi = np.arctan2(q[1, 0], q[0, 0]) / 2
             if phi > np.pi / 2:
                 phi = np.pi / 2 - phi
