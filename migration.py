@@ -27,7 +27,42 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 14})
+
+# -------------------
+
+
+def densityDrift(filename):
+
+    df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+    A0 = np.mean(list(df["Area"][df["Time"] == 0] * scale ** 2))
+
+    mu = []
+    time = range(181)
+    for t in time:
+        prop = list(df["Area"][df["Time"] == t] * scale ** 2)
+        mu.append(np.mean(prop) / A0)
+    for i in range(7):
+        mu.append(mu[-1])
+    mu = np.array(mu)
+
+    mu = movingAverage(mu, 8)
+
+    density = 1 / mu
+
+    return density
+
+
+def movingAverage(x, w):
+    return np.convolve(x, np.ones(w), "valid") / w
+
+
+def driftCorrection(r, theta, D, time):
+
+    s = r * (1 - (D[time] / D[time + 1]) ** 0.5)
+    Vd = s * np.array([np.cos(theta), np.sin(theta)])
+    return Vd
+
 
 # -------------------
 
@@ -325,11 +360,19 @@ if run:
 
     _dfvelocity = []
     for filename in filenames:
+
+        # change in density drift
+        D = densityDrift(filename)
+
         df = dfVelocityCenter[dfVelocityCenter["Filename"] == filename]
         for t in range(T - 1):
             dft = df[df["Time"] == t]
             V = np.mean(list(dft["Velocity"]), axis=0)
             for i in range(len(dft)):
+                r = (dft["X"].iloc[i] ** 2 + dft["Y"].iloc[i] ** 2) ** 0.5
+                theta = np.arctan2(dft["Y"].iloc[i], dft["X"].iloc[i])
+                time = int(dft["Time"].iloc[i])
+                Vd = driftCorrection(r, theta, D, time)
                 _dfvelocity.append(
                     {
                         "Filename": filename,
@@ -337,9 +380,9 @@ if run:
                         "Time": dft["Time"].iloc[i],
                         "X": dft["X"].iloc[i],
                         "Y": dft["Y"].iloc[i],
-                        "R": (dft["X"].iloc[i] ** 2 + dft["Y"].iloc[i] ** 2) ** 0.5,
-                        "Theta": np.arctan2(dft["Y"].iloc[i], dft["X"].iloc[i]),
-                        "Velocity": dft["Velocity"].iloc[i] - V,
+                        "R": r,
+                        "Theta": theta,
+                        "Velocity": dft["Velocity"].iloc[i] - V + Vd,
                     }
                 )
     dfvelocity = pd.DataFrame(_dfvelocity)
@@ -375,7 +418,8 @@ if run:
     c.set_label(r"Velocity $(\mu m/min)$")
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound center $(\mu m)$")
+    plt.title(f"Velocity {fileType}")
     fig.savefig(
-        f"results/Radial Velocity kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Radial Velocity kymograph DDC {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")

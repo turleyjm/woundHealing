@@ -54,6 +54,20 @@ def getFilesType():
     return filenames, fileType
 
 
+def getFilesOfType(fileType):
+
+    cwd = os.getcwd()
+    Fullfilenames = os.listdir(cwd + "/dat")
+    filenames = []
+    for filename in Fullfilenames:
+        if fileType in filename:
+            filenames.append(filename)
+
+    filenames.sort()
+
+    return filenames
+
+
 def ThreeD(a):
     lst = [[[] for col in range(a)] for col in range(a)]
     return lst

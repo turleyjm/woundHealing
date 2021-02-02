@@ -27,46 +27,75 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
 filenames, fileType = cl.getFilesType()
 
 T = 181
+scale = 147.91 / 512
 
-for filename in filenames:
-
-    functionTitle = "Shape Factor"
-
-    df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
-
-    mu = []
-    err = []
-
-    for t in range(T):
-        prop = list(df[f"{functionTitle}"][df["Time"] == t])
-        mu.append(np.mean(prop))
-        err.append(np.std(prop) / len(prop) ** 0.5)
-
-    x = range(T)
-
+run = True
+if run:
     fig = plt.figure(1, figsize=(9, 8))
-    plt.gcf().subplots_adjust(left=0.2)
-    plt.errorbar(x, mu, yerr=err, fmt="o")
+    time = range(T)
+    for filename in filenames:
+
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        sf0 = np.mean(list(df["Shape Factor"][df["Time"] == 0]))
+
+        mu = []
+        err = []
+
+        for t in time:
+            prop = list(df["Shape Factor"][df["Time"] == t])
+            mu.append(np.mean(prop) / sf0)
+            err.append(np.std(prop) / len(prop) ** 0.5)
+
+        plt.plot(time, mu)
 
     plt.xlabel("Time")
-    plt.ylabel(f"{functionTitle}")
-    plt.gcf().subplots_adjust(bottom=0.2)
+    plt.ylabel(f"Shape Factor relative")
     fig.savefig(
-        f"results/{functionTitle} of {filename}", dpi=300, transparent=True,
+        f"results/Shape Factor", dpi=300, transparent=True,
     )
     plt.close("all")
 
-    # ----------------------------
+# ----------------------------
 
-    functionTitle = "Orientation"
+run = True
+if run:
+    fig = plt.figure(1, figsize=(9, 8))
+    time = range(T)
+    for filename in filenames:
 
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        A0 = np.mean(list(df["Area"][df["Time"] == 0] * scale ** 2))
+
+        mu = []
+        err = []
+
+        for t in time:
+            prop = list(df["Area"][df["Time"] == t] * scale ** 2)
+            mu.append(np.mean(prop) / A0)
+            err.append(np.std(prop) / len(prop) ** 0.5)
+
+        plt.plot(time, mu)
+        mu = np.array(mu)
+
+    plt.xlabel("Time")
+    plt.ylabel("Area relative")
+    fig.savefig(
+        f"results/Area", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+
+# ----------------------------
+
+run = False
+if run:
     df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
 
     iso = []
@@ -108,7 +137,7 @@ for filename in filenames:
     plt.ylabel(f"isotopy of the tissue")
     plt.gcf().subplots_adjust(bottom=0.2)
     fig.savefig(
-        f"results/{functionTitle} of {filename}", dpi=300, transparent=True,
+        f"results/Orientation of {filename}", dpi=300, transparent=True,
     )
     plt.close("all")
 

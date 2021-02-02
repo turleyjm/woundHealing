@@ -98,7 +98,7 @@ plt.close("all")
 
 #  ------------------- Radius around wound thats fully in frame
 
-run = True
+run = False
 if run:
     rList = [[] for col in range(T)]
     for filename in filenames:
