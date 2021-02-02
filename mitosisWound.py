@@ -27,7 +27,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -46,7 +46,10 @@ def divisonsWeight(x, y, distance, scale, outPlane):
 
     Astar = sum(sum(background[1000:1512, 1000:1512])) * (scale ** 2)
 
-    weight = 1 / Astar
+    if Astar == 0:
+        weight = 0
+    else:
+        weight = 1 / Astar
 
     return weight
 
@@ -93,76 +96,145 @@ for filename in filenames:
 
 dfDivisions = pd.DataFrame(_df2)
 
-time = dfDivisions["T"]
-orientation = dfDivisions["Wound Orientation"]
 
+run = False
+if run:
+    orientation = dfDivisions["Wound Orientation"]
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.hist(time, 18, density=True)
-plt.ylabel("Number of Divisons")
-plt.xlabel("Time (mins)")
-plt.title(f"Division time")
-plt.ylim([0, 0.01])
-fig.savefig(
-    f"results/Division time after wounding {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
-
-
-fig = plt.figure(1, figsize=(9, 8))
-plt.hist(orientation, 9, density=True)
-plt.ylabel("Number of Divisons")
-plt.xlabel("Orientation")
-plt.title(f"Division Orientation")
-plt.ylim([0, 0.015])
-fig.savefig(
-    f"results/Division Orientation {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.hist(orientation, 9, density=True)
+    plt.ylabel("Number of Divisons")
+    plt.xlabel("Orientation")
+    plt.title(f"Division Orientation")
+    plt.ylim([0, 0.015])
+    fig.savefig(
+        f"results/Division Orientation {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
 # -------------------
 
-density = []
-number = []
-position = np.linspace(0, 120, 13)
-for pos in position:
-    df = dfDivisions[dfDivisions["Distance"] > pos]
-    weight = df["Weight"][df["Distance"] < pos + 10]
-    density.append(sum(weight))
-    number.append(len(weight))
+run = False
+if run:
+    density = []
+    position = np.linspace(0, 120, 13)
+    for pos in position:
+        df = dfDivisions[dfDivisions["Distance"] > pos]
+        weight = list(df["Weight"][df["Distance"] < pos + 10])
+        if 0 in weight:
+            weight.remove(0)
+        density.append(sum(weight))
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.plot(position, density)
+    plt.ylabel("Density of Divisons")
+    plt.xlabel("Wound Distance")
+    plt.title(f"Division Density")
+    fig.savefig(
+        f"results/Division Density {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    # fig = plt.figure(1, figsize=(9, 8))
+    # plt.plot(position, number)
+    # plt.ylabel("Number of Divisons")
+    # plt.xlabel("Wound Distance")
+    # plt.title(f"Division number")
+    # fig.savefig(
+    #     f"results/Division number {fileType}", dpi=300, transparent=True,
+    # )
+    # plt.close("all")
+
+    density = []
+    time = np.linspace(0, 160, 9)
+    for t in time:
+        df = dfDivisions[dfDivisions["T"] > t]
+        weight = list(df["Weight"][df["T"] < t + 20])
+        if 0 in weight:
+            weight.remove(0)
+        density.append(sum(weight))
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.plot(time, density)
+    plt.ylabel("Density of Divisons")
+    plt.xlabel("Time (mins)")
+    plt.title(f"Division time")
+    fig.savefig(
+        f"results/Division time {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.plot(position, density)
-plt.ylabel("Density of Divisons")
-plt.xlabel("Wound Distance")
-plt.title(f"Division Density")
-fig.savefig(
-    f"results/Division Density {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+# -------------------
+
+run = False
+if run:
+    x = dfDivisions["X"]
+    y = dfDivisions["Y"]
+
+    heatmap = np.histogram2d(x, y, range=[[0, 120], [0, 100]], bins=20)[0]
+    x, y = np.mgrid[-100:100:10, -100:100:10]
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmap, cmap="Reds")
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/Division heatmap {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.plot(position, number)
-plt.ylabel("Number of Divisons")
-plt.xlabel("Wound Distance")
-plt.title(f"Division number")
-fig.savefig(
-    f"results/Division number {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+# -------------------
 
-x = dfDivisions["X"]
-y = dfDivisions["Y"]
+run = True
+if run:
+    heatmapDensity = np.zeros([9, 10])
+    heatmapOrientation = np.zeros([9, 10])
+    time = np.linspace(0, 160, 9)
+    position = np.linspace(0, 90, 10)
+    x = 0
+    y = 0
+    for t in time:
+        for pos in position:
+            df = dfDivisions[dfDivisions["T"] > t]
+            df2 = df[df["T"] < t + 20]
+            df3 = df2[df2["Distance"] > pos]
+            df4 = df3[df3["Distance"] < pos + 10]
+            weight = list(df4["Weight"])
+            if 0 in weight:
+                weight.remove(0)
+            ori = df4["Wound Orientation"]
+            if len(weight) == 0:
+                weight = [np.nan]
+                ori = [np.nan]
 
-heatmap = np.histogram2d(x, y, range=[[-100, 100], [-100, 100]], bins=20)[0]
-x, y = np.mgrid[-100:100:10, -100:100:10]
+            heatmapDensity[x, y] = sum(weight)
+            heatmapOrientation[x, y] = np.mean(ori)
 
-fig, ax = plt.subplots()
-c = ax.pcolor(x, y, heatmap, cmap="Reds")
-fig.colorbar(c, ax=ax)
-fig.savefig(
-    f"results/Division heatmap {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+            y += 1
+        x += 1
+        y = 0
+
+    x, y = np.mgrid[0:200:20, 0:100:10]
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmapDensity, cmap="coolwarm")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound center $(\mu m)$")
+    plt.title(f"Division Density")
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/Division Time Distance Heatmap {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmapOrientation, cmap="coolwarm")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound center $(\mu m)$")
+    plt.title(f"Division Orientation")
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/Division Orientation Heatmap {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
