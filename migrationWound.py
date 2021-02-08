@@ -88,6 +88,7 @@ for filename in filenames:
     woundEdge.append((area[0] / np.pi) ** 0.5)
 
 meanFinish = int(np.mean(finish))
+medianFinish = int(np.median(finish))
 minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
 
@@ -96,6 +97,7 @@ _df2 = []
 for filename in filenames:
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
     df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+    dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
 
     for i in range(len(df)):
         t = df["t"][i]
@@ -111,6 +113,9 @@ for filename in filenames:
                 t0 = t[j]
                 x0 = x[j]
                 y0 = y[j]
+                r = dist[int(t0), int(x0), int(y0)]
+                if r == 0:
+                    r = -1
 
                 tdelta = tMax - t0
                 if tdelta > 5:
@@ -128,7 +133,7 @@ for filename in filenames:
                             "Time": t0,
                             "X": x0 - wx,
                             "Y": y0 - wy,
-                            "R": ((x0 - wx) ** 2 + (y0 - wy) ** 2) ** 0.5,
+                            "R": r,
                             "Theta": np.arctan2(y0 - wy, x0 - wx),
                             "Velocity": v,
                         }
@@ -148,7 +153,7 @@ for filename in filenames:
                             "Time": t0,
                             "X": x0 - wx,
                             "Y": y0 - wy,
-                            "R": ((x0 - wx) ** 2 + (y0 - wy) ** 2) ** 0.5,
+                            "R": r,
                             "Theta": np.arctan2(y0 - wy, x0 - wx),
                             "Velocity": v,
                         }
@@ -156,7 +161,27 @@ for filename in filenames:
 
 dfvelocity = pd.DataFrame(_df2)
 
-#  ------------------- Velocity - mean velocity
+radius = [[] for col in range(T)]
+for filename in filenames:
+
+    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+    # area = dfWound["Area"].iloc[0] * (scale) ** 2
+    # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
+
+    time = np.array(dfWound["Time"])
+    area = np.array(dfWound["Area"]) * (scale) ** 2
+    for t in range(T):
+        if pd.isnull(area[t]):
+            area[t] = 0
+
+    for t in range(T):
+        radius[t].append((area[t] / np.pi) ** 0.5)
+
+for t in range(T):
+    radius[t] = np.median(radius[t])
+
+#  ------------------- Velocity - mean velocity + density drift correction
 
 _dfVelocity = []
 for filename in filenames:
@@ -333,7 +358,6 @@ if run:
 #  ------------------- Mean migration path
 
 run = False
-
 if run:
     fig = plt.figure(1, figsize=(9, 8))
     x = []
@@ -360,7 +384,6 @@ if run:
 #  ------------------- Radial Velocity
 
 run = True
-
 if run:
     grid = 40
     heatmap = np.zeros([int(T / 4), grid])
@@ -370,7 +393,7 @@ if run:
             t = [i, i + 4]
             dfr = cl.sortRadius(dfVelocity, t, r)
             if list(dfr["Velocity"]) == []:
-                Vr = 0
+                Vr = np.nan
             else:
                 Vr = []
                 for k in range(len(dfr)):
@@ -383,63 +406,32 @@ if run:
 
     dt, dr = 4, 80 / grid
     t, r = np.mgrid[0:180:dt, 0:80:dr]
-    z_min, z_max = -0.5, 0.5
+    z_min, z_max = -0.35, 0.35
     midpoint = 1 - z_max / (z_max + abs(z_min))
-    orig_cmap = matplotlib.cm.seismic
+    orig_cmap = matplotlib.cm.RdBu_r
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
     fig.colorbar(c, ax=ax)
-    c.set_label(r"Velocity $(\mu m/min)$")
-    plt.axvline(x=meanFinish)
-    plt.axvline(x=minFinish, linestyle="--")
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (min)")
-    plt.ylabel(r"Distance from wound center $(\mu m)$")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Velocity {fileType}")
     fig.savefig(
         f"results/Radial Velocity kymograph DDC {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
 
+    D = np.zeros(grid)
 
-#  ------------------- Radial Migration
+    for r in range(grid):
 
-run = False
-
-if run:
-
-    woundDist = np.linspace(woundEdge, woundEdge + 40, 41)
-    lagMigration = []
-
-    grid = 40
-    heatmap = np.zeros([meanFinish, grid])
-    for i in range(meanFinish):
-        for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
-            t = [i, i + 1]
-            dfr = cl.sortRadius(dfVelocity, t, r)
-            if list(dfr["Velocity"]) == []:
-                Vr = 0
-            else:
-                Vr = []
-                for k in range(len(dfr)):
-                    v = dfr["Velocity"].iloc[k]
-                    theta = dfr["Theta"].iloc[k]
-                    R = cl.rotation_matrix(-theta)
-                    Vr.append(-np.matmul(R, v)[0])
-
-                heatmap[i, j] = np.mean(Vr) * scale
-
-    for d in woundDist:
-        d0 = d
-        migration = 0
-        for t in range(meanFinish):
-            d = d - heatmap[t, int(d / 2)]
-
-        lagMigration.append(d0 - d)
+        D[r] = sum(heatmap[:, r])
 
     fig, ax = plt.subplots()
-    plt.plot(woundDist - woundEdge, lagMigration)
+    plt.plot(np.array(range(grid)) * 2, D)
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     fig.savefig(
@@ -447,3 +439,70 @@ if run:
     )
     plt.close("all")
 
+    # make into a video
+
+    run = True
+    if run:
+        cl.createFolder("results/video/")
+
+        vidDist = np.ones([45, 511, 511])
+
+        for t in range(45):
+            r = radius[t * 4]
+            if r == 0:
+                r = scale
+            rr, cc = sm.draw.circle(255, 255, r / scale)
+            img = np.ones([511, 511])
+            img[rr, cc] = 0
+            vidDist[t] = sp.ndimage.morphology.distance_transform_edt(img)
+
+        vid = np.zeros([45, 511, 511])
+        for t in range(45):
+            img = vidDist[t]
+            vid[t][img == 0] = np.nan
+            for r in range(grid):
+                vid[t][img > 2 * r / scale] = heatmap[t, r]
+
+        dx, dy = scale, scale
+        x, y = np.mgrid[
+            -255 * scale : 256 * scale : dx, -255 * scale : 256 * scale : dy
+        ]
+        z_min, z_max = -0.35, 0.35
+        midpoint = 1 - z_max / (z_max + abs(z_min))
+        orig_cmap = matplotlib.cm.RdBu_r
+        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        for t in range(45):
+            fig, ax = plt.subplots()
+            c = ax.pcolor(x, y, vid[t], cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+            fig.colorbar(c, ax=ax)
+            plt.title(f"Velocity {fileType} {int(4*t)}mins")
+            fig.savefig(
+                f"results/video/Velocity Video {fileType} {t}",
+                dpi=300,
+                transparent=True,
+            )
+            plt.close("all")
+
+        # make video
+        img_array = []
+
+        for t in range(45):
+            img = cv2.imread(f"results/video/Velocity Video {fileType} {t}.png")
+            height, width, layers = img.shape
+            size = (width, height)
+            img_array.append(img)
+
+        out = cv2.VideoWriter(
+            f"results/Velocity Video {fileType}.mp4",
+            cv2.VideoWriter_fourcc(*"DIVX"),
+            3,
+            size,
+        )
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+
+        out.release()
+        cv2.destroyAllWindows()
+
+        shutil.rmtree("results/video")

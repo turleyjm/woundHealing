@@ -272,6 +272,8 @@ if run:
 
     xList = [[] for col in range(T - 1)]
     yList = [[] for col in range(T - 1)]
+    xFinal = []
+    yFinal = []
     for filename in filenames:
         dfUnwound = dfVelocity[dfVelocity["Filename"] == filename]
         xt = 0
@@ -284,6 +286,9 @@ if run:
             xList[t].append(xt)
             yList[t].append(yt)
 
+        xFinal.append(xt)
+        yFinal.append(yt)
+
     for t in range(T - 1):
         xList[t] = np.mean(xList[t])
         yList[t] = np.mean(yList[t])
@@ -295,12 +300,17 @@ if run:
 
     xList = [[] for col in range(T)]
     yList = [[] for col in range(T)]
+    xwsFinal = []
+    ywsFinal = []
     for filename in filenames:
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         x0, y0 = dfWound["Position"].iloc[0]
         for t in range(T):
             xList[t].append(dfWound["Position"].iloc[t][0] - x0)
             yList[t].append(dfWound["Position"].iloc[t][1] - y0)
+
+        xwsFinal.append(dfWound["Position"].iloc[t][0] - x0)
+        ywsFinal.append(dfWound["Position"].iloc[t][1] - y0)
 
     for t in range(T):
         xList[t] = np.mean(xList[t])
@@ -322,7 +332,24 @@ if run:
     )
     plt.close("all")
 
+    xFinal = np.array(xFinal) * scale
+    yFinal = np.array(yFinal) * scale
+    xwsFinal = np.array(xwsFinal) * scale
+    ywsFinal = np.array(ywsFinal) * scale
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.scatter(xwsFinal - xFinal, ywsFinal - yFinal)
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.title("Diffence between final migration path of Wounded and Wounsite")
+    fig.savefig(
+        f"results/Final Migration Wounded and Wounsite", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+
 #  ------------------- Radial Velocity
+
 
 run = True
 if run:
@@ -390,12 +417,12 @@ if run:
     grid = 40
     heatmap = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
+        t = [i, i + 4]
         for j in range(grid):
             r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
-            t = [i, i + 4]
             dfr = cl.sortRadius(dfvelocity, t, r)
             if list(dfr["Velocity"]) == []:
-                Vr = 0
+                Vr = np.nan
             else:
                 Vr = []
                 for k in range(len(dfr)):
@@ -408,10 +435,11 @@ if run:
 
     dt, dr = 4, 80 / grid
     t, r = np.mgrid[0:180:dt, 0:80:dr]
-    z_min, z_max = -0.5, 0.5
+    z_min, z_max = -0.35, 0.35
     midpoint = 1 - z_max / (z_max + abs(z_min))
-    orig_cmap = matplotlib.cm.seismic
+    orig_cmap = matplotlib.cm.RdBu_r
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
     fig.colorbar(c, ax=ax)
@@ -421,5 +449,20 @@ if run:
     plt.title(f"Velocity {fileType}")
     fig.savefig(
         f"results/Radial Velocity kymograph DDC {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    D = np.zeros(grid)
+
+    for r in range(grid):
+
+        D[r] = sum(heatmap[:, r])
+
+    fig, ax = plt.subplots()
+    plt.plot(np.array(range(grid)) * 2, D)
+    plt.xlabel(r"Start from Wound Edge $(\mu m)$")
+    plt.ylabel(r"Migration $(\mu m)$")
+    fig.savefig(
+        f"results/Migration {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
