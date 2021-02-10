@@ -90,35 +90,9 @@ for filename in filenames:
 
 dfShape = pd.DataFrame(_df2)
 
-# normalisation of area and shape factor
-# _dfShape = []
-# for filename in filenames:
-
-#     dfFile = df2[df2["Filename"] == filename]
-#     dfTime = dfFile[dfFile["Time"] == 0]
-#     dfr = dfTime[dfTime["Filename"] == filename]
-#     sf0 = np.mean(dfr["Shape Factor"][dfr["R"] > R / scale])
-#     A0 = np.mean(dfr["Area"][dfr["R"] > R / scale])
-
-#     for i in range(len(dfFile)):
-#         _dfShape.append(
-#             {
-#                 "Filename": dfFile["Filename"].iloc[i],
-#                 "Time": dfFile["Time"].iloc[i],
-#                 "X": dfFile["X"].iloc[i],
-#                 "Y": dfFile["Y"].iloc[i],
-#                 "R": dfFile["R"].iloc[i],
-#                 "Theta": dfFile["Theta"].iloc[i],
-#                 "q": dfFile["q"].iloc[i],
-#                 "Shape Factor": dfFile["Shape Factor"].iloc[i] / sf0,
-#                 "Area": dfFile["Area"].iloc[i] / A0,
-#             }
-#         )
-# dfShape = pd.DataFrame(_dfShape)
-
 #  -------------------
 
-run = True
+run = False
 if run:
     fig = plt.figure(1, figsize=(9, 8))
     time = range(T)
@@ -147,13 +121,13 @@ if run:
 
 #  ------------------- Area kymograph
 
-run = True
+run = False
 if run:
-    grid = 40
+    grid = 50
     heatmapA = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
             t = [i, i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Area"]) == []:
@@ -162,8 +136,8 @@ if run:
                 Ar = dfr["Area"]
                 heatmapA[int(i / 4), j] = np.mean(Ar)
 
-    dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:180:dt, 0:100:dr]
     # z_min, z_max = heatmapA.min(), heatmapA.max()
     # midpoint = (1 - z_min) / (z_max - z_min)
     # orig_cmap = matplotlib.cm.seismic
@@ -185,13 +159,13 @@ if run:
 
 #  ------------------- Shape Factor kymograph
 
-run = True
+run = False
 if run:
-    grid = 40
+    grid = 50
     heatmapSf = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
             t = [i, i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Shape Factor"]) == []:
@@ -200,8 +174,8 @@ if run:
                 Sf = dfr["Shape Factor"]
                 heatmapSf[int(i / 4), j] = np.mean(Sf)
 
-    dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:180:dt, 0:100:dr]
     # z_min, z_max = heatmapSf.min(), heatmapSf.max()
     # midpoint = (1 - z_min) / (z_max - z_min)
     # orig_cmap = matplotlib.cm.seismic
@@ -223,13 +197,13 @@ if run:
 
 #  ------------------- Orientation kymograph
 
-run = True
+run = False
 if run:
-    grid = 40
+    grid = 50
     heatmapOri = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
             t = [i, i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["q"]) == []:
@@ -247,8 +221,8 @@ if run:
 
                 heatmapOri[int(i / 4), j] = 180 * ori / np.pi
 
-    dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:180:dt, 0:100:dr]
 
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapOri, cmap="Reds")  # vmin=0, vmax=90)
@@ -260,5 +234,66 @@ if run:
     plt.title(f"Orientation {fileType}")
     fig.savefig(
         f"results/Orientation kymograph {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+#  ------------------- Orientation kymograph
+
+run = True
+if run:
+    grid = 50
+    heatmapq1 = np.zeros([int(T / 4), grid])
+    heatmapq2 = np.zeros([int(T / 4), grid])
+    for i in range(0, 180, 4):
+        for j in range(grid):
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+            t = [i, i + 4]
+            dfr = cl.sortRadius(dfShape, t, r)
+            if list(dfr["q"]) == []:
+                ori = np.nan
+            else:
+                Q = []
+                for k in range(len(dfr)):
+                    q = dfr["q"].iloc[k]
+                    phi = dfr["Theta"].iloc[k] * 2
+                    R = cl.rotation_matrix(-phi)
+                    Q.append(np.matmul(R, q))
+
+                Q = np.mean(Q, axis=0)
+
+                heatmapq1[int(i / 4), j] = Q[0, 0]
+                heatmapq2[int(i / 4), j] = Q[0, 1]
+
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:180:dt, 0:100:dr]
+
+    z_min, z_max = -0.04, 0.04
+    midpoint = 1 - z_max / (z_max + abs(z_min))
+    orig_cmap = matplotlib.cm.RdBu_r
+    shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(t, r, heatmapq1, cmap=shifted_cmap, vmin=-0.04, vmax=0.04)
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (min)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Q1 {fileType}")
+    fig.savefig(
+        f"results/Q1 kymograph {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(t, r, heatmapq2, cmap=shifted_cmap, vmin=-0.04, vmax=0.04)
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (min)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Q2 {fileType}")
+    fig.savefig(
+        f"results/Q2 kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")

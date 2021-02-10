@@ -385,11 +385,11 @@ if run:
 
 run = True
 if run:
-    grid = 40
+    grid = 50
     heatmap = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
             t = [i, i + 4]
             dfr = cl.sortRadius(dfVelocity, t, r)
             if list(dfr["Velocity"]) == []:
@@ -404,8 +404,8 @@ if run:
 
                 heatmap[int(i / 4), j] = np.mean(Vr) * scale
 
-    dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:180:dt, 0:100:dr]
     z_min, z_max = -0.35, 0.35
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.RdBu_r
