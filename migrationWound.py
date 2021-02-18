@@ -428,7 +428,7 @@ if run:
 
     for r in range(grid):
 
-        D[r] = sum(heatmap[:, r])
+        D[r] = sum(heatmap[:, r]) * 4
 
     fig, ax = plt.subplots()
     plt.plot(np.array(range(grid)) * 2, D)

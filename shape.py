@@ -27,7 +27,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 16})
+plt.rcParams.update({"font.size": 14})
 
 # -------------------
 
@@ -35,40 +35,101 @@ filenames, fileType = cl.getFilesType()
 
 T = 181
 scale = 147.91 / 512
-R = 40
-
-finish = []
-woundEdge = []
-for filename in filenames:
-
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-
-    area = np.array(dfWound["Area"]) * (scale) ** 2
-    t = 0
-    while pd.notnull(area[t]):
-        t += 1
-
-    finish.append(t - 1)
-    woundEdge.append((area[0] / np.pi) ** 0.5)
-
-meanFinish = int(np.mean(finish))
-medianFinish = int(np.median(finish))
-minFinish = int(min(finish))
-woundEdge = np.mean(woundEdge)
+grid = 10
 
 
 _df2 = []
 for filename in filenames:
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+    df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+
+    for i in range(len(df)):
+        t = df["t"][i]
+        x = df["x"][i]
+        y = df["y"][i]
+        label = df["Label"][i]
+
+        m = len(t)
+        tMax = t[-1]
+
+        if m > 1:
+            for j in range(m - 1):
+                t0 = t[j]
+                x0 = x[j]
+                y0 = y[j]
+
+                tdelta = tMax - t0
+                if tdelta > 5:
+                    t5 = t[j + 5]
+                    x5 = x[j + 5]
+                    y5 = y[j + 5]
+
+                    v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
+
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "Time": t0,
+                            "X": x0,
+                            "Y": y0,
+                            "Velocity": v,
+                        }
+                    )
+                else:
+                    tEnd = t[-1]
+                    xEnd = x[-1]
+                    yEnd = y[-1]
+
+                    v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
+
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "Time": int(t0),
+                            "X": x0,
+                            "Y": y0,
+                            "Velocity": v,
+                        }
+                    )
+
+dfVelocity = pd.DataFrame(_df2)
+
+_df2 = []
+for filename in filenames:
+    dfUnwound = dfVelocity[dfVelocity["Filename"] == filename]
+    xt = 256
+    yt = 256
+    xList = []
+    yList = []
+    xList.append(xt)
+    yList.append(yt)
+    for t in range(T - 1):
+        df = dfUnwound[dfUnwound["Time"] == t]
+        v = np.mean(list(df["Velocity"]), axis=0)
+        xt += v[0]
+        yt += v[1]
+        xList.append(xt)
+        yList.append(yt)
+
+    dist = np.ones([T, 512, 512])
+
+    for t in range(T):
+        x = int(xList[t])
+        y = int(yList[t])
+        dist[t, x, y] = 0
+        dist[t] = sp.ndimage.morphology.distance_transform_edt(dist[t])
+
     df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
-    dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
 
     for t in range(T):
         dft = df[df["Time"] == t]
-        [wx, wy] = dfWound["Position"].iloc[int(t)]
+        x = int(xList[t])
+        y = int(yList[t])
         Q = np.mean(dft["q"])
         for i in range(len(dft)):
-            [x, y] = [dft["Centroid"].iloc[i][0] - wx, dft["Centroid"].iloc[i][1] - wy]
+            [x, y] = [dft["Centroid"].iloc[i][0] - x, dft["Centroid"].iloc[i][1] - y]
             r = dist[
                 int(t), int(dft["Centroid"].iloc[i][0]), int(dft["Centroid"].iloc[i][1])
             ]
@@ -94,38 +155,10 @@ for filename in filenames:
 
 dfShape = pd.DataFrame(_df2)
 
-#  -------------------
-
-run = False
-if run:
-    fig = plt.figure(1, figsize=(9, 8))
-    time = range(T)
-    for filename in filenames:
-
-        df = dfShape[dfShape["Filename"] == filename]
-        dfr = df[df["R"] > R]
-
-        mu = []
-        err = []
-
-        for t in time:
-            prop = list(dfr["Area"][dfr["Time"] == t])
-            mu.append(np.mean(prop) * scale ** 2)
-            err.append(np.std(prop) / len(prop) ** 0.5)
-
-        plt.plot(time, mu)
-
-    plt.xlabel("Time (mins)")
-    plt.ylabel(r"Area ($\mu m^2$)")
-    plt.title(f"Area {R}" + r"$\mu m $ back from wound")
-    fig.savefig(
-        f"results/Area back from Wound {fileType}", dpi=300, transparent=True,
-    )
-    plt.close("all")
 
 #  ------------------- Area kymograph
 
-run = False
+run = True
 if run:
     grid = 50
     heatmapA = np.zeros([int(T), grid])
@@ -150,8 +183,6 @@ if run:
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapA, cmap="Reds", vmin=100, vmax=225)
     fig.colorbar(c, ax=ax)
-    plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (mins)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Area {fileType}")
@@ -163,7 +194,7 @@ if run:
 
 #  ------------------- Shape Factor kymograph
 
-run = False
+run = True
 if run:
     grid = 50
     heatmapSf = np.zeros([int(T), grid])
@@ -188,8 +219,6 @@ if run:
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapSf, cmap="Reds", vmin=0.3, vmax=0.5)
     fig.colorbar(c, ax=ax)
-    plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (mins)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Shape Factor {fileType}")
@@ -231,8 +260,6 @@ if run:
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapOri, cmap="Reds")  # vmin=0, vmax=90)
     fig.colorbar(c, ax=ax)
-    plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Orientation {fileType}")
@@ -274,8 +301,6 @@ if run:
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapq1, cmap="RdBu_r", vmin=-0.03, vmax=0.03)
     fig.colorbar(c, ax=ax)
-    plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Q1 {fileType}")
@@ -287,8 +312,6 @@ if run:
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.03, vmax=0.03)
     fig.colorbar(c, ax=ax)
-    plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Q2 {fileType}")
