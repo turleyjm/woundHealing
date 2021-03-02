@@ -194,7 +194,7 @@ if run:
 
 #  ------------------- Shape Factor kymograph
 
-run = True
+run = False
 if run:
     grid = 50
     heatmapSf = np.zeros([int(T), grid])
@@ -270,7 +270,7 @@ if run:
 
 #  ------------------- q tensor kymograph
 
-run = True
+run = False
 if run:
     grid = 50
     heatmapq1 = np.zeros([int(T), grid])

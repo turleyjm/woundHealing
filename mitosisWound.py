@@ -60,7 +60,6 @@ for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
     dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
-    outPlane = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype("uint8")
     df = dfDivisions[dfDivisions["Chain"] == "parent"]
     n = int(len(df))
 
@@ -149,7 +148,7 @@ for t in T:
         df3 = df2[df2["R"] >= r]
         df4 = df3[df3["R"] < r + 10]
         ori = []
-        n = np.mean(df4["Number"])
+        n = sum(df4["Number"])
         area = np.mean(df4["Area"])
         oriList = list(df4["Wound Orientation"])
 
@@ -198,6 +197,7 @@ if run:
     for r in R:
         area = np.mean(dfDensity["Area"][dfDensity["R"] == r])
         n = np.mean(dfDensity["Number"][dfDensity["R"] == r])
+
         density.append(n / area)
 
     fig = plt.figure(1, figsize=(9, 8))
@@ -249,7 +249,7 @@ if run:
 
 # -------------------
 
-run = True
+run = False
 if run:
     heatmapDensity = np.zeros([len(T), len(R)])
     heatmapOrientation = np.zeros([len(T), len(R)])
@@ -260,8 +260,8 @@ if run:
         for r in R:
             df = dfDensity[dfDensity["T"] == t]
             df2 = df[df["R"] == r]
-            area = df2["Area"].iloc[0]
-            n = df2["Number"].iloc[0]
+            area = np.mean(df2["Area"].iloc[0])
+            n = np.mean(df2["Number"].iloc[0])
             ori = df2["Wound Orientation"].iloc[0]
 
             if ori == []:
@@ -310,13 +310,13 @@ if run:
     )
     plt.close("all")
 
-    fig, ax = plt.subplots()
-    c = ax.pcolor(x, y, heatmapArea, cmap="Blues")
-    plt.xlabel("Time (mins)")
-    plt.ylabel(r"Distance from wound center $(\mu m)$")
-    plt.title(f"Division Density")
-    fig.colorbar(c, ax=ax)
-    fig.savefig(
-        f"results/Division Area Distance Heatmap {fileType}", dpi=300, transparent=True,
-    )
-    plt.close("all")
+    # fig, ax = plt.subplots()
+    # c = ax.pcolor(x, y, heatmapArea, cmap="Blues")
+    # plt.xlabel("Time (mins)")
+    # plt.ylabel(r"Distance from wound center $(\mu m)$")
+    # plt.title(f"Division Density")
+    # fig.colorbar(c, ax=ax)
+    # fig.savefig(
+    #     f"results/Division Area Distance Heatmap {fileType}", dpi=300, transparent=True,
+    # )
+    # plt.close("all")

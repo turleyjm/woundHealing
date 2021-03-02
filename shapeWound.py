@@ -76,8 +76,8 @@ for filename in filenames:
                 r = -1
             q = dft["q"].iloc[i] - Q
             sf = dft["Shape Factor"].iloc[i]
-            A = dft["Area"].iloc[i]
-            P = dft["Perimeter"].iloc[i]
+            A = dft["Area"].iloc[i] * scale ** 2
+            P = dft["Perimeter"].iloc[i] * scale
 
             _df2.append(
                 {
@@ -112,7 +112,7 @@ if run:
 
         for t in time:
             prop = list(dfr["Area"][dfr["Time"] == t])
-            mu.append(np.mean(prop) * scale ** 2)
+            mu.append(np.mean(prop))
             err.append(np.std(prop) / len(prop) ** 0.5)
 
         plt.plot(time, mu)
@@ -127,7 +127,7 @@ if run:
 
 #  ------------------- Area kymograph
 
-run = False
+run = True
 if run:
     grid = 50
     heatmapA = np.zeros([int(T), grid])
