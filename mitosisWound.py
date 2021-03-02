@@ -56,8 +56,6 @@ def inPlaneWeight(x, y, r0, r1, outPlane):
 filenames, fileType = cl.getFilesType()
 scale = 147.91 / 512
 _df2 = []
-count = 0
-countDiv = 0
 for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
@@ -77,11 +75,6 @@ for filename in filenames:
         [x, y] = df["Position"].iloc[i][-1]
         distance = ((x - xw) ** 2 + (y - yw) ** 2) ** 0.5
         distance = distance * scale
-
-        if ori > 0:
-            countDiv += 1
-        else:
-            count += 1
 
         _df2.append(
             {
@@ -156,7 +149,7 @@ for t in T:
         df3 = df2[df2["R"] >= r]
         df4 = df3[df3["R"] < r + 10]
         ori = []
-        n = np.mean(df4["Number"]) * 20
+        n = np.mean(df4["Number"])
         area = np.mean(df4["Area"])
         oriList = list(df4["Wound Orientation"])
 
@@ -168,7 +161,14 @@ for t in T:
                     ori.append(List[i])
 
         _df2.append(
-            {"T": t, "R": r, "Wound Orientation": ori, "Number": n, "Area": area,}
+            {
+                "T": t,
+                "R": r,
+                "Wound Orientation": ori,
+                "Number": n,
+                "Area": area,
+                "Weight": weight,
+            }
         )
 
 dfDensity = pd.DataFrame(_df2)

@@ -77,6 +77,7 @@ for filename in filenames:
             q = dft["q"].iloc[i] - Q
             sf = dft["Shape Factor"].iloc[i]
             A = dft["Area"].iloc[i]
+            P = dft["Perimeter"].iloc[i]
 
             _df2.append(
                 {
@@ -89,6 +90,7 @@ for filename in filenames:
                     "q": q,
                     "Shape Factor": sf,
                     "Area": A,
+                    "Shape Index": P / A ** 0.5,
                 }
             )
 
@@ -148,7 +150,7 @@ if run:
     # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(t, r, heatmapA, cmap="Reds", vmin=100, vmax=225)
+    c = ax.pcolor(t, r, heatmapA, cmap="Reds")
     fig.colorbar(c, ax=ax)
     plt.axvline(x=medianFinish)
     plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
@@ -157,6 +159,40 @@ if run:
     plt.title(f"Area {fileType}")
     fig.savefig(
         f"results/Area kymograph {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+
+#  ------------------- Shape index kymograph
+
+run = False
+if run:
+    grid = 50
+    heatmapSI = np.zeros([int(T), grid])
+    for i in range(T):
+        for j in range(grid):
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+            t = [i, i + 1]
+            dfr = cl.sortRadius(dfShape, t, r)
+            if list(dfr["Shape Index"]) == []:
+                Si = np.nan
+            else:
+                Si = dfr["Shape Index"]
+                heatmapSI[int(i), j] = np.mean(Si)
+
+    dt, dr = 1, 100 / grid
+    t, r = np.mgrid[0:181:dt, 0:100:dr]
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(t, r, heatmapSI, cmap="Reds")
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Shape index {fileType}")
+    fig.savefig(
+        f"results/Shape index kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
 
@@ -243,7 +279,7 @@ if run:
 
 #  ------------------- q tensor kymograph
 
-run = True
+run = False
 if run:
     grid = 50
     heatmapq1 = np.zeros([int(T), grid])
@@ -283,6 +319,24 @@ if run:
         f"results/Q1 kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
+
+    # p = np.zeros([15, 3])
+    # for t in range(10):
+
+    # d = heatmapq1[t * 4, 3:30]
+    # x = np.array(range(len(d))) * 2 + 6
+    # p[t] = np.polyfit(x, d, 2)
+
+    # fig, ax = plt.subplots()
+    # plt.plot(x, d)
+    # plt.plot(x, (p[t, 0] * x ** 2 + p[t, 1] * x + p[t, 2]))
+    # plt.ylim(-0.04, 0.01)
+    # plt.xlabel(r"Distance from Wound Edge $(\mu m)$")
+    # plt.ylabel(r"Q1")
+    # fig.savefig(
+    #     f"results/Q1 t={t*4} {fileType}", dpi=300, transparent=True,
+    # )
+    # plt.close("all")
 
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.03, vmax=0.03)

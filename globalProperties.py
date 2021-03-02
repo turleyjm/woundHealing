@@ -36,7 +36,7 @@ filenames, fileType = cl.getFilesType()
 T = 181
 scale = 147.91 / 512
 
-run = True
+run = False
 if run:
     fig = plt.figure(1, figsize=(9, 8))
     time = range(T)

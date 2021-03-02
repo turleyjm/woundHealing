@@ -12,6 +12,8 @@ import pandas as pd
 import random
 import scipy as sp
 import scipy.linalg as linalg
+from scipy.optimize import leastsq
+from scipy.optimize import curve_fit
 import shapely
 import skimage as sm
 import skimage.io
@@ -30,6 +32,26 @@ import commonLiberty as cl
 plt.rcParams.update({"font.size": 16})
 
 # -------------------
+
+
+def model(x, coeffs):
+    return coeffs / x
+
+
+def residuals(coeffs, y, x):
+    return y - model(x, coeffs)
+
+
+def model2(t, coeffs):
+    return coeffs[0] * np.exp(coeffs[1] * t)
+
+
+def residuals2(coeffs, y, t):
+    return y - model2(t, coeffs)
+
+
+def model3(M, A, c):
+    return (A / M[1]) * np.exp(-c * M[0])
 
 
 def densityDrift(filename):
@@ -179,7 +201,7 @@ for filename in filenames:
         radius[t].append((area[t] / np.pi) ** 0.5)
 
 for t in range(T):
-    radius[t] = np.median(radius[t])
+    radius[t] = np.mean(radius[t])
 
 #  ------------------- Velocity - mean velocity + density drift correction
 
@@ -383,13 +405,14 @@ if run:
 
 #  ------------------- Radial Velocity
 
-run = True
+run = False
 if run:
-    grid = 50
+    grid = 40
     heatmap = np.zeros([int(T / 4), grid])
+    heatmapErr = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
             t = [i, i + 4]
             dfr = cl.sortRadius(dfVelocity, t, r)
             if list(dfr["Velocity"]) == []:
@@ -403,9 +426,10 @@ if run:
                     Vr.append(-np.matmul(R, v)[0])
 
                 heatmap[int(i / 4), j] = np.mean(Vr) * scale
+                heatmapErr[int(i / 4), j] = np.std(Vr) * scale / len(Vr)
 
-    dt, dr = 4, 100 / grid
-    t, r = np.mgrid[0:180:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:180:dt, 0:80:dr]
     z_min, z_max = -0.35, 0.35
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.RdBu_r
@@ -415,7 +439,7 @@ if run:
     c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
     fig.colorbar(c, ax=ax)
     plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
     plt.xlabel("Time (min)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Velocity {fileType}")
@@ -424,24 +448,77 @@ if run:
     )
     plt.close("all")
 
-    D = np.zeros(grid)
+    # -----------
 
-    for r in range(grid):
+    r = np.array(range(40)) * 2 + 1
+    t = np.array(range(45)) * 4
+    T, R = np.meshgrid(t, r)
+    for i in range(len(R[0])):
+        R[:, i] += int(radius[4 * i])
 
-        D[r] = sum(heatmap[:, r]) * 4
+    xdata = np.vstack((T.ravel(), R.ravel()))
+
+    coeffs = curve_fit(model3, xdata, heatmap.ravel())[0]
+
+    T = 181
+    heatmapModel = np.zeros([int(T / 4), grid])
+    for i in range(0, 180, 4):
+        for j in range(grid):
+            heatmapModel[int(i / 4), j] = model3(
+                [i, 2 * j + radius[i] + 1], coeffs[0], coeffs[1]
+            )
+
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:180:dt, 0:80:dr]
 
     fig, ax = plt.subplots()
-    plt.plot(np.array(range(grid)) * 2, D)
+    c = ax.pcolor(t, r, heatmapModel, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Velocity model {fileType}")
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.20)
+    fig.savefig(
+        f"results/Radial Velocity model kymograph DDC {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    # -----------
+
+    D = np.zeros(40)
+    Dmodel = np.zeros(40)
+    Dpred = np.zeros(40)
+    r0 = radius[0]
+    R = np.linspace(0, 80, 200)
+    for r in range(40):
+
+        D[r] = sum(heatmap[:, r]) * 4
+        Dmodel[r] = sum(heatmapModel[:, r]) * 4
+        Dpred[r] = r0 + r * 2 - ((r0 + r * 2) ** 2 - r0 ** 2) ** 0.5
+
+    fig, ax = plt.subplots()
+    plt.plot(np.array(range(40)) * 2, D)
+    plt.plot(
+        np.array(range(40)) * 2, Dmodel,
+    )
+    plt.plot(
+        np.array(range(40)) * 2, Dpred,
+    )
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
+    plt.ylim([0, 7.5])
     fig.savefig(
         f"results/Migration {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
 
     # make into a video
-
-    run = True
+    run = False
     if run:
         cl.createFolder("results/video/")
 
@@ -506,3 +583,53 @@ if run:
         cv2.destroyAllWindows()
 
         shutil.rmtree("results/video")
+
+
+#  ------------------- Rotational Velocity
+
+run = True
+if run:
+    for filename in filenames:
+        df = dfVelocity[dfVelocity["Filename"] == filename]
+        grid = 50
+        heatmap = np.zeros([int(T / 4), grid])
+        heatmapErr = np.zeros([int(T / 4), grid])
+        for i in range(0, 180, 4):
+            for j in range(grid):
+                r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+                t = [i, i + 4]
+                dfr = cl.sortRadius(df, t, r)
+                if list(dfr["Velocity"]) == []:
+                    Vr = np.nan
+                else:
+                    Vr = []
+                    for k in range(len(dfr)):
+                        v = dfr["Velocity"].iloc[k]
+                        theta = dfr["Theta"].iloc[k]
+                        R = cl.rotation_matrix(-theta)
+                        Vr.append(-np.matmul(R, v)[1])
+
+                    heatmap[int(i / 4), j] = np.mean(Vr) * scale
+                    heatmapErr[int(i / 4), j] = np.std(Vr) * scale / len(Vr)
+
+        dt, dr = 4, 100 / grid
+        t, r = np.mgrid[0:180:dt, 0:100:dr]
+        z_min, z_max = -0.35, 0.35
+        midpoint = 1 - z_max / (z_max + abs(z_min))
+        orig_cmap = matplotlib.cm.RdBu_r
+        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+        fig.colorbar(c, ax=ax)
+        plt.axvline(x=medianFinish)
+        plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+        plt.xlabel("Time (min)")
+        plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        plt.title(f"Rotational Velocity {fileType}")
+        fig.savefig(
+            f"results/rotational Velocity kymograph DDC {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")

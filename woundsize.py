@@ -96,6 +96,21 @@ fig.savefig(
 )
 plt.close("all")
 
+R = np.array(R)
+err = np.array(err)
+
+fig = plt.figure(1, figsize=(9, 8))
+plt.errorbar(time, (R / np.pi) ** 0.5, yerr=(err / np.pi) ** 0.5)
+plt.gcf().subplots_adjust(left=0.2)
+plt.title(f"Mean finish time = {meanFinish}")
+plt.suptitle("Wound Radius")
+plt.xlabel("Time (mins)")
+plt.ylabel(r"Radius ($\mu m$)")
+fig.savefig(
+    f"results/Wound Radius Mean {fileType}", dpi=300, transparent=True,
+)
+plt.close("all")
+
 #  ------------------- Radius around wound thats fully in frame
 
 run = False
