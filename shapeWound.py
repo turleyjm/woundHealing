@@ -67,6 +67,7 @@ for filename in filenames:
         dft = df[df["Time"] == t]
         [wx, wy] = dfWound["Position"].iloc[int(t)]
         Q = np.mean(dft["q"])
+        A0 = np.mean(dft["Area"])
         for i in range(len(dft)):
             [x, y] = [dft["Centroid"].iloc[i][0] - wx, dft["Centroid"].iloc[i][1] - wy]
             r = dist[
@@ -89,7 +90,7 @@ for filename in filenames:
                     "Theta": np.arctan2(y, x),
                     "q": q,
                     "Shape Factor": sf,
-                    "Area": A,
+                    "Area": A - A0,
                     "Shape Index": P / A ** 0.5,
                 }
             )
@@ -129,12 +130,12 @@ if run:
 
 run = True
 if run:
-    grid = 50
-    heatmapA = np.zeros([int(T), grid])
-    for i in range(T):
+    grid = 40
+    heatmapA = np.zeros([int(T / 4), grid])
+    for i in range(45):
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
-            t = [i, i + 1]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Area"]) == []:
                 Ar = np.nan
@@ -142,8 +143,8 @@ if run:
                 Ar = dfr["Area"]
                 heatmapA[int(i), j] = np.mean(Ar)
 
-    dt, dr = 1, 100 / grid
-    t, r = np.mgrid[0:181:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:181:dt, 0:80:dr]
     # z_min, z_max = heatmapA.min(), heatmapA.max()
     # midpoint = (1 - z_min) / (z_max - z_min)
     # orig_cmap = matplotlib.cm.seismic
@@ -167,12 +168,12 @@ if run:
 
 run = False
 if run:
-    grid = 50
-    heatmapSI = np.zeros([int(T), grid])
-    for i in range(T):
+    grid = 40
+    heatmapSI = np.zeros([int(T / 4), grid])
+    for i in range(45):
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
-            t = [i, i + 1]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Shape Index"]) == []:
                 Si = np.nan
@@ -180,8 +181,8 @@ if run:
                 Si = dfr["Shape Index"]
                 heatmapSI[int(i), j] = np.mean(Si)
 
-    dt, dr = 1, 100 / grid
-    t, r = np.mgrid[0:181:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:181:dt, 0:80:dr]
 
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapSI, cmap="Reds")
@@ -201,12 +202,12 @@ if run:
 
 run = False
 if run:
-    grid = 50
-    heatmapSf = np.zeros([int(T), grid])
-    for i in range(T):
+    grid = 40
+    heatmapSf = np.zeros([int(T / 4), grid])
+    for i in range(45):
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
-            t = [i, i + 1]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Shape Factor"]) == []:
                 Sf = np.nan
@@ -214,8 +215,8 @@ if run:
                 Sf = dfr["Shape Factor"]
                 heatmapSf[int(i), j] = np.mean(Sf)
 
-    dt, dr = 1, 100 / grid
-    t, r = np.mgrid[0:181:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:181:dt, 0:80:dr]
     # z_min, z_max = heatmapSf.min(), heatmapSf.max()
     # midpoint = (1 - z_min) / (z_max - z_min)
     # orig_cmap = matplotlib.cm.seismic
@@ -239,12 +240,12 @@ if run:
 
 run = False
 if run:
-    grid = 50
-    heatmapOri = np.zeros([int(T), grid])
-    for i in range(T):
+    grid = 40
+    heatmapOri = np.zeros([int(T / 4), grid])
+    for i in range(45):
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
-            t = [i, i + 1]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["q"]) == []:
                 ori = np.nan
@@ -261,8 +262,8 @@ if run:
 
                 heatmapOri[int(i), j] = 180 * ori / np.pi
 
-    dt, dr = 1, 100 / grid
-    t, r = np.mgrid[0:181:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:181:dt, 0:80:dr]
 
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapOri, cmap="Reds")  # vmin=0, vmax=90)
@@ -279,15 +280,15 @@ if run:
 
 #  ------------------- q tensor kymograph
 
-run = False
+run = True
 if run:
-    grid = 50
-    heatmapq1 = np.zeros([int(T), grid])
-    heatmapq2 = np.zeros([int(T), grid])
-    for i in range(T):
-        for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
-            t = [i, i + 1]
+    grid = 40
+    heatmapq1 = np.zeros([int(T / 4), grid])
+    heatmapq2 = np.zeros([int(T / 4), grid])
+    for i in range(Time):
+        for j in range(45):
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["q"]) == []:
                 ori = np.nan
@@ -304,11 +305,11 @@ if run:
                 heatmapq1[int(i), j] = Q[0, 0]
                 heatmapq2[int(i), j] = Q[0, 1]
 
-    dt, dr = 1, 100 / grid
-    t, r = np.mgrid[0:181:dt, 0:100:dr]
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:180:dt, 0:80:dr]
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(t, r, heatmapq1, cmap="RdBu_r", vmin=-0.03, vmax=0.03)
+    c = ax.pcolor(t, r, heatmapq1, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
     fig.colorbar(c, ax=ax)
     plt.axvline(x=medianFinish)
     plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
@@ -339,7 +340,7 @@ if run:
     # plt.close("all")
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.03, vmax=0.03)
+    c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
     fig.colorbar(c, ax=ax)
     plt.axvline(x=medianFinish)
     plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)

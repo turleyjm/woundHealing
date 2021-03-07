@@ -405,7 +405,7 @@ if run:
 
 #  ------------------- Radial Velocity
 
-run = False
+run = True
 if run:
     grid = 40
     heatmap = np.zeros([int(T / 4), grid])
@@ -502,18 +502,37 @@ if run:
         Dpred[r] = r0 + r * 2 - ((r0 + r * 2) ** 2 - r0 ** 2) ** 0.5
 
     fig, ax = plt.subplots()
-    plt.plot(np.array(range(40)) * 2, D)
-    plt.plot(
-        np.array(range(40)) * 2, Dmodel,
-    )
-    plt.plot(
-        np.array(range(40)) * 2, Dpred,
-    )
+    plt.plot(np.array(range(40)) * 2, D, label="exprement")
+    plt.plot(np.array(range(40)) * 2, Dmodel, label="model")
+    # plt.plot(np.array(range(40)) * 2, Dpred, label="model 2")
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     plt.ylim([0, 7.5])
+    plt.legend()
     fig.savefig(
         f"results/Migration {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:180:dt, 0:80:dr]
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(
+        t, r, heatmap - heatmapModel, cmap=shifted_cmap, vmin=z_min, vmax=z_max
+    )
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Velocity data - model {fileType}")
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.20)
+    fig.savefig(
+        f"results/Radial Velocity data - model kymograph DDC {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -587,7 +606,7 @@ if run:
 
 #  ------------------- Rotational Velocity
 
-run = True
+run = False
 if run:
     for filename in filenames:
         df = dfVelocity[dfVelocity["Filename"] == filename]
