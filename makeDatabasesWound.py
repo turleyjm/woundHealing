@@ -52,7 +52,7 @@ f = open("pythonText.txt", "r")
 
 filename = f.read()
 
-start = (256, 256)  # if not all wounds are centred
+start = (256, 299)  # if not all wounds are centred
 
 vidFile = f"dat/{filename}/outPlane{filename}.tif"  # change
 

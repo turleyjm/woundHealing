@@ -156,6 +156,43 @@ for filename in filenames:
 dfShape = pd.DataFrame(_df2)
 
 
+#  ------------------- Area kymograph mean
+
+run = False
+if run:
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filenames]
+        grid = 50
+        heatmapA = np.zeros([int(T), grid])
+        for i in range(T):
+            for j in range(grid):
+                r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+                t = [i, i + 1]
+                dfr = cl.sortRadius(df, t, r)
+                if list(dfr["Area"]) == []:
+                    Ar = np.nan
+                else:
+                    Ar = dfr["Area"]
+                    heatmapA[int(i), j] = np.mean(Ar)
+
+        dt, dr = 1, 100 / grid
+        t, r = np.mgrid[0:181:dt, 0:100:dr]
+        # z_min, z_max = heatmapA.min(), heatmapA.max()
+        # midpoint = (1 - z_min) / (z_max - z_min)
+        # orig_cmap = matplotlib.cm.seismic
+        # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(t, r, heatmapA, cmap="Reds")
+        fig.colorbar(c, ax=ax)
+        plt.xlabel("Time (mins)")
+        plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        plt.title(f"Area {fileType}")
+        fig.savefig(
+            f"results/Area kymograph {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
 #  ------------------- Area kymograph
 
 run = True
@@ -190,8 +227,6 @@ if run:
         f"results/Area kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
-
-
 #  ------------------- Shape Factor kymograph
 
 run = False

@@ -409,17 +409,17 @@ if run:
                         "Y": dft["Y"].iloc[i],
                         "R": r,
                         "Theta": theta,
-                        "Velocity": dft["Velocity"].iloc[i] - V + Vd,
+                        "Velocity": dft["Velocity"].iloc[i] - V + Vd,  # remove DDC
                     }
                 )
     dfvelocity = pd.DataFrame(_dfvelocity)
 
-    grid = 50
+    grid = 40
     heatmap = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         t = [i, i + 4]
         for j in range(grid):
-            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
             dfr = cl.sortRadius(dfvelocity, t, r)
             if list(dfr["Velocity"]) == []:
                 Vr = np.nan
@@ -433,9 +433,9 @@ if run:
 
                 heatmap[int(i / 4), j] = np.mean(Vr) * scale
 
-    dt, dr = 4, 100 / grid
-    t, r = np.mgrid[0:100:dt, 0:100:dr]
-    z_min, z_max = -0.35, 0.35
+    dt, dr = 4, 80 / grid
+    t, r = np.mgrid[0:180:dt, 1:81:dr]
+    z_min, z_max = -0.3, 0.3
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.RdBu_r
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
@@ -459,7 +459,7 @@ if run:
         D[r] = sum(heatmap[:, r]) * 4
 
     fig, ax = plt.subplots()
-    plt.plot(np.array(range(grid)) * 2, D)
+    plt.plot(np.array(range(grid)) * 2 + 1, D)
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     fig.savefig(

@@ -42,6 +42,32 @@ def residuals(coeffs, y, x):
     return y - model(x, coeffs)
 
 
+def Polynomial(x, coeffs):
+    a = coeffs[0]
+    b = coeffs[1]
+    c = coeffs[2]
+    return a * (x - b) ** 2 + c
+
+
+def residualsPolynomial(coeffs, y, x):
+    return y - Polynomial(x, coeffs)
+
+
+def Gaussian(x, coeffs):
+
+    mu = coeffs[0]
+    sigma = coeffs[1]
+    A = coeffs[2]
+
+    return (A / (sigma * (2 * np.pi) ** 0.5)) * np.exp(
+        -0.5 * ((x - mu) ** 2) / (sigma ** 2)
+    )
+
+
+def residualsGaussian(coeffs, y, x):
+    return y - Gaussian(x, coeffs)
+
+
 def model2(t, coeffs):
     return coeffs[0] * np.exp(coeffs[1] * t)
 
@@ -50,8 +76,12 @@ def residuals2(coeffs, y, t):
     return y - model2(t, coeffs)
 
 
-def model3(M, A, c):
-    return (A / M[1]) * np.exp(-c * M[0])
+def residualsStretch(coeffs, y, t):
+    return y - modelStretch(t, coeffs)
+
+
+def modelStretch(t, coeffs):
+    return coeffs[0] * np.exp(coeffs[1] * (t) ** coeffs[2])
 
 
 def densityDrift(filename):
@@ -114,124 +144,151 @@ medianFinish = int(np.median(finish))
 minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
 
+run = False
+if run:
+    _df2 = []
+    for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
 
-_df2 = []
-for filename in filenames:
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-    df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
-    dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
+        for i in range(len(df)):
+            t = df["t"][i]
+            x = df["x"][i]
+            y = df["y"][i]
+            label = df["Label"][i]
 
-    for i in range(len(df)):
-        t = df["t"][i]
-        x = df["x"][i]
-        y = df["y"][i]
-        label = df["Label"][i]
+            m = len(t)
+            tMax = t[-1]
 
-        m = len(t)
-        tMax = t[-1]
+            if m > 1:
+                for j in range(m - 1):
+                    t0 = t[j]
+                    x0 = x[j]
+                    y0 = y[j]
+                    r = dist[int(t0), int(x0), int(y0)]
+                    if r == 0:
+                        r = -1
 
-        if m > 1:
-            for j in range(m - 1):
-                t0 = t[j]
-                x0 = x[j]
-                y0 = y[j]
-                r = dist[int(t0), int(x0), int(y0)]
-                if r == 0:
-                    r = -1
+                    tdelta = tMax - t0
+                    if tdelta > 5:
+                        t5 = t[j + 5]
+                        x5 = x[j + 5]
+                        y5 = y[j + 5]
 
-                tdelta = tMax - t0
-                if tdelta > 5:
-                    t5 = t[j + 5]
-                    x5 = x[j + 5]
-                    y5 = y[j + 5]
+                        v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
 
-                    v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
+                        [wx, wy] = dfWound["Position"].iloc[int(t0)]
+                        _df2.append(
+                            {
+                                "Filename": filename,
+                                "Label": label,
+                                "Time": t0,
+                                "X": x0 - wx,
+                                "Y": y0 - wy,
+                                "R": r,
+                                "Theta": np.arctan2(y0 - wy, x0 - wx),
+                                "Velocity": v,
+                            }
+                        )
+                    else:
+                        tEnd = t[-1]
+                        xEnd = x[-1]
+                        yEnd = y[-1]
 
-                    [wx, wy] = dfWound["Position"].iloc[int(t0)]
-                    _df2.append(
-                        {
-                            "Filename": filename,
-                            "Label": label,
-                            "Time": t0,
-                            "X": x0 - wx,
-                            "Y": y0 - wy,
-                            "R": r,
-                            "Theta": np.arctan2(y0 - wy, x0 - wx),
-                            "Velocity": v,
-                        }
-                    )
-                else:
-                    tEnd = t[-1]
-                    xEnd = x[-1]
-                    yEnd = y[-1]
+                        v = np.array(
+                            [(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)]
+                        )
 
-                    v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
+                        [wx, wy] = dfWound["Position"].iloc[int(t0)]
+                        _df2.append(
+                            {
+                                "Filename": filename,
+                                "Label": label,
+                                "Time": t0,
+                                "X": x0 - wx,
+                                "Y": y0 - wy,
+                                "R": r,
+                                "Theta": np.arctan2(y0 - wy, x0 - wx),
+                                "Velocity": v,
+                            }
+                        )
 
-                    [wx, wy] = dfWound["Position"].iloc[int(t0)]
-                    _df2.append(
-                        {
-                            "Filename": filename,
-                            "Label": label,
-                            "Time": t0,
-                            "X": x0 - wx,
-                            "Y": y0 - wy,
-                            "R": r,
-                            "Theta": np.arctan2(y0 - wy, x0 - wx),
-                            "Velocity": v,
-                        }
-                    )
+    dfvelocity = pd.DataFrame(_df2)
 
-dfvelocity = pd.DataFrame(_df2)
+    radius = [[] for col in range(T)]
+    for filename in filenames:
 
-radius = [[] for col in range(T)]
-for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        # area = dfWound["Area"].iloc[0] * (scale) ** 2
+        # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
 
-    # area = dfWound["Area"].iloc[0] * (scale) ** 2
-    # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
 
-    time = np.array(dfWound["Time"])
-    area = np.array(dfWound["Area"]) * (scale) ** 2
+        for t in range(T):
+            radius[t].append((area[t] / np.pi) ** 0.5)
+
     for t in range(T):
-        if pd.isnull(area[t]):
-            area[t] = 0
+        radius[t] = np.mean(radius[t])
+
+    #  ------------------- Velocity - mean velocity + density drift correction
+
+    _dfVelocity = []
+    for filename in filenames:
+        # change in density drift
+        D = densityDrift(filename)
+
+        df = dfvelocity[dfvelocity["Filename"] == filename]
+        for t in range(T - 1):
+            dft = df[df["Time"] == t]
+            V = np.mean(list(dft["Velocity"]), axis=0)
+            for i in range(len(dft)):
+                r = dft["R"].iloc[i]
+                theta = dft["Theta"].iloc[i]
+                time = int(dft["Time"].iloc[i])
+                Vd = driftCorrection(r, theta, D, time)
+                _dfVelocity.append(
+                    {
+                        "Filename": filename,
+                        "Label": dft["Label"].iloc[i],
+                        "Time": dft["Time"].iloc[i],
+                        "X": dft["X"].iloc[i],
+                        "Y": dft["Y"].iloc[i],
+                        "R": dft["R"].iloc[i],
+                        "Theta": dft["Theta"].iloc[i],
+                        "Velocity": dft["Velocity"].iloc[i] - V,  # removed Vd
+                    }
+                )
+    dfVelocity = pd.DataFrame(_dfVelocity)
+    dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
+
+else:
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
+    radius = [[] for col in range(T)]
+    for filename in filenames:
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        # area = dfWound["Area"].iloc[0] * (scale) ** 2
+        # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
+
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
+
+        for t in range(T):
+            radius[t].append((area[t] / np.pi) ** 0.5)
 
     for t in range(T):
-        radius[t].append((area[t] / np.pi) ** 0.5)
+        radius[t] = np.mean(radius[t])
 
-for t in range(T):
-    radius[t] = np.mean(radius[t])
-
-#  ------------------- Velocity - mean velocity + density drift correction
-
-_dfVelocity = []
-for filename in filenames:
-    # change in density drift
-    D = densityDrift(filename)
-
-    df = dfvelocity[dfvelocity["Filename"] == filename]
-    for t in range(T - 1):
-        dft = df[df["Time"] == t]
-        V = np.mean(list(dft["Velocity"]), axis=0)
-        for i in range(len(dft)):
-            r = dft["R"].iloc[i]
-            theta = dft["Theta"].iloc[i]
-            time = int(dft["Time"].iloc[i])
-            Vd = driftCorrection(r, theta, D, time)
-            _dfVelocity.append(
-                {
-                    "Filename": filename,
-                    "Label": dft["Label"].iloc[i],
-                    "Time": dft["Time"].iloc[i],
-                    "X": dft["X"].iloc[i],
-                    "Y": dft["Y"].iloc[i],
-                    "R": dft["R"].iloc[i],
-                    "Theta": dft["Theta"].iloc[i],
-                    "Velocity": dft["Velocity"].iloc[i] - V + Vd,
-                }
-            )
-dfVelocity = pd.DataFrame(_dfVelocity)
 
 #  ------------------- Velocity feild
 
@@ -405,7 +462,7 @@ if run:
 
 #  ------------------- Radial Velocity
 
-run = True
+run = False
 if run:
     grid = 40
     heatmap = np.zeros([int(T / 4), grid])
@@ -429,8 +486,8 @@ if run:
                 heatmapErr[int(i / 4), j] = np.std(Vr) * scale / len(Vr)
 
     dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
-    z_min, z_max = -0.35, 0.35
+    t, r = np.mgrid[0:180:dt, 1:81:dr]
+    z_min, z_max = -0.25, 0.25
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.RdBu_r
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
@@ -444,7 +501,25 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Velocity {fileType}")
     fig.savefig(
-        f"results/Radial Velocity kymograph DDC {fileType}", dpi=300, transparent=True,
+        f"results/Radial Velocity kymograph {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    background = np.mean(heatmap[int(medianFinish / 4) :])
+    heatmapSignal = heatmap - background
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(t, r, heatmapSignal, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (min)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Velocity {fileType}")
+    fig.savefig(
+        f"results/Radial Velocity kymograph signal {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -452,24 +527,77 @@ if run:
 
     r = np.array(range(40)) * 2 + 1
     t = np.array(range(45)) * 4
-    T, R = np.meshgrid(t, r)
-    for i in range(len(R[0])):
-        R[:, i] += int(radius[4 * i])
 
-    xdata = np.vstack((T.ravel(), R.ravel()))
+    a = []
+    b = []
+    c = []
+    for i in range(45):
+        m = leastsq(
+            residualsPolynomial, x0=(-1, 10, 0.4), args=(heatmap[i], r + radius[i])
+        )[0]
+        a.append(m[0])
+        b.append(m[1])
+        c.append(m[2])
+        fig, ax = plt.subplots()
+        plt.plot(r + radius[i], heatmap[i], label="exprement")
+        plt.plot(r + radius[i], Polynomial(r + radius[i], m), label="model")
+        plt.xlabel(r"Distance from Wound Centre $(\mu m)$")
+        plt.ylabel(r"Velocity $(\mu m mins^{-1})$")
+        # plt.title(f"t = {4*i} m = {m}")
+        plt.ylim([-0.1, 0.3])
+        plt.legend()
+        fig.savefig(
+            f"results/Velocity Model {fileType} {4*i}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
-    coeffs = curve_fit(model3, xdata, heatmap.ravel())[0]
+    fig, ax = plt.subplots()
+    plt.plot(t, a, label="exprement")
+    plt.xlabel(r"t")
+    plt.ylabel(r"a")
+    plt.legend()
+    plt.gcf().subplots_adjust(left=0.15)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    fig.savefig(
+        f"results/a Model {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    plt.plot(t, b, label="exprement")
+    plt.xlabel(r"t")
+    plt.ylabel(r"b")
+    plt.legend()
+    plt.gcf().subplots_adjust(left=0.2)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    fig.savefig(
+        f"results/b Model {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    plt.plot(t, c, label="exprement")
+    plt.xlabel(r"t")
+    plt.ylabel(r"c")
+    plt.legend()
+    plt.gcf().subplots_adjust(left=0.15)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    fig.savefig(
+        f"results/c Model {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
     T = 181
     heatmapModel = np.zeros([int(T / 4), grid])
-    for i in range(0, 180, 4):
-        for j in range(grid):
-            heatmapModel[int(i / 4), j] = model3(
-                [i, 2 * j + radius[i] + 1], coeffs[0], coeffs[1]
-            )
+    heatmapModelStretch = np.zeros([int(T / 4), grid])
+    for i in range(45):
+        m = model2(4 * i, coeffs)
+        heatmapModel[i] = model(r + radius[4 * i], m)
+        m = modelStretch(4 * i, coeffsStretch)
+        heatmapModelStretch[i] = model(r + radius[4 * i], m)
 
     dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    t, r = np.mgrid[0:180:dt, 81:dr]
 
     fig, ax = plt.subplots()
     c = ax.pcolor(t, r, heatmapModel, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
@@ -482,7 +610,24 @@ if run:
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.20)
     fig.savefig(
-        f"results/Radial Velocity model kymograph DDC {fileType}",
+        f"results/Radial Velocity model kymograph  {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(t, r, heatmapModelStretch, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Velocity model {fileType}")
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.20)
+    fig.savefig(
+        f"results/Radial Velocity model stretch kymograph  {fileType}",
         dpi=300,
         transparent=True,
     )
@@ -492,22 +637,23 @@ if run:
 
     D = np.zeros(40)
     Dmodel = np.zeros(40)
-    Dpred = np.zeros(40)
-    r0 = radius[0]
-    R = np.linspace(0, 80, 200)
+    DmodelStretch = np.zeros(40)
     for r in range(40):
 
         D[r] = sum(heatmap[:, r]) * 4
         Dmodel[r] = sum(heatmapModel[:, r]) * 4
-        Dpred[r] = r0 + r * 2 - ((r0 + r * 2) ** 2 - r0 ** 2) ** 0.5
+        DmodelStretch[r] = sum(heatmapModelStretch[:, r]) * 4
+
+    r = np.array(range(40)) * 2 + 1
 
     fig, ax = plt.subplots()
-    plt.plot(np.array(range(40)) * 2, D, label="exprement")
-    plt.plot(np.array(range(40)) * 2, Dmodel, label="model")
-    # plt.plot(np.array(range(40)) * 2, Dpred, label="model 2")
-    plt.xlabel(r"Start from Wound Edge $(\mu m)$")
+    plt.plot(r, D, label="exprement")
+    plt.plot(r, Dmodel, label="model")
+    plt.plot(r, DmodelStretch, label="model Stretch")
+    plt.xlabel(r"r $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     plt.ylim([0, 7.5])
+    plt.gcf().subplots_adjust(bottom=0.15)
     plt.legend()
     fig.savefig(
         f"results/Migration {fileType}", dpi=300, transparent=True,
@@ -515,7 +661,7 @@ if run:
     plt.close("all")
 
     dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:180:dt, 0:80:dr]
+    t, r = np.mgrid[0:180:dt, 1:81:dr]
 
     fig, ax = plt.subplots()
     c = ax.pcolor(
@@ -530,7 +676,26 @@ if run:
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.20)
     fig.savefig(
-        f"results/Radial Velocity data - model kymograph DDC {fileType}",
+        f"results/Radial Velocity data - model kymograph  {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(
+        t, r, heatmap - heatmapModelStretch, cmap=shifted_cmap, vmin=z_min, vmax=z_max
+    )
+    fig.colorbar(c, ax=ax)
+    plt.axvline(x=medianFinish)
+    plt.text(medianFinish + 2, 45, "Median Finish Time", size=10, rotation=90)
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Velocity data - model {fileType}")
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.20)
+    fig.savefig(
+        f"results/Radial Velocity data - model stretch kymograph  {fileType}",
         dpi=300,
         transparent=True,
     )
@@ -647,8 +812,126 @@ if run:
         plt.ylabel(r"Distance from wound edge $(\mu m)$")
         plt.title(f"Rotational Velocity {fileType}")
         fig.savefig(
-            f"results/rotational Velocity kymograph DDC {filename}",
+            f"results/rotational Velocity kymograph {filename}",
             dpi=300,
             transparent=True,
         )
         plt.close("all")
+
+
+#  ------------------- Radial Velocity indial videos
+heatmaps = []
+run = True
+if run:
+    for filename in filenames:
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        finish = sum(area > 0)
+
+        df = dfVelocity[dfVelocity["Filename"] == filename]
+        grid = 40
+        heatmap = np.zeros([int(T / 4), grid])
+        heatmapErr = np.zeros([int(T / 4), grid])
+        for i in range(0, 180, 4):
+            for j in range(grid):
+                r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+                t = [i, i + 4]
+                dfr = cl.sortRadius(df, t, r)
+                if list(dfr["Velocity"]) == []:
+                    Vr = np.nan
+                else:
+                    Vr = []
+                    for k in range(len(dfr)):
+                        v = dfr["Velocity"].iloc[k]
+                        theta = dfr["Theta"].iloc[k]
+                        R = cl.rotation_matrix(-theta)
+                        Vr.append(-np.matmul(R, v)[0])
+
+                    heatmap[int(i / 4), j] = np.mean(Vr) * scale
+                    heatmapErr[int(i / 4), j] = np.std(Vr) * scale / len(Vr)
+
+        heatmaps.append(heatmap)
+
+        dt, dr = 4, 80 / grid
+        t, r = np.mgrid[0:180:dt, 1:81:dr]
+        z_min, z_max = -0.5, 0.5
+        midpoint = 1 - z_max / (z_max + abs(z_min))
+        orig_cmap = matplotlib.cm.RdBu_r
+        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+        fig.colorbar(c, ax=ax)
+        plt.axvline(x=finish)
+        plt.text(finish + 2, 45, "Finish Time", size=10, rotation=90)
+        plt.xlabel("Time (min)")
+        plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        plt.title(f"Velocity {fileType}")
+        fig.savefig(
+            f"results/Radial Velocity kymograph {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+        r = np.array(range(40)) * 2 + 1
+        t = np.array(range(45)) * 4
+
+        a = []
+        b = []
+        c = []
+        for i in range(45):
+            m = leastsq(
+                residualsPolynomial, x0=(-1, 10, 0.4), args=(heatmap[i], r + radius[i])
+            )[0]
+            a.append(m[0])
+            b.append(m[1])
+            c.append(m[2])
+            # fig, ax = plt.subplots()
+            # plt.plot(r + radius[i], heatmap[i], label="exprement")
+            # plt.plot(r + radius[i], Polynomial(r + radius[i], m), label="model")
+            # plt.xlabel(r"Distance from Wound Centre $(\mu m)$")
+            # plt.ylabel(r"Velocity $(\mu m mins^{-1})$")
+            # plt.ylim([-0.1, 0.3])
+            # plt.legend()
+            # fig.savefig(
+            #     f"results/Velocity Model {filename} {4*i}", dpi=300, transparent=True,
+            # )
+            # plt.close("all")
+
+        fig, ax = plt.subplots()
+        plt.plot(t[: int(finish / 4)], a[: int(finish / 4)], label="exprement")
+        plt.xlabel(r"t")
+        plt.ylabel(r"a")
+        plt.legend()
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.gcf().subplots_adjust(bottom=0.15)
+        fig.savefig(
+            f"results/a Model {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+        fig, ax = plt.subplots()
+        plt.plot(t[: int(finish / 4)], b[: int(finish / 4)], label="exprement")
+        plt.xlabel(r"t")
+        plt.ylabel(r"b")
+        plt.legend()
+        plt.gcf().subplots_adjust(left=0.2)
+        plt.gcf().subplots_adjust(bottom=0.15)
+        fig.savefig(
+            f"results/b Model {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+        fig, ax = plt.subplots()
+        plt.plot(t[: int(finish / 4)], c[: int(finish / 4)], label="exprement")
+        plt.xlabel(r"t")
+        plt.ylabel(r"c")
+        plt.legend()
+        plt.gcf().subplots_adjust(left=0.15)
+        plt.gcf().subplots_adjust(bottom=0.15)
+        fig.savefig(
+            f"results/c Model {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+

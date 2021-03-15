@@ -1252,8 +1252,8 @@ for filename in filenames:
 
         dfDivisions4.to_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
 
-        trackBinary = np.asarray(trackBinary, "uint8")
-        tifffile.imwrite(f"dat/{filename}/tracks{filename}.tif", trackBinary)
+        # trackBinary = np.asarray(trackBinary, "uint8")
+        # tifffile.imwrite(f"dat/{filename}/tracks{filename}.tif", trackBinary)
 
         # display divisions
 

@@ -56,46 +56,55 @@ medianFinish = int(np.median(finish))
 minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
 
+run = True
+if run:
+    _df2 = []
+    for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
 
-_df2 = []
-for filename in filenames:
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-    df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
-    dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(float)
+        for t in range(T):
+            dft = df[df["Time"] == t]
+            [wx, wy] = dfWound["Position"].iloc[int(t)]
+            Q = np.mean(dft["q"])
+            A0 = np.mean(dft["Area"]) * scale ** 2
+            for i in range(len(dft)):
+                [x, y] = [
+                    dft["Centroid"].iloc[i][0] - wx,
+                    dft["Centroid"].iloc[i][1] - wy,
+                ]
+                r = dist[
+                    int(t),
+                    int(dft["Centroid"].iloc[i][0]),
+                    int(dft["Centroid"].iloc[i][1]),
+                ]
+                if r == 0:
+                    r = -1
+                q = dft["q"].iloc[i] - Q
+                sf = dft["Shape Factor"].iloc[i]
+                A = dft["Area"].iloc[i] * scale ** 2
+                P = dft["Perimeter"].iloc[i] * scale
 
-    for t in range(T):
-        dft = df[df["Time"] == t]
-        [wx, wy] = dfWound["Position"].iloc[int(t)]
-        Q = np.mean(dft["q"])
-        A0 = np.mean(dft["Area"])
-        for i in range(len(dft)):
-            [x, y] = [dft["Centroid"].iloc[i][0] - wx, dft["Centroid"].iloc[i][1] - wy]
-            r = dist[
-                int(t), int(dft["Centroid"].iloc[i][0]), int(dft["Centroid"].iloc[i][1])
-            ]
-            if r == 0:
-                r = -1
-            q = dft["q"].iloc[i] - Q
-            sf = dft["Shape Factor"].iloc[i]
-            A = dft["Area"].iloc[i] * scale ** 2
-            P = dft["Perimeter"].iloc[i] * scale
+                _df2.append(
+                    {
+                        "Filename": filename,
+                        "Time": t,
+                        "X": x,
+                        "Y": y,
+                        "R": r,
+                        "Theta": np.arctan2(y, x),
+                        "q": q,
+                        "Shape Factor": sf,
+                        "Area": A,
+                        "Shape Index": P / A ** 0.5,
+                    }
+                )
 
-            _df2.append(
-                {
-                    "Filename": filename,
-                    "Time": t,
-                    "X": x,
-                    "Y": y,
-                    "R": r,
-                    "Theta": np.arctan2(y, x),
-                    "q": q,
-                    "Shape Factor": sf,
-                    "Area": A - A0,
-                    "Shape Index": P / A ** 0.5,
-                }
-            )
-
-dfShape = pd.DataFrame(_df2)
+    dfShape = pd.DataFrame(_df2)
+    dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
+else:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
 #  -------------------
 
@@ -126,15 +135,15 @@ if run:
     )
     plt.close("all")
 
-#  ------------------- Area kymograph
+#  ------------------- Area kymograph Mean
 
 run = True
 if run:
-    grid = 40
+    grid = 50
     heatmapA = np.zeros([int(T / 4), grid])
     for i in range(45):
         for j in range(grid):
-            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+            r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
             t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
             if list(dfr["Area"]) == []:
@@ -143,18 +152,18 @@ if run:
                 Ar = dfr["Area"]
                 heatmapA[int(i), j] = np.mean(Ar)
 
-    dt, dr = 4, 80 / grid
-    t, r = np.mgrid[0:181:dt, 0:80:dr]
+    dt, dr = 4, 100 / grid
+    t, r = np.mgrid[0:181:dt, 1:101:dr]
     # z_min, z_max = heatmapA.min(), heatmapA.max()
     # midpoint = (1 - z_min) / (z_max - z_min)
     # orig_cmap = matplotlib.cm.seismic
     # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(t, r, heatmapA, cmap="Reds")
+    c = ax.pcolor(t, r, heatmapA, cmap="RdBu_r", vmin=0, vmax=25)
     fig.colorbar(c, ax=ax)
     plt.axvline(x=medianFinish)
-    plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+    plt.text(medianFinish + 2, 50, "Median Wound Closed", size=10, rotation=90)
     plt.xlabel("Time (mins)")
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Area {fileType}")
@@ -162,6 +171,50 @@ if run:
         f"results/Area kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
+
+
+#  ------------------- Area kymograph
+
+run = True
+if run:
+    for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        finish = sum(area > 0)
+        df = dfShape[dfShape["Filename"] == filename]
+        grid = 50
+        heatmapA = np.zeros([int(T / 4), grid])
+        for i in range(45):
+            for j in range(grid):
+                r = [100 / grid * j / scale, (100 / grid * j + 100 / grid) / scale]
+                t = [4 * i, 4 * i + 4]
+                dfr = cl.sortRadius(df, t, r)
+                if list(dfr["Area"]) == []:
+                    Ar = np.nan
+                else:
+                    Ar = dfr["Area"]
+                    heatmapA[int(i), j] = np.mean(Ar)
+
+        dt, dr = 4, 100 / grid
+        t, r = np.mgrid[0:181:dt, 1:101:dr]
+        # z_min, z_max = heatmapA.min(), heatmapA.max()
+        # midpoint = (1 - z_min) / (z_max - z_min)
+        # orig_cmap = matplotlib.cm.seismic
+        # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(t, r, heatmapA, cmap="RdBu_r", vmin=0, vmax=25)
+        fig.colorbar(c, ax=ax)
+        plt.axvline(x=medianFinish)
+        plt.text(medianFinish + 2, 50, "Wound Closed", size=10, rotation=90)
+        plt.xlabel("Time (mins)")
+        plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        plt.title(f"Area {fileType}")
+        fig.savefig(
+            f"results/Area kymograph {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
 
 
 #  ------------------- Shape index kymograph
@@ -280,7 +333,7 @@ if run:
 
 #  ------------------- q tensor kymograph
 
-run = True
+run = False
 if run:
     grid = 40
     heatmapq1 = np.zeros([int(T / 4), grid])

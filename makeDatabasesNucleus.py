@@ -156,7 +156,7 @@ def filter_spots(spots, name, value, isabove):
 
 # -------------------
 
-filenames = cl.getFiles()
+filenames, fileType = cl.getFilesType()
 
 for filename in filenames:
 

@@ -38,16 +38,18 @@ fig = plt.figure(1, figsize=(9, 8))
 
 T = 181
 
+sf = []
+endTime = []
 R = [[] for col in range(T)]
 for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
-    # area = dfWound["Area"].iloc[0] * (scale) ** 2
-    # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
-
+    sf.append(dfWound["Shape Factor"].iloc[0])
     time = np.array(dfWound["Time"])
     area = np.array(dfWound["Area"]) * (scale) ** 2
+
+    endTime.append(sum(area > 0))
     for t in range(T):
         if pd.isnull(area[t]):
             area[t] = 0
@@ -140,5 +142,18 @@ if run:
 
     fig.savefig(
         f"results/max distance from wound edge {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+
+run = False
+if run:
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.scatter(sf, endTime)
+    plt.xlabel(r"sf")
+    plt.ylabel(r"end time")
+
+    fig.savefig(
+        f"results/correlation {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
