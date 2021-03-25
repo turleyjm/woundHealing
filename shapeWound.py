@@ -31,7 +31,16 @@ plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
-filenames, fileType = cl.getFilesType()
+# filenames, fileType = cl.getFilesType()
+
+# fileType = "slowHealersL"
+# filenames = "WoundL18h02", "WoundL18h06"
+
+fileType = "medHealersL"
+filenames = "WoundL18h07", "WoundL18h09"
+
+# fileType = "fastHealersL"
+# filenames = "WoundL18h01", "WoundL18h03", "WoundL18h04", "WoundL18h05", "WoundL18h08"
 
 T = 181
 scale = 147.91 / 512
@@ -137,7 +146,7 @@ if run:
 
 #  ------------------- Area kymograph Mean
 
-run = True
+run = False
 if run:
     grid = 50
     heatmapA = np.zeros([int(T / 4), grid])
@@ -175,7 +184,7 @@ if run:
 
 #  ------------------- Area kymograph
 
-run = True
+run = False
 if run:
     for filename in filenames:
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
@@ -331,15 +340,15 @@ if run:
     )
     plt.close("all")
 
-#  ------------------- q tensor kymograph
+#  ------------------- mean q tensor kymograph
 
-run = False
+run = True
 if run:
     grid = 40
     heatmapq1 = np.zeros([int(T / 4), grid])
     heatmapq2 = np.zeros([int(T / 4), grid])
-    for i in range(Time):
-        for j in range(45):
+    for i in range(45):
+        for j in range(grid):
             r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
             t = [4 * i, 4 * i + 4]
             dfr = cl.sortRadius(dfShape, t, r)
@@ -404,4 +413,88 @@ if run:
         f"results/Q2 kymograph {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
+
+#  ------------------- q tensor kymograph
+
+run = False
+if run:
+
+    for filename in filenames:
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        finish = sum(area > 0)
+
+        df = dfShape[dfShape["Filename"] == filename]
+
+        grid = 40
+        heatmapq1 = np.zeros([int(T / 4), grid])
+        heatmapq2 = np.zeros([int(T / 4), grid])
+        for i in range(45):
+            for j in range(grid):
+                r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
+                t = [4 * i, 4 * i + 4]
+                dfr = cl.sortRadius(df, t, r)
+                if list(dfr["q"]) == []:
+                    ori = np.nan
+                else:
+                    Q = []
+                    for k in range(len(dfr)):
+                        q = dfr["q"].iloc[k]
+                        phi = dfr["Theta"].iloc[k] * 2
+                        R = cl.rotation_matrix(-phi)
+                        Q.append(np.matmul(R, q))
+
+                    Q = np.mean(Q, axis=0)
+
+                    heatmapq1[int(i), j] = Q[0, 0]
+                    heatmapq2[int(i), j] = Q[0, 1]
+
+        dt, dr = 4, 80 / grid
+        t, r = np.mgrid[0:180:dt, 0:80:dr]
+
+        fig, ax = plt.subplots()
+        c = ax.pcolor(t, r, heatmapq1, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
+        fig.colorbar(c, ax=ax)
+        plt.axvline(x=finish)
+        plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+        plt.xlabel("Time (min)")
+        plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        plt.title(f"Q1 {fileType}")
+        fig.savefig(
+            f"results/Q1 kymograph {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+        # p = np.zeros([15, 3])
+        # for t in range(10):
+
+        # d = heatmapq1[t * 4, 3:30]
+        # x = np.array(range(len(d))) * 2 + 6
+        # p[t] = np.polyfit(x, d, 2)
+
+        # fig, ax = plt.subplots()
+        # plt.plot(x, d)
+        # plt.plot(x, (p[t, 0] * x ** 2 + p[t, 1] * x + p[t, 2]))
+        # plt.ylim(-0.04, 0.01)
+        # plt.xlabel(r"Distance from Wound Edge $(\mu m)$")
+        # plt.ylabel(r"Q1")
+        # fig.savefig(
+        #     f"results/Q1 t={t*4} {fileType}", dpi=300, transparent=True,
+        # )
+        # plt.close("all")
+
+        # fig, ax = plt.subplots()
+        # c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
+        # fig.colorbar(c, ax=ax)
+        # plt.axvline(x=medianFinish)
+        # plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+        # plt.xlabel("Time (min)")
+        # plt.ylabel(r"Distance from wound edge $(\mu m)$")
+        # plt.title(f"Q2 {fileType}")
+        # fig.savefig(
+        #     f"results/Q2 kymograph {fileType}", dpi=300, transparent=True,
+        # )
+        # plt.close("all")
 

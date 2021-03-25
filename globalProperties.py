@@ -36,13 +36,16 @@ filenames, fileType = cl.getFilesType()
 T = 181
 scale = 147.91 / 512
 
-run = False
+count = 0
+run = True
 if run:
     fig = plt.figure(1, figsize=(9, 8))
     time = range(T)
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        count += len(df)
+
         sf0 = np.mean(list(df["Shape Factor"][df["Time"] == 0]))
 
         mu = []

@@ -33,6 +33,8 @@ plt.rcParams.update({"font.size": 20})
 
 def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):
     """Import detected tracks with TrackMate Fiji plugin.
+    
+    ref: https://github.com/hadim/pytrackmate
 
     Parameters
     ----------

@@ -1283,11 +1283,8 @@ for filename in filenames:
             x = int(x)
             y = int(y)
 
-            [rr0, cc0] = circle_perimeter(
-                551 - (y + 20), x + 20, 13
-            )  # change to column row coord
-            [rr1, cc1] = circle_perimeter(551 - (y + 20), x + 20, 14)
-            [rr2, cc2] = circle_perimeter(551 - (y + 20), x + 20, 15)
+            rr0, cc0 = sm.draw.circle(551 - (y + 20), x + 20, 15)
+            rr1, cc1 = sm.draw.circle(551 - (y + 20), x + 20, 12)
 
             times = range(t0 - 5, t0 + 5)
 
@@ -1298,8 +1295,7 @@ for filename in filenames:
 
             for t in timeVid:
                 highlightDivisions[t][rr0, cc0, 2] = 200
-                highlightDivisions[t][rr1, cc1, 2] = 200
-                highlightDivisions[t][rr2, cc2, 2] = 200
+                highlightDivisions[t][rr1, cc1, 2] = 0
 
         highlightDivisions = highlightDivisions[:, 20:532, 20:532]
 
