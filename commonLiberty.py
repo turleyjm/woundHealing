@@ -40,14 +40,24 @@ def getFiles():
 
 def getFilesType():
     f = open("pythonText.txt", "r")
-
     fileType = f.read()
-    cwd = os.getcwd()
-    Fullfilenames = os.listdir(cwd + "/dat")
-    filenames = []
-    for filename in Fullfilenames:
-        if fileType in filename:
+
+    if fileType == "All":
+        cwd = os.getcwd()
+        Fullfilenames = os.listdir(cwd + "/dat")
+        filenames = []
+        for filename in Fullfilenames:
             filenames.append(filename)
+
+        if ".DS_Store" in filenames:
+            filenames.remove(".DS_Store")
+    else:
+        cwd = os.getcwd()
+        Fullfilenames = os.listdir(cwd + "/dat")
+        filenames = []
+        for filename in Fullfilenames:
+            if fileType in filename:
+                filenames.append(filename)
 
     filenames.sort()
 

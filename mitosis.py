@@ -60,116 +60,125 @@ _df2 = []
 
 xw = 256
 yw = 256
+Rbin = 5
+Tbin = 10
 
-for filename in filenames:
+run = False
+if run:
+    for filename in filenames:
 
-    dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
-    df = dfDivisions[dfDivisions["Chain"] == "parent"]
-    n = int(len(df))
+        dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+        df = dfDivisions[dfDivisions["Chain"] == "parent"]
+        n = int(len(df))
 
-    for i in range(n):
+        for i in range(n):
 
-        label = df["Label"].iloc[i]
-        ori = df["Division Orientation"].iloc[i]
-        if ori > 90:
-            ori = 180 - ori
-        T = df["Time"].iloc[i]
-        t = T[-1]
-        [x, y] = df["Position"].iloc[i][-1]
+            label = df["Label"].iloc[i]
+            ori = df["Division Orientation"].iloc[i]
+            if ori > 90:
+                ori = 180 - ori
+            T = df["Time"].iloc[i]
+            t = T[-1]
+            [x, y] = df["Position"].iloc[i][-1]
 
-        distance = ((x - xw) ** 2 + (y - yw) ** 2) ** 0.5
-        distance = distance * scale
-        _df2.append(
-            {
-                "Filename": filename,
-                "Label": label,
-                "Orientation": ori,
-                "Distance": distance,
-                "T": t,
-                "X": x,
-                "Y": y,
-            }
-        )
-
-dfDivisions = pd.DataFrame(_df2)
-
-
-_df2 = []
-T = 180
-R = range(0, 80, 10)
-
-for filename in filenames:
-
-    # outPlane = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype("uint8")
-    outPlane = np.zeros([181, 512, 512])
-
-    for t in range(T):
-        for r in R:
-
-            r0 = r
-            area = np.pi * ((r0 + 10) ** 2 - r0 ** 2)
-            weight = inPlaneWeight(256, 256, r0 / scale, (r0 + 10) / scale, outPlane[t])
-            df = dfDivisions[dfDivisions["Distance"] > r0]
-            df2 = df[df["Distance"] < r0 + 10]
-            df3 = df2[df2["T"] == t]
-
-            n = len(df3)
-            if n == 0:
-                ori = []
-            else:
-                ori = list(df3["Orientation"])
-
+            distance = ((x - xw) ** 2 + (y - yw) ** 2) ** 0.5
+            distance = distance * scale
             _df2.append(
                 {
                     "Filename": filename,
+                    "Label": label,
                     "Orientation": ori,
+                    "Distance": distance,
+                    "T": t,
+                    "X": x,
+                    "Y": y,
+                }
+            )
+
+    dfDivisions = pd.DataFrame(_df2)
+
+    _df2 = []
+    T = 180
+    R = range(0, 80, Rbin)
+
+    for filename in filenames:
+
+        # outPlane = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype("uint8")
+        outPlane = np.zeros([181, 512, 512])
+
+        for t in range(T):
+            for r in R:
+
+                r0 = r
+                area = np.pi * ((r0 + 10) ** 2 - r0 ** 2)
+                weight = inPlaneWeight(
+                    256, 256, r0 / scale, (r0 + 10) / scale, outPlane[t]
+                )
+                df = dfDivisions[dfDivisions["Distance"] > r0]
+                df2 = df[df["Distance"] < r0 + 10]
+                df3 = df2[df2["T"] == t]
+
+                n = len(df3)
+                if n == 0:
+                    ori = []
+                else:
+                    ori = list(df3["Orientation"])
+
+                _df2.append(
+                    {
+                        "Filename": filename,
+                        "Orientation": ori,
+                        "T": t,
+                        "R": r,
+                        "Number": n,
+                        "Area": area * weight,
+                        "Weight": weight,
+                    }
+                )
+
+    dfDensity_t = pd.DataFrame(_df2)
+
+    _df2 = []
+    T = range(0, 180, Tbin)
+    for t in T:
+        for r in R:
+            df = dfDensity_t[dfDensity_t["T"] >= t]
+            df2 = df[df["T"] < t + 20]
+            df3 = df2[df2["R"] >= r]
+            df4 = df3[df3["R"] < r + 10]
+            ori = []
+            n = sum(df4["Number"])
+            area = np.mean(df4["Area"])
+            oriList = list(df4["Orientation"])
+
+            for List in oriList:
+                if List == []:
+                    a = 0
+                else:
+                    for i in range(len(List)):
+                        ori.append(List[i])
+
+            _df2.append(
+                {
                     "T": t,
                     "R": r,
+                    "Orientation": ori,
                     "Number": n,
-                    "Area": area * weight,
+                    "Area": area,
                     "Weight": weight,
                 }
             )
 
-dfDensity_t = pd.DataFrame(_df2)
-
-
-_df2 = []
-T = range(0, 180, 20)
-for t in T:
-    for r in R:
-        df = dfDensity_t[dfDensity_t["T"] >= t]
-        df2 = df[df["T"] < t + 20]
-        df3 = df2[df2["R"] >= r]
-        df4 = df3[df3["R"] < r + 10]
-        ori = []
-        n = sum(df4["Number"])
-        area = np.mean(df4["Area"])
-        oriList = list(df4["Orientation"])
-
-        for List in oriList:
-            if List == []:
-                a = 0
-            else:
-                for i in range(len(List)):
-                    ori.append(List[i])
-
-        _df2.append(
-            {
-                "T": t,
-                "R": r,
-                "Orientation": ori,
-                "Number": n,
-                "Area": area,
-                "Weight": weight,
-            }
-        )
-
-dfDensity = pd.DataFrame(_df2)
+    dfDensity = pd.DataFrame(_df2)
+    dfDensity.to_pickle(f"databases/dfDensity{fileType}.pkl")
+else:
+    dfDensity = pd.read_pickle(f"databases/dfDensity{fileType}.pkl")
+    R = range(0, 80, Rbin)
+    T = range(0, 180, Tbin)
 
 # -------------------
 
-run = True
+run = False
 if run:
     orientation = dfDivisions["Orientation"]
 
@@ -189,7 +198,7 @@ if run:
 run = True
 if run:
     density = []
-    position = range(5, 85, 10)
+    position = range(5, 85, Rbin)
     for r in R:
         area = np.mean(dfDensity["Area"][dfDensity["R"] == r])
         n = np.mean(dfDensity["Number"][dfDensity["R"] == r])
@@ -200,6 +209,7 @@ if run:
     plt.plot(position, density)
     plt.ylabel("Density of Divisons")
     plt.xlabel("Wound Distance")
+    plt.ylim([0, 0.5])
     plt.title(f"Division Density")
     fig.savefig(
         f"results/Division Density {fileType}", dpi=300, transparent=True,
@@ -207,7 +217,7 @@ if run:
     plt.close("all")
 
     density = []
-    time = range(10, 190, 20)
+    time = range(10, 190, Tbin)
     for t in T:
         area = np.mean(dfDensity["Area"][dfDensity["T"] == t])
         n = np.mean(dfDensity["Number"][dfDensity["T"] == t])
@@ -217,6 +227,7 @@ if run:
     plt.plot(time, density)
     plt.ylabel("Density of Divisons")
     plt.xlabel("Time (mins)")
+    plt.ylim([0, 0.6])
     plt.title(f"Division time")
     fig.savefig(
         f"results/Division time {fileType}", dpi=300, transparent=True,
@@ -281,10 +292,10 @@ if run:
         x += 1
         y = 0
 
-    x, y = np.mgrid[0:200:20, 0:90:10]
+    x, y = np.mgrid[0 : 180 + Tbin : Tbin, 0 : 80 + Rbin : Rbin]
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(x, y, heatmapDensity, cmap="Blues")
+    c = ax.pcolor(x, y, heatmapDensity, cmap="Blues", vmin=0, vmax=0.8)
     plt.xlabel("Time (mins)")
     plt.ylabel(r"Distance from wound center $(\mu m)$")
     plt.title(f"Division Density")

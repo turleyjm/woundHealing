@@ -272,6 +272,63 @@ def polarMag(polygon):
     return r
 
 
+def inertia_tcj(tcj):
+    """takes the tcj and finds its inertia tensor matrix"""
+
+    x = []
+    y = []
+    for i in range(len(tcj)):
+        x.append(tcj[i][0])
+        y.append(tcj[i][1])
+    Ixx = 0
+    Iyy = 0
+    Ixy = 0
+    cx, cy = np.mean(x), np.mean(y)
+    for i in range(len(tcj)):
+        Ixx += (y[i] - cy) ** 2
+        Iyy += (x[i] - cx) ** 2
+        Ixy += (x[i] - cx) * (y[i] - cy)
+
+    I = np.zeros(shape=(2, 2))
+    I[0, 0] = Ixx
+    I[1, 0] = -Ixy
+    I[0, 1] = -Ixy
+    I[1, 1] = Iyy
+    return I
+
+
+def shapeFactor_tcj(tcj):
+    """Using the inertia tensor matrix it products the shape factor of the polygon"""
+
+    I = inertia_tcj(tcj)
+    D = linalg.eig(I)[0]
+    e1 = D[0]
+    e2 = D[1]
+    SF = abs((e1 - e2) / (e1 + e2))
+    return SF
+
+
+def orientation_tcj(tcj):
+    """Using the inertia tensor matrix it products the orientation of the polygon"""
+
+    I = inertia_tcj(tcj)
+    D, V = linalg.eig(I)
+    e1 = D[0]
+    e2 = D[1]
+    v1 = V[:, 0]
+    v2 = V[:, 1]
+    if e1 < e2:
+        v = v1
+    else:
+        v = v2
+    theta = np.arctan(v[1] / v[0])
+    if theta < 0:
+        theta = theta + np.pi
+    if theta > np.pi:
+        theta = theta - np.pi
+    return theta
+
+
 def findContourCurvature(contour, m):
 
     n = len(contour)

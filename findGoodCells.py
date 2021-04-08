@@ -208,16 +208,67 @@ def imgrcxy(img):
 
 def imgxyrc(imgxy):
 
-    n = len(imgxy)
-
-    img = np.zeros(shape=(n, n))
-
-    for i in range(n):
-        for j in range(n):
-
-            img[(n - 1) - j, i] = imgxy[i, j]
+    img = imgrcxy(imgxy)
+    img = imgrcxy(img)
+    img = imgrcxy(img)
 
     return img
+
+
+def imgrcxyRGB(vid):
+
+    T, X, Y, C = vid.shape
+
+    vidxy = np.zeros(shape=(T, X, Y, C))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
+
+    return vidxy
+
+
+def imgxyrcRGB(vid):
+
+    T, X, Y, C = vid.shape
+
+    vidrc = np.zeros(shape=(T, X, Y, C))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
+
+    return vidrc
+
+
+def vidrcxy(vid):
+
+    T, X, Y = vid.shape
+
+    vidxy = np.zeros(shape=(T, X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
+
+    return vidxy
+
+
+def vidxyrc(vid):
+
+    T, X, Y = vid.shape
+
+    vidrc = np.zeros(shape=(T, X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
+
+    return vidrc
 
 
 def imgxAxis(img):
