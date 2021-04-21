@@ -126,20 +126,6 @@ def driftCorrection(r, theta, D, time):
 
 filenames, fileType = cl.getFilesType()
 
-# fileType = "slowHealersL"
-# filenames = "WoundL18h02", "WoundL18h06"
-
-# fileType = "medHealersL"
-# filenames = "WoundL18h07", "WoundL18h09"
-
-# fileType = "fastHealersL"
-# filenames = "WoundL18h01", "WoundL18h03", "WoundL18h04", "WoundL18h05", "WoundL18h08"
-
-# filenamesS = "WoundL18h02", "WoundL18h06"
-# filenamesM = "WoundL18h07", "WoundL18h09"
-# filenamesL = "WoundL18h01", "WoundL18h03", "WoundL18h04", "WoundL18h05", "WoundL18h08"
-
-
 T = 181
 scale = 147.91 / 512
 grid = 10
@@ -163,6 +149,35 @@ meanFinish = int(np.mean(finish))
 medianFinish = int(np.median(finish))
 minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
+
+if fileType == "WoundL":
+    fast = 70
+    med = 100
+else:
+    fast = 35
+    med = 50
+
+# get only fast/med/slow videos
+# fileType = "fastHealersS"
+# fileType = "medHealersS"
+# fileType = "slowHealersS"
+# fileType = "fastHealersL"
+# fileType = "medHealersL"
+# fileType = "slowHealersL"
+# newFilenames = []
+# for i in range(len(filenames)):
+#     if "fastHealers" in fileType:
+#         if finish[i] < fast:
+#             newFilenames.append(filenames[i])
+#     if "medHealers" in fileType:
+#         if finish[i] < med:
+#             if finish[i] > fast:
+#                 newFilenames.append(filenames[i])
+#     if "slowHealers" in fileType:
+#         if finish[i] > med:
+#             newFilenames.append(filenames[i])
+
+# filenames = newFilenames
 
 run = False
 if run:
@@ -416,10 +431,7 @@ if run:
     heatmapErr = np.zeros([int(T / 4), grid])
     for i in range(0, 180, 4):
         for j in range(grid):
-            r = [
-                80 / grid * j / scale - radius[i] / scale,
-                (80 / grid * j + 80 / grid) / scale - radius[i] / scale,
-            ]
+            r = [80 / grid * j / scale, (80 / grid * j + 80 / grid) / scale]
             t = [i, i + 4]
             if r[0] < 0:
                 r[0] = 0
@@ -539,7 +551,7 @@ if run:
 
     dt, dr = 4, 80 / grid
     t, r = np.mgrid[0:180:dt, 1:81:dr]
-    z_min, z_max = -0.2, 0.4
+    z_min, z_max = -0.4, 0.4
     midpoint = 1 - z_max / (z_max + abs(z_min))
     orig_cmap = matplotlib.cm.RdBu_r
     shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
@@ -605,7 +617,7 @@ if run:
         x, y = np.mgrid[
             -255 * scale : 256 * scale : dx, -255 * scale : 256 * scale : dy
         ]
-        z_min, z_max = -0.35, 0.35
+        z_min, z_max = -0.5, 0.5
         midpoint = 1 - z_max / (z_max + abs(z_min))
         orig_cmap = matplotlib.cm.RdBu_r
         shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
@@ -698,18 +710,29 @@ if run:
 
 #  ------------------- Radial Velocity indial videos
 heatmaps = []
-run = True
+run = False
 if run:
+
     Acoeffs = []
     Bcoeffs = []
     Ccoeffs = []
     t0 = []
+    Am = [[], [], []]
+    Ac = [[], [], []]
+    Bm = [[], [], []]
+    Bc = [[], [], []]
+    Cm = [[], [], []]
+    Cc = [[], [], []]
+
     for filename in filenames:
 
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         area = np.array(dfWound["Area"]) * (scale) ** 2
-        finish = sum(area > 0)
+        t = 0
+        while pd.notnull(area[t]):
+            t += 1
+        finish = t
 
         df = dfVelocity[dfVelocity["Filename"] == filename]
         grid = 40
@@ -734,26 +757,6 @@ if run:
                     heatmapErr[int(i / 4), j] = np.std(Vr) * scale / len(Vr)
 
         heatmaps.append(heatmap)
-
-        dt, dr = 4, 80 / grid
-        t, r = np.mgrid[0:180:dt, 1:81:dr]
-        z_min, z_max = -0.5, 0.5
-        midpoint = 1 - z_max / (z_max + abs(z_min))
-        orig_cmap = matplotlib.cm.RdBu_r
-        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
-
-        # fig, ax = plt.subplots()
-        # c = ax.pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
-        # fig.colorbar(c, ax=ax)
-        # plt.axvline(x=finish)
-        # plt.text(finish + 2, 45, "Finish Time", size=10, rotation=90)
-        # plt.xlabel("Time (min)")
-        # plt.ylabel(r"Distance from wound edge $(\mu m)$")
-        # plt.title(f"Velocity {fileType}")
-        # fig.savefig(
-        #     f"results/Radial Velocity kymograph {filename}", dpi=300, transparent=True,
-        # )
-        # plt.close("all")
 
         r = np.array(range(40)) * 2 + 1
         t = np.array(range(45)) * 4
@@ -792,47 +795,85 @@ if run:
             # )
             # plt.close("all")
 
-        # fig, ax = plt.subplots()
-        # plt.plot(r, A, label="exprement")
-        # plt.xlabel(r"r")
-        # plt.ylabel(r"a")
-        # plt.legend()
-        # plt.gcf().subplots_adjust(left=0.2)
+        Acoeff = leastsq(residualsLinear, x0=(0, 0), args=(A, r))[0]
+
+        Bcoeff = leastsq(residualsLinear, x0=(0, 0), args=(B, r))[0]
+
+        Ccoeff = leastsq(residualsLinear, x0=(0, 0), args=(C, r))[0]
+
+        # fig, ax = plt.subplots(1, 3, figsize=(12, 3))
+        # plt.subplots_adjust(wspace=0.4)
         # plt.gcf().subplots_adjust(bottom=0.15)
+        # ax[0].plot(r, A, label="exprement")
+        # ax[0].plot(r, Acoeff[0] * r + Acoeff[1], label="model")
+        # ax[0].set(xlabel="r", ylabel="A")
+        # ax[0].legend()
+
+        # ax[1].plot(r, B, label="exprement")
+        # ax[1].plot(r, Bcoeff[0] * r + Bcoeff[1], label="model")
+        # ax[1].set(xlabel="r", ylabel="B")
+        # ax[1].legend()
+
+        # ax[2].plot(r, C, label="exprement")
+        # ax[2].plot(r, Ccoeff[0] * r + Ccoeff[1], label="model")
+        # ax[2].set(xlabel="r", ylabel="C")
+        # ax[2].legend()
+
         # fig.savefig(
-        #     f"results/a Time Model {filename}", dpi=300, transparent=True,
+        #     f"results/Model Coeff {filename}", dpi=300, transparent=True,
         # )
         # plt.close("all")
 
-        # fig, ax = plt.subplots()
-        # plt.plot(r, B, label="exprement")
-        # plt.xlabel(r"r")
-        # plt.ylabel(r"b")
-        # plt.legend()
-        # plt.gcf().subplots_adjust(left=0.2)
+        # T = 181
+        # heatmapModel = np.zeros([int(T / 4), grid])
+        # for i in range(int(finish / 4)):
+        #     for j in range(grid):
+        #         heatmapModel[i, j] = model(t[i], r[j], Acoeff, Bcoeff, Ccoeff)
+
+        # # -----------
+
+        # dt, dr = 4, 80 / grid
+        # t, r = np.mgrid[0:180:dt, 1:81:dr]
+        # z_min, z_max = -0.4, 0.4
+        # midpoint = 1 - z_max / (z_max + abs(z_min))
+        # orig_cmap = matplotlib.cm.RdBu_r
+        # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        # fig, ax = plt.subplots(1, 3, figsize=(12, 3))
+        # plt.subplots_adjust(wspace=0.3)
         # plt.gcf().subplots_adjust(bottom=0.15)
+        # c = ax[0].pcolor(t, r, heatmap, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+        # fig.colorbar(c, ax=ax[0])
+        # ax[0].axvline(x=finish)
+        # ax[0].text(finish + 2, 45, "Median Finish Time", size=6, rotation=90)
+        # ax[0].set_xlabel("Time (min)")
+        # ax[0].set_ylabel(r"Distance from wound edge $(\mu m)$")
+        # ax[0].title.set_text(f"Velocity {filename}")
+
+        # c = ax[1].pcolor(t, r, heatmapModel, cmap=shifted_cmap, vmin=z_min, vmax=z_max)
+        # fig.colorbar(c, ax=ax[1])
+        # ax[1].axvline(x=finish)
+        # ax[1].text(finish + 2, 45, "Median Finish Time", size=6, rotation=90)
+        # ax[1].set_xlabel("Time (min)")
+        # ax[1].set_ylabel(r"Distance from wound edge $(\mu m)$")
+        # ax[1].title.set_text(f"Velocity Model {filename}")
+
+        # c = ax[2].pcolor(
+        #     t, r, heatmap - heatmapModel, cmap=shifted_cmap, vmin=z_min, vmax=z_max
+        # )
+        # fig.colorbar(c, ax=ax[2])
+        # ax[2].axvline(x=finish)
+        # ax[2].text(finish + 2, 45, "Median Finish Time", size=6, rotation=90)
+        # ax[2].set_xlabel("Time (min)")
+        # ax[2].set_ylabel(r"Distance from wound edge $(\mu m)$")
+        # ax[2].title.set_text(f"Velocity difference {filename}")
+
         # fig.savefig(
-        #     f"results/b Time Model {filename}", dpi=300, transparent=True,
+        #     f"results/Radial Velocity kymograph {filename}", dpi=300, transparent=True,
         # )
         # plt.close("all")
 
-        # fig, ax = plt.subplots()
-        # plt.plot(r, C, label="exprement")
-        # plt.xlabel(r"r")
-        # plt.ylabel(r"C")
-        # plt.legend()
-        # plt.gcf().subplots_adjust(left=0.15)
-        # plt.gcf().subplots_adjust(bottom=0.15)
-        # fig.savefig(
-        #     f"results/c Model {filename}", dpi=300, transparent=True,
-        # )
-        # plt.close("all")
-
-        Acoeffs.append(leastsq(residualsLinear, x0=(0, 0), args=(A, r))[0])
-
-        Bcoeffs.append(leastsq(residualsLinear, x0=(0, 0), args=(B, r))[0])
-
-        Ccoeffs.append(leastsq(residualsLinear, x0=(0, 0), args=(C, r))[0])
+        r = np.array(range(40)) * 2 + 1
         A0 = leastsq(residualsLinear, x0=(0, 0), args=(A, r))[0][1]
         B0 = leastsq(residualsLinear, x0=(0, 0), args=(B, r))[0][1]
         C0 = leastsq(residualsLinear, x0=(0, 0), args=(C, r))[0][1]
@@ -848,6 +889,28 @@ if run:
             t0.append(
                 [np.nan, np.nan,]
             )
+
+        if finish < fast:
+            Am[0].append(Acoeff[0])
+            Ac[0].append(Acoeff[1])
+            Bm[0].append(Bcoeff[0])
+            Bc[0].append(Bcoeff[1])
+            Cm[0].append(Ccoeff[0])
+            Cc[0].append(Ccoeff[1])
+        elif finish < med:
+            Am[1].append(Acoeff[0])
+            Ac[1].append(Acoeff[1])
+            Bm[1].append(Bcoeff[0])
+            Bc[1].append(Bcoeff[1])
+            Cm[1].append(Ccoeff[0])
+            Cc[1].append(Ccoeff[1])
+        else:
+            Am[2].append(Acoeff[0])
+            Ac[2].append(Acoeff[1])
+            Bm[2].append(Bcoeff[0])
+            Bc[2].append(Bcoeff[1])
+            Cm[2].append(Ccoeff[0])
+            Cc[2].append(Ccoeff[1])
 
     T0 = []
     x = []
@@ -870,113 +933,28 @@ if run:
     )
     plt.close("all")
 
-    # filenamesS = "WoundL18h02", "WoundL18h06"
-    # filenamesM = "WoundL18h07", "WoundL18h09"
-    # filenamesL = "WoundL18h01", "WoundL18h03", "WoundL18h04", "WoundL18h05", "WoundL18h08"
-
-    Am = []
-    Ac = []
-    Bm = []
-    Bc = []
-    Cm = []
-    Cc = []
     AmErr = []
     AcErr = []
     BmErr = []
     BcErr = []
     CmErr = []
     CcErr = []
+
+    for i in range(3):
+        AmErr.append(np.std(Am[i]))
+        AcErr.append(np.std(Ac[i]))
+        BmErr.append(np.std(Bm[i]))
+        BcErr.append(np.std(Bc[i]))
+        CmErr.append(np.std(Cm[i]))
+        CcErr.append(np.std(Cc[i]))
+        Am[i] = np.mean(Am[i])
+        Ac[i] = np.mean(Ac[i])
+        Bm[i] = np.mean(Bm[i])
+        Bc[i] = np.mean(Bc[i])
+        Cm[i] = np.mean(Cm[i])
+        Cc[i] = np.mean(Cc[i])
+
     x = ["Fast", "Med", "Slow"]
-
-    Am.append(
-        np.mean(
-            [Acoeffs[0][0], Acoeffs[2][0], Acoeffs[3][0], Acoeffs[4][0], Acoeffs[7][0]]
-        )
-    )
-    Am.append(np.mean([Acoeffs[6][0], Acoeffs[8][0]]))
-    Am.append(np.mean([Acoeffs[1][0], Acoeffs[5][0]]))
-    AmErr.append(
-        np.std(
-            [Acoeffs[0][0], Acoeffs[2][0], Acoeffs[3][0], Acoeffs[4][0], Acoeffs[7][0]]
-        )
-    )
-    AmErr.append(np.std([Acoeffs[6][0], Acoeffs[8][0]]))
-    AmErr.append(np.std([Acoeffs[1][0], Acoeffs[5][0]]))
-
-    Ac.append(
-        np.mean(
-            [Acoeffs[0][1], Acoeffs[2][1], Acoeffs[3][1], Acoeffs[4][1], Acoeffs[7][1]]
-        )
-    )
-    Ac.append(np.mean([Acoeffs[6][1], Acoeffs[8][1]]))
-    Ac.append(np.mean([Acoeffs[1][1], Acoeffs[5][1]]))
-    AcErr.append(
-        np.std(
-            [Acoeffs[0][1], Acoeffs[2][1], Acoeffs[3][1], Acoeffs[4][1], Acoeffs[7][1]]
-        )
-    )
-    AcErr.append(np.std([Acoeffs[6][1], Acoeffs[8][1]]))
-    AcErr.append(np.std([Acoeffs[1][1], Acoeffs[5][1]]))
-
-    Bm.append(
-        np.mean(
-            [Bcoeffs[0][0], Bcoeffs[2][0], Bcoeffs[3][0], Bcoeffs[4][0], Bcoeffs[7][0]]
-        )
-    )
-    Bm.append(np.mean([Bcoeffs[6][0], Bcoeffs[8][0]]))
-    Bm.append(np.mean([Bcoeffs[1][0], Bcoeffs[5][0]]))
-    BmErr.append(
-        np.std(
-            [Bcoeffs[0][0], Bcoeffs[2][0], Bcoeffs[3][0], Bcoeffs[4][0], Bcoeffs[7][0]]
-        )
-    )
-    BmErr.append(np.std([Bcoeffs[6][0], Bcoeffs[8][0]]))
-    BmErr.append(np.std([Bcoeffs[1][0], Bcoeffs[5][0]]))
-
-    Bc.append(
-        np.mean(
-            [Bcoeffs[0][1], Bcoeffs[2][1], Bcoeffs[3][1], Bcoeffs[4][1], Bcoeffs[7][1]]
-        )
-    )
-    Bc.append(np.mean([Bcoeffs[6][1], Bcoeffs[8][1]]))
-    Bc.append(np.mean([Bcoeffs[1][1], Bcoeffs[5][1]]))
-    BcErr.append(
-        np.std(
-            [Bcoeffs[0][1], Bcoeffs[2][1], Bcoeffs[3][1], Bcoeffs[4][1], Bcoeffs[7][1]]
-        )
-    )
-    BcErr.append(np.std([Bcoeffs[6][1], Bcoeffs[8][1]]))
-    BcErr.append(np.std([Bcoeffs[1][1], Bcoeffs[5][1]]))
-
-    Cm.append(
-        np.mean(
-            [Ccoeffs[0][0], Ccoeffs[2][0], Ccoeffs[3][0], Ccoeffs[4][0], Ccoeffs[7][0]]
-        )
-    )
-    Cm.append(np.mean([Ccoeffs[6][0], Ccoeffs[8][0]]))
-    Cm.append(np.mean([Ccoeffs[1][0], Ccoeffs[5][0]]))
-    CmErr.append(
-        np.std(
-            [Ccoeffs[0][0], Ccoeffs[2][0], Ccoeffs[3][0], Ccoeffs[4][0], Ccoeffs[7][0]]
-        )
-    )
-    CmErr.append(np.std([Ccoeffs[6][0], Ccoeffs[8][0]]))
-    CmErr.append(np.std([Ccoeffs[1][0], Ccoeffs[5][0]]))
-
-    Cc.append(
-        np.mean(
-            [Ccoeffs[0][1], Ccoeffs[2][1], Ccoeffs[3][1], Ccoeffs[4][1], Ccoeffs[7][1]]
-        )
-    )
-    Cc.append(np.mean([Ccoeffs[6][1], Ccoeffs[8][1]]))
-    Cc.append(np.mean([Ccoeffs[1][1], Ccoeffs[5][1]]))
-    CcErr.append(
-        np.std(
-            [Ccoeffs[0][1], Ccoeffs[2][1], Ccoeffs[3][1], Ccoeffs[4][1], Ccoeffs[7][1]]
-        )
-    )
-    CcErr.append(np.std([Ccoeffs[6][1], Ccoeffs[8][1]]))
-    CcErr.append(np.std([Ccoeffs[1][1], Ccoeffs[5][1]]))
 
     fig, ax = plt.subplots(2, 3)
     plt.subplots_adjust(wspace=0.8)
@@ -1017,9 +995,9 @@ if run:
             t0_1.append(t0[i][0])
             t0_2.append(t0[i][1])
 
-    ax.scatter(range(1, 10), t0_1)
-    ax.scatter(range(1, 10), t0_2)
-    ax.set(ylabel=r"$C_0$")
+    ax.scatter(range(1, int(len(filenames)) + 1), t0_1)
+    ax.scatter(range(1, int(len(filenames)) + 1), t0_2)
+    ax.set(ylabel=r"$t_0$")
 
     fig.savefig(
         f"results/velocity t0 {fileType}", dpi=300, transparent=True,
@@ -1031,7 +1009,10 @@ if run:
 
 run = False
 if run:
-    fileTypes = "fastHealersL", "medHealersL", "slowHealersL"
+    if fileType == "WoundL":
+        fileTypes = "fastHealersL", "medHealersL", "slowHealersL", "WoundL"
+    else:
+        fileTypes = "fastHealersS", "medHealersS", "slowHealersS", "WoundS"
     for fileType in fileTypes:
         dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
         radius = [[] for col in range(T)]
@@ -1123,7 +1104,7 @@ if run:
         CmErr.append(0)
         CcErr.append(0)
 
-    x = [r"$F$", r"$M$", r"$S$", r"$\bar F$", r"$\bar M$", r"$\bar S$"]
+    x = [r"$F$", r"$M$", r"$S$", r"$\bar F$", r"$\bar M$", r"$\bar S$", "All"]
 
     plt.rcParams.update({"font.size": 10})
 
@@ -1151,6 +1132,9 @@ if run:
     ax[1, 2].set(ylabel=r"$C_0$")
 
     fig.savefig(
-        f"results/model coeff compare slow fast mean", dpi=300, transparent=True,
+        f"results/model coeff compare slow fast mean {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
+

@@ -12,6 +12,7 @@ import pandas as pd
 import random
 import scipy as sp
 import scipy.linalg as linalg
+from scipy.optimize import leastsq
 import shapely
 import skimage as sm
 import skimage.io
@@ -31,16 +32,31 @@ plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
-# filenames, fileType = cl.getFilesType()
 
-# fileType = "slowHealersL"
-# filenames = "WoundL18h02", "WoundL18h06"
+def reciprocal(x, coeffs):
+    m = coeffs[0]
+    c = coeffs[1]
+    return m / (x) + c
 
-fileType = "medHealersL"
-filenames = "WoundL18h07", "WoundL18h09"
 
-# fileType = "fastHealersL"
-# filenames = "WoundL18h01", "WoundL18h03", "WoundL18h04", "WoundL18h05", "WoundL18h08"
+def residualsReciprocal(coeffs, y, x):
+    return y - reciprocal(x, coeffs)
+
+
+def exponential(x, coeffs):
+    m = coeffs[0]
+    c = coeffs[1]
+    A = coeffs[2]
+    return A * np.exp(m * x) + c
+
+
+def residualsExponential(coeffs, y, x):
+    return y - exponential(x, coeffs)
+
+
+# -------------------
+
+filenames, fileType = cl.getFilesType()
 
 T = 181
 scale = 147.91 / 512
@@ -65,7 +81,7 @@ medianFinish = int(np.median(finish))
 minFinish = int(min(finish))
 woundEdge = np.mean(woundEdge)
 
-run = True
+run = False
 if run:
     _df2 = []
     for filename in filenames:
@@ -124,7 +140,7 @@ if run:
     for filename in filenames:
 
         df = dfShape[dfShape["Filename"] == filename]
-        dfr = df[df["R"] > R]
+        dfr = df[df["R"] < R]
 
         mu = []
         err = []
@@ -184,9 +200,17 @@ if run:
 
 #  ------------------- Area kymograph
 
-run = False
+run = True
 if run:
+    Area = []
+    finishTime = []
     for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        finish = sum(area > 0)
+        finishTime.append(finish)
+
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         area = np.array(dfWound["Area"]) * (scale) ** 2
@@ -205,6 +229,8 @@ if run:
                     Ar = dfr["Area"]
                     heatmapA[int(i), j] = np.mean(Ar)
 
+        Area.append(np.mean(heatmapA[:, 0:10], axis=1))
+
         dt, dr = 4, 100 / grid
         t, r = np.mgrid[0:181:dt, 1:101:dr]
         # z_min, z_max = heatmapA.min(), heatmapA.max()
@@ -215,13 +241,28 @@ if run:
         fig, ax = plt.subplots()
         c = ax.pcolor(t, r, heatmapA, cmap="RdBu_r", vmin=0, vmax=25)
         fig.colorbar(c, ax=ax)
-        plt.axvline(x=medianFinish)
-        plt.text(medianFinish + 2, 50, "Wound Closed", size=10, rotation=90)
+        plt.axvline(x=finish)
+        plt.text(finish + 2, 50, "Wound Closed", size=10, rotation=90)
         plt.xlabel("Time (mins)")
         plt.ylabel(r"Distance from wound edge $(\mu m)$")
         plt.title(f"Area {fileType}")
         fig.savefig(
             f"results/Area kymograph {filename}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+    t = np.array(range(45)) * 4
+
+    for i in range(len(Area)):
+        fig, ax = plt.subplots()
+        plt.plot(t, Area[i])  # [0:int(finishTime[i]/4)]
+
+        plt.ylabel("Area")
+        plt.xlabel("Time (mins)")
+        plt.ylim([5, 35])
+        plt.title(f"Division time Finished at = {finishTime[i]}")
+        fig.savefig(
+            f"results/Area close to wound {filenames[i]}", dpi=300, transparent=True,
         )
         plt.close("all")
 
@@ -342,7 +383,7 @@ if run:
 
 #  ------------------- mean q tensor kymograph
 
-run = True
+run = False
 if run:
     grid = 40
     heatmapq1 = np.zeros([int(T / 4), grid])
@@ -416,15 +457,17 @@ if run:
 
 #  ------------------- q tensor kymograph
 
-run = False
+run = True
 if run:
-
+    q1 = []
+    finishTime = []
     for filename in filenames:
 
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
 
         area = np.array(dfWound["Area"]) * (scale) ** 2
         finish = sum(area > 0)
+        finishTime.append(finish)
 
         df = dfShape[dfShape["Filename"] == filename]
 
@@ -451,6 +494,8 @@ if run:
                     heatmapq1[int(i), j] = Q[0, 0]
                     heatmapq2[int(i), j] = Q[0, 1]
 
+        q1.append(np.mean(heatmapq1[:, 0:10], axis=1))
+
         dt, dr = 4, 80 / grid
         t, r = np.mgrid[0:180:dt, 0:80:dr]
 
@@ -458,7 +503,7 @@ if run:
         c = ax.pcolor(t, r, heatmapq1, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
         fig.colorbar(c, ax=ax)
         plt.axvline(x=finish)
-        plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
+        plt.text(finish + 2, 50, "Median Finish Time", size=10, rotation=90)
         plt.xlabel("Time (min)")
         plt.ylabel(r"Distance from wound edge $(\mu m)$")
         plt.title(f"Q1 {fileType}")
@@ -467,34 +512,58 @@ if run:
         )
         plt.close("all")
 
-        # p = np.zeros([15, 3])
-        # for t in range(10):
+    t = np.array(range(45)) * 4
 
-        # d = heatmapq1[t * 4, 3:30]
-        # x = np.array(range(len(d))) * 2 + 6
-        # p[t] = np.polyfit(x, d, 2)
+    m = []
+    A = []
+    fig, ax = plt.subplots()
+    for i in range(len(q1)):
+        plt.plot(t, q1[i])  # [0:int(finishTime[i]/4)]
+        coeffs = leastsq(residualsExponential, x0=(-1, 0.005, 1), args=(q1[i], t))[0]
+        m.append(coeffs[0])
+        A.append(coeffs[2])
 
-        # fig, ax = plt.subplots()
-        # plt.plot(x, d)
-        # plt.plot(x, (p[t, 0] * x ** 2 + p[t, 1] * x + p[t, 2]))
-        # plt.ylim(-0.04, 0.01)
-        # plt.xlabel(r"Distance from Wound Edge $(\mu m)$")
-        # plt.ylabel(r"Q1")
-        # fig.savefig(
-        #     f"results/Q1 t={t*4} {fileType}", dpi=300, transparent=True,
-        # )
-        # plt.close("all")
+    plt.ylabel("q1")
+    plt.xlabel("Time (mins)")
+    plt.title(f"Division time")
+    fig.savefig(
+        f"results/q1 close to wound {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 
-        # fig, ax = plt.subplots()
-        # c = ax.pcolor(t, r, heatmapq2, cmap="RdBu_r", vmin=-0.04, vmax=0.04)
-        # fig.colorbar(c, ax=ax)
-        # plt.axvline(x=medianFinish)
-        # plt.text(medianFinish + 2, 50, "Median Finish Time", size=10, rotation=90)
-        # plt.xlabel("Time (min)")
-        # plt.ylabel(r"Distance from wound edge $(\mu m)$")
-        # plt.title(f"Q2 {fileType}")
-        # fig.savefig(
-        #     f"results/Q2 kymograph {fileType}", dpi=300, transparent=True,
-        # )
-        # plt.close("all")
+    mu_q = np.mean(q1, axis=0)
+    coeffs = leastsq(residualsReciprocal, x0=(-1, 0.005, 1), args=(mu_q, t))[0]
+
+    fig, ax = plt.subplots()
+    plt.plot(t, mu_q)
+    plt.plot(t, exponential(t, coeffs))
+    plt.ylabel("q1")
+    plt.xlabel("Time (mins)")
+    plt.title(f"Division time")
+    fig.savefig(
+        f"results/mean q1 close to wound {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    for i in range(len(q1)):
+        fig, ax = plt.subplots()
+        plt.plot(t, q1[i])
+        coeffs = leastsq(residualsExponential, x0=(-1, 0.005, 1), args=(q1[i], t))[0]
+        plt.plot(t, exponential(t, coeffs))
+        plt.ylabel("q1")
+        plt.xlabel("Time (mins)")
+        plt.title(f"Division time Finished at = {finishTime[i]}")
+        fig.savefig(
+            f"results/q1 close to wound {filenames[i]}", dpi=300, transparent=True,
+        )
+        plt.close("all")
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.scatter(finishTime, m)
+    plt.ylabel("m")
+    plt.xlabel("finish time")
+    fig.savefig(
+        f"results/corr m and finish healing {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
 

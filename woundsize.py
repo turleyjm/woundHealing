@@ -12,6 +12,7 @@ import pandas as pd
 import random
 import scipy as sp
 import scipy.linalg as linalg
+from scipy.stats import pearsonr
 import shapely
 import skimage as sm
 import skimage.io
@@ -40,19 +41,30 @@ T = 181
 
 sf = []
 endTime = []
+divisions = []
 R = [[] for col in range(T)]
 for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+    dfMitosis = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
 
+    # divisions.append(int(len(dfMitosis) / 3))
     sf.append(dfWound["Shape Factor"].iloc[0])
     time = np.array(dfWound["Time"])
     area = np.array(dfWound["Area"]) * (scale) ** 2
 
-    endTime.append(sum(area > 0))
+    tf = sum(area > 0)
+    endTime.append(tf)
     for t in range(T):
         if pd.isnull(area[t]):
             area[t] = 0
+
+    df = dfMitosis[dfMitosis["Chain"] == "parent"]
+    count = 0
+    for i in range(len(df)):
+        if df["Time"].iloc[i][-1] < tf:
+            count += 1
+    divisions.append(count)
 
     for t in range(T):
         R[t].append(area[t])
@@ -155,5 +167,35 @@ if run:
 
     fig.savefig(
         f"results/correlation {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+
+run = False
+if run:
+    cor, a = pearsonr(endTime, divisions)
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.scatter(endTime, divisions)
+    plt.xlabel(r"end time")
+    plt.ylabel(r"divisions")
+    plt.title(f"Pearsons Correlation = {cor}")
+
+    fig.savefig(
+        f"results/correlation healing time and mitosis {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+run = True
+if run:
+    x = np.array(range(len(endTime))) + 1
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.scatter(x, endTime)
+    plt.xlabel(r"video")
+    plt.ylabel(r"end time")
+
+    fig.savefig(
+        f"results/end time {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")

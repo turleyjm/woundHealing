@@ -12,6 +12,7 @@ import pandas as pd
 import random
 import scipy as sp
 import scipy.linalg as linalg
+from scipy.stats import chisquare
 import shapely
 import skimage as sm
 import skimage.feature
@@ -31,7 +32,77 @@ import commonLiberty as cl
 # -------------------
 
 
-def boundary(contour):
+def orientationMean(polygons):
+
+    n = len(polygons)
+
+    I = np.zeros(shape=(2, 2))
+    for i in range(n):
+        I += cell.inertia(polygons[i])
+
+    D, V = linalg.eig(I / n)
+    e1 = D[0]
+    e2 = D[1]
+    v1 = V[:, 0]
+    v2 = V[:, 1]
+    if e1 < e2:
+        v = v1
+    else:
+        v = v2
+    theta = np.arctan(v[1] / v[0])
+    if theta < 0:
+        theta = theta + np.pi
+    if theta > np.pi:
+        theta = theta - np.pi
+    return theta
+
+
+def shapeFactorMean(polygons):
+
+    n = len(polygons)
+
+    I = np.zeros(shape=(2, 2))
+    for i in range(n):
+        I += cell.inertia(polygons[i])
+
+    D = linalg.eig(I / n)[0]
+    e1 = D[0]
+    e2 = D[1]
+    SF = abs((e1 - e2) / (e1 + e2))
+    return SF
+
+
+def shapeFactor_tcj20Tensor(tcj20Tensor):
+
+    D = linalg.eig(tcj20Tensor)[0]
+    e1 = D[0]
+    e2 = D[1]
+    sf20_tcj = abs((e1 - e2) / (e1 + e2))
+
+    return sf20_tcj
+
+
+def orientation_tcj20Tensor(tcj20Tensor):
+
+    D, V = linalg.eig(tcj20Tensor)
+    e1 = D[0]
+    e2 = D[1]
+    v1 = V[:, 0]
+    v2 = V[:, 1]
+    if e1 < e2:
+        v = v1
+    else:
+        v = v2
+    theta = np.arctan(v[1] / v[0])
+    if theta < 0:
+        theta = theta + np.pi
+    if theta > np.pi:
+        theta = theta - np.pi
+
+    return theta
+
+
+def isBoundary(contour):
 
     boundary = False
 
@@ -62,7 +133,7 @@ def findtcj(polygon, img):
     # imgLabelrc = np.asarray(imgLabelrc, "uint16")
     # tifffile.imwrite(f"results/imgLabel{filename}.tif", imgLabelrc)
 
-    if boundary(contour) == True:
+    if isBoundary(contour) == True:
         return "False"
     if label == 0:
         print("label == 0")
@@ -98,6 +169,7 @@ def findtcj(polygon, img):
 
     if "False" in tcj:
         tcj.remove("False")
+        print("removed")
 
     return tcj
 
@@ -130,11 +202,25 @@ def angleDiff(theta, phi):
         else:
             diff = -180 - diff
 
-    return diff
+    return abs(diff)
+
+
+def findtcjMean(polygons, binarys):
+
+    n = len(polygons)
+
+    I = np.zeros(shape=(2, 2))
+    for i in range(n):
+        tcj = findtcj(polygons[i], binarys[i])
+        if "False" in tcj:
+            return I, True
+
+        I += cell.inertia_tcj(tcj)
+
+    return I / n, False
 
 
 # -------------------
-
 
 plt.rcParams.update({"font.size": 8})
 
@@ -226,20 +312,21 @@ if run:
                 #     0,
                 # ]
 
-            _dfOrientation.append(
-                {
-                    "Filename": filename,
-                    "Label": label,
-                    "Orientation": ori,
-                    "T": t,
-                    "Cytokineses Time": tc,
-                    "Anaphase Time": tm,
-                    "X": x,
-                    "Y": y,
-                    "Colour": colour,
-                    "Polygons": polyList,
-                }
-            )
+            if tc - tm < 10:
+                _dfOrientation.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "Orientation": ori,
+                        "T": t,
+                        "Cytokineses Time": tc,
+                        "Anaphase Time": tm,
+                        "X": x,
+                        "Y": y,
+                        "Colour": colour,
+                        "Polygons": polyList,
+                    }
+                )
 
         # tracksDivisions = fi.imgxyrcRGB(tracksDivisions)
         # tracksDivisions = np.asarray(tracksDivisions, "uint8")
@@ -277,6 +364,7 @@ if run:
                         "Shape Factor": cell.shapeFactor(polygon) - sf0,
                         "Area Start": Area0,
                         "Shape Factor Start": sf0,
+                        "Colour": dfOrientation["Colour"].iloc[i],
                     }
                 )
                 t += 1
@@ -286,7 +374,7 @@ if run:
 else:
     dfPolgyons = pd.read_pickle(f"databases/dfPolgyons{fileType}.pkl")
 
-run = True
+run = False
 if run:
 
     _df30 = []
@@ -331,8 +419,8 @@ if run:
             j += 1
     sfL = sfL[:j]
 
-    muA = np.mean(area, axis=0) * scale
-    sdA = np.std(area, axis=0) * scale
+    muA = np.mean(area, axis=0) * scale ** 2
+    sdA = np.std(area, axis=0) * scale ** 2
     muSf = np.mean(sf, axis=0)
     sdSf = np.std(sf, axis=0)
     muSfL = np.mean(sfL, axis=0)
@@ -344,7 +432,7 @@ if run:
     plt.subplots_adjust(wspace=0.3)
 
     ax[0].errorbar(t, muA, yerr=sdA, marker="o")
-    ax[0].set(xlabel="Time", ylabel="Area change")
+    ax[0].set(xlabel="Time", ylabel=r"Area change $\mu m^2$")
 
     ax[1].errorbar(t, muSf, yerr=sdSf, marker="o")
     ax[1].set(xlabel="Time", ylabel="shape factor change")
@@ -479,8 +567,11 @@ for filename in filenames:
 
 df20 = pd.DataFrame(_df20)
 
+
+# All division
 run = False
 if run:
+    _dftcj = []
     diffOri20 = []
     diffOriA = []
     diffOri20_tcj = []
@@ -490,14 +581,17 @@ if run:
         binary = sm.io.imread(f"dat/{filename}/ecadBinary{filename}.tif").astype(int)
         binary = fi.vidrcxy(255 - binary)
         for i in range(len(df)):
-            divisionOri = df20["Division Orientation"].iloc[i]
+            divisionOri = df["Division Orientation"].iloc[i]
 
-            polygon = df["Polygon"].iloc[i][10]
-            t0 = df["Cytokineses Time"].iloc[i] - 20
-            tcj20 = findtcj(polygon, binary[t0])
+            polygons = df["Polygon"].iloc[i][0:10]
+            t = [
+                df["Cytokineses Time"].iloc[i] - 29,
+                df["Cytokineses Time"].iloc[i] - 19,
+            ]
+            tcj20Tensor, boundary = findtcjMean(polygons, binary[t[0] : t[1]])
 
-            shapeOri20 = cell.orientation(polygon) * (180 / np.pi)
-            sf20 = cell.shapeFactor(polygon)
+            shapeOri20 = orientationMean(polygons) * (180 / np.pi)
+            sf20 = shapeFactorMean(polygons)
 
             polygon = df["Polygon"].iloc[i][
                 29 - df["Cytokineses Time"].iloc[i] + df["Anaphase Time"].iloc[i]
@@ -508,43 +602,435 @@ if run:
             shapeOriA = cell.orientation(polygon) * (180 / np.pi)
             sfA = cell.shapeFactor(polygon)
 
-            if "False" not in tcj20:
+            if True != boundary:
                 if "False" not in tcjA:
                     diffOri20.append(angleDiff(divisionOri, shapeOri20))
                     diffOriA.append(angleDiff(divisionOri, shapeOriA))
 
-                    sf20_tcj = cell.shapeFactor_tcj(tcj20)
-                    shapeOri20_tcj = cell.orientation_tcj(tcj20) * (180 / np.pi)
+                    sf20_tcj = shapeFactor_tcj20Tensor(tcj20Tensor)
+                    shapeOri20_tcj = orientation_tcj20Tensor(tcj20Tensor) * (
+                        180 / np.pi
+                    )
                     diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
 
                     sfA_tcj = cell.shapeFactor_tcj(tcjA)
                     shapeOriA_tcj = cell.orientation_tcj(tcjA) * (180 / np.pi)
                     diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
-                else:
-                    print(i)
-            else:
-                print(i)
+
+                    _dftcj.append(
+                        {
+                            "Filename": filename,
+                            "Label": df["Label"].iloc[i],
+                            "Division Orientation": divisionOri,
+                            "Polygon": df["Polygon"].iloc[i],
+                            "Anaphase Time": df["Anaphase Time"].iloc[i],
+                            "Cytokineses Time": df["Cytokineses Time"],
+                            "Pre-rounded up shape Orinentation": shapeOri20,
+                            "Anaphase shape Orinentation": shapeOriA,
+                            "Pre-rounded up tcj Orinentation": shapeOri20_tcj,
+                            "Anaphase tcj Orinentation": shapeOriA_tcj,
+                            "Pre-rounded up Shape Factor": sf20,
+                            "Anaphase Shape Factor": sfA,
+                            "Pre-rounded up tcj Shape Factor": sf20_tcj,
+                            "Anaphase tcj Shape Factor": sfA_tcj,
+                        }
+                    )
+
+    dftcj = pd.DataFrame(_dftcj)
+    dftcj.to_pickle(f"databases/dftcj{fileType}.pkl")
+
+    dist_diffOri20 = []
+    dist_diffOriA = []
+    dist_diffOri20_tcj = []
+    dist_diffOriA_tcj = []
+
+    for i in range(9):
+        dist_diffOri20.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
+                )
+            )
+        )
+        dist_diffOriA.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
+                )
+            )
+        )
+        dist_diffOri20_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20_tcj) < 10 * i + 10,
+                    np.array(diffOri20_tcj) > 10 * i,
+                )
+            )
+        )
+        dist_diffOriA_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA_tcj) < 10 * i + 10,
+                    np.array(diffOriA_tcj) > 10 * i,
+                )
+            )
+        )
+
+    dist_diffOri20 = np.array(dist_diffOri20)
+    dist_diffOriA = np.array(dist_diffOriA)
+    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
+    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
+
+    yMax = (
+        max(
+            [
+                max(dist_diffOri20),
+                max(dist_diffOriA),
+                max(dist_diffOri20_tcj),
+                max(dist_diffOriA_tcj),
+            ]
+        )
+        * 1.1
+    )
 
     fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    plt.suptitle(f"divsion orientation predictors {fileType}")
 
-    ax[0, 0].hist(diffOri20, bins=20)
+    ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
+    ax[0, 0].axvline(np.mean(diffOri20), color="r")
     ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 0].title.set_text("Pre round up orientation")
+    ax[0, 0].title.set_text(
+        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
+    )
+    ax[0, 0].set_ylim([0, yMax])
 
-    ax[0, 1].hist(diffOriA, bins=20)
+    ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
+    ax[0, 1].axvline(np.mean(diffOriA), color="r")
     ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 1].title.set_text("Anaphase orientation")
+    ax[0, 1].title.set_text(
+        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
+    )
+    ax[0, 1].set_ylim([0, yMax])
 
-    ax[1, 0].hist(diffOri20_tcj, bins=20)
+    ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
+    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
     ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[1, 0].title.set_text("Pre round up TCJ orientation")
+    ax[1, 0].title.set_text(
+        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+    )
+    ax[1, 0].set_ylim([0, yMax])
 
-    ax[1, 1].hist(diffOriA_tcj, bins=20)
+    ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
+    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
     ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[1, 1].title.set_text("Anaphase TCJ orientation")
+    ax[1, 1].title.set_text(
+        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+    )
+    ax[1, 1].set_ylim([0, yMax])
 
     fig.savefig(
         f"results/divsion orientation predictor {fileType}", dpi=300, transparent=True,
     )
     plt.close("all")
+else:
+    dftcj = pd.read_pickle(f"databases/dftcj{fileType}.pkl")
 
+
+# low and high shape factor
+run = False
+if run:
+    diffOri20 = []
+    diffOriA = []
+    diffOri20_tcj = []
+    diffOriA_tcj = []
+    for i in range(len(dftcj)):
+
+        sf20 = dftcj["Pre-rounded up Shape Factor"].iloc[i]
+        if sf20 < 0.15:
+            divisionOri = dftcj["Division Orientation"].iloc[i]
+            shapeOri20 = dftcj["Pre-rounded up shape Orinentation"].iloc[i]
+            shapeOriA = dftcj["Anaphase shape Orinentation"].iloc[i]
+            shapeOri20_tcj = dftcj["Pre-rounded up tcj Orinentation"].iloc[i]
+            shapeOriA_tcj = dftcj["Anaphase tcj Orinentation"].iloc[i]
+
+            diffOri20.append(angleDiff(divisionOri, shapeOri20))
+            diffOriA.append(angleDiff(divisionOri, shapeOriA))
+            diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
+            diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
+
+    dist_diffOri20 = []
+    dist_diffOriA = []
+    dist_diffOri20_tcj = []
+    dist_diffOriA_tcj = []
+
+    for i in range(9):
+        dist_diffOri20.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
+                )
+            )
+        )
+        dist_diffOriA.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
+                )
+            )
+        )
+        dist_diffOri20_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20_tcj) < 10 * i + 10,
+                    np.array(diffOri20_tcj) > 10 * i,
+                )
+            )
+        )
+        dist_diffOriA_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA_tcj) < 10 * i + 10,
+                    np.array(diffOriA_tcj) > 10 * i,
+                )
+            )
+        )
+
+    dist_diffOri20 = np.array(dist_diffOri20)
+    dist_diffOriA = np.array(dist_diffOriA)
+    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
+    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
+
+    yMax = (
+        max(
+            [
+                max(dist_diffOri20),
+                max(dist_diffOriA),
+                max(dist_diffOri20_tcj),
+                max(dist_diffOriA_tcj),
+            ]
+        )
+        * 1.1
+    )
+
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    plt.suptitle(f"divsion orientation predictors sf < 0.15 {fileType}")
+
+    ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
+    ax[0, 0].axvline(np.mean(diffOri20), color="r")
+    ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 0].title.set_text(
+        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
+    )
+    ax[0, 0].set_ylim([0, yMax])
+
+    ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
+    ax[0, 1].axvline(np.mean(diffOriA), color="r")
+    ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 1].title.set_text(
+        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
+    )
+    ax[0, 1].set_ylim([0, yMax])
+
+    ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
+    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
+    ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 0].title.set_text(
+        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+    )
+    ax[1, 0].set_ylim([0, yMax])
+
+    ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
+    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
+    ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 1].title.set_text(
+        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+    )
+    ax[1, 1].set_ylim([0, yMax])
+
+    fig.savefig(
+        f"results/divsion orientation predictor low sf {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    diffOri20 = []
+    diffOriA = []
+    diffOri20_tcj = []
+    diffOriA_tcj = []
+    for i in range(len(dftcj)):
+
+        sf20 = dftcj["Pre-rounded up Shape Factor"].iloc[i]
+        if sf20 > 0.5:
+            divisionOri = dftcj["Division Orientation"].iloc[i]
+            shapeOri20 = dftcj["Pre-rounded up shape Orinentation"].iloc[i]
+            shapeOriA = dftcj["Anaphase shape Orinentation"].iloc[i]
+            shapeOri20_tcj = dftcj["Pre-rounded up tcj Orinentation"].iloc[i]
+            shapeOriA_tcj = dftcj["Anaphase tcj Orinentation"].iloc[i]
+
+            diffOri20.append(angleDiff(divisionOri, shapeOri20))
+            diffOriA.append(angleDiff(divisionOri, shapeOriA))
+            diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
+            diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
+
+    dist_diffOri20 = []
+    dist_diffOriA = []
+    dist_diffOri20_tcj = []
+    dist_diffOriA_tcj = []
+
+    for i in range(9):
+        dist_diffOri20.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
+                )
+            )
+        )
+        dist_diffOriA.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
+                )
+            )
+        )
+        dist_diffOri20_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOri20_tcj) < 10 * i + 10,
+                    np.array(diffOri20_tcj) > 10 * i,
+                )
+            )
+        )
+        dist_diffOriA_tcj.append(
+            sum(
+                np.logical_and(
+                    np.array(diffOriA_tcj) < 10 * i + 10,
+                    np.array(diffOriA_tcj) > 10 * i,
+                )
+            )
+        )
+
+    dist_diffOri20 = np.array(dist_diffOri20)
+    dist_diffOriA = np.array(dist_diffOriA)
+    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
+    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
+
+    yMax = (
+        max(
+            [
+                max(dist_diffOri20),
+                max(dist_diffOriA),
+                max(dist_diffOri20_tcj),
+                max(dist_diffOriA_tcj),
+            ]
+        )
+        * 1.1
+    )
+
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    plt.suptitle(f"divsion orientation predictors sf > 0.5 {fileType}")
+
+    ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
+    ax[0, 0].axvline(np.mean(diffOri20), color="r")
+    ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 0].title.set_text(
+        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
+    )
+    ax[0, 0].set_ylim([0, yMax])
+
+    ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
+    ax[0, 1].axvline(np.mean(diffOriA), color="r")
+    ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 1].title.set_text(
+        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
+    )
+    ax[0, 1].set_ylim([0, yMax])
+
+    ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
+    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
+    ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 0].title.set_text(
+        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+    )
+    ax[1, 0].set_ylim([0, yMax])
+
+    ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
+    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
+    ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 1].title.set_text(
+        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+    )
+    ax[1, 1].set_ylim([0, yMax])
+
+    fig.savefig(
+        f"results/divsion orientation predictor high sf {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+run = True
+if run:
+    diffOri20 = []
+    diffOriA = []
+    diffOri20_tcj = []
+    diffOriA_tcj = []
+    for i in range(len(dftcj)):
+
+        shapeOri20 = dftcj["Pre-rounded up shape Orinentation"].iloc[i]
+        shapeOri20_tcj = dftcj["Pre-rounded up tcj Orinentation"].iloc[i]
+        if angleDiff(shapeOri20, shapeOri20_tcj) > 15:
+            divisionOri = dftcj["Division Orientation"].iloc[i]
+            shapeOriA = dftcj["Anaphase shape Orinentation"].iloc[i]
+            shapeOriA_tcj = dftcj["Anaphase tcj Orinentation"].iloc[i]
+
+            diffOri20.append(angleDiff(divisionOri, shapeOri20))
+            diffOriA.append(angleDiff(divisionOri, shapeOriA))
+            diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
+            diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
+
+    yMax = max(
+        [
+            max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
+            max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
+            max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
+            max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
+        ]
+    )
+
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    plt.suptitle(
+        f"divsion orientation predictors where predictors differ by 15 {fileType}"
+    )
+
+    ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
+    ax[0, 0].axvline(np.mean(diffOri20), color="r")
+    ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 0].title.set_text(f"Pre round up orientation")
+    ax[0, 0].set_ylim([0, yMax])
+
+    ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
+    ax[0, 1].axvline(np.mean(diffOriA), color="r")
+    ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[0, 1].title.set_text(f"Anaphase orientation")
+    ax[0, 1].set_ylim([0, yMax])
+
+    ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
+    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
+    ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 0].title.set_text(f"Pre round up TCJ orientation")
+    ax[1, 0].set_ylim([0, yMax])
+
+    ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
+    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
+    ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
+    ax[1, 1].title.set_text(f"Anaphase TCJ orientation")
+    ax[1, 1].set_ylim([0, yMax])
+
+    fig.savefig(
+        f"results/divsion orientation predictor high differ in prediction {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")

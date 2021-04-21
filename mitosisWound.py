@@ -120,10 +120,12 @@ if run:
                     rw = 0
 
                 r0 = r + rw
-                area = np.pi * ((r0 + 10) ** 2 - r0 ** 2)
-                weight = inPlaneWeight(x, y, r0 / scale, (r0 + 10) / scale, outPlane[t])
+                area = np.pi * ((r0 + Rbin) ** 2 - r0 ** 2)
+                weight = inPlaneWeight(
+                    x, y, r0 / scale, (r0 + Rbin) / scale, outPlane[t]
+                )
                 df = dfDivisions[dfDivisions["Distance"] > r0]
-                df2 = df[df["Distance"] < r0 + 10]
+                df2 = df[df["Distance"] < r0 + Rbin]
                 df3 = df2[df2["T"] == t]
 
                 n = len(df3)
@@ -151,11 +153,11 @@ if run:
     for t in T:
         for r in R:
             df = dfDensity_t[dfDensity_t["T"] >= t]
-            df2 = df[df["T"] < t + 20]
+            df2 = df[df["T"] < t + Tbin]
             df3 = df2[df2["R"] >= r]
-            df4 = df3[df3["R"] < r + 10]
+            df4 = df3[df3["R"] < r + Rbin]
             ori = []
-            n = sum(df4["Number"])
+            n = sum(df4["Number"]) / len(filenames)
             area = np.mean(df4["Area"])
             oriList = list(df4["Wound Orientation"])
 
@@ -214,9 +216,9 @@ if run:
 
     fig = plt.figure(1, figsize=(9, 8))
     plt.plot(position, density)
-    plt.ylabel("Density of Divisons")
+    plt.ylabel(r"Density of Divisons $\mu m^{-2}$")
     plt.xlabel("Wound Distance")
-    plt.ylim([0, 0.5])
+    plt.ylim([0, 0.01])
     plt.title(f"Division Density")
     fig.savefig(
         f"results/Division Density {fileType}", dpi=300, transparent=True,
@@ -232,9 +234,9 @@ if run:
 
     fig = plt.figure(1, figsize=(9, 8))
     plt.plot(time, density)
-    plt.ylabel("Density of Divisons")
+    plt.ylabel(r"Density of Divisons $\mu m^{-2}$")
     plt.xlabel("Time (mins)")
-    plt.ylim([0, 0.6])
+    plt.ylim([0, 0.012])
     plt.title(f"Division time")
     fig.savefig(
         f"results/Division time {fileType}", dpi=300, transparent=True,
@@ -263,11 +265,12 @@ if run:
 
 # -------------------
 
-run = True
+run = False
 if run:
     heatmapDensity = np.zeros([len(T), len(R)])
     heatmapOrientation = np.zeros([len(T), len(R)])
     heatmapArea = np.zeros([len(T), len(R)])
+    heatmapNumber = np.zeros([len(T), len(R)])
     x = 0
     y = 0
     for t in T:
@@ -295,6 +298,7 @@ if run:
             heatmapDensity[x, y] = n / area
             heatmapOrientation[x, y] = ori
             heatmapArea[x, y] = area
+            heatmapNumber[x, y] = n
 
             y += 1
         x += 1
@@ -303,10 +307,10 @@ if run:
     x, y = np.mgrid[0 : 180 + Tbin : Tbin, 0 : 80 + Rbin : Rbin]
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(x, y, heatmapDensity, cmap="Blues", vmin=0, vmax=0.8)
+    c = ax.pcolor(x, y, heatmapDensity, cmap="Blues", vmin=0, vmax=0.02)
     plt.xlabel("Time (mins)")
-    plt.ylabel(r"Distance from wound center $(\mu m)$")
-    plt.title(f"Division Density")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(r"Division Density $\mu m^{-2}$")
     fig.colorbar(c, ax=ax)
     fig.savefig(
         f"results/Division Time Distance Heatmap {fileType}", dpi=300, transparent=True,
@@ -314,9 +318,9 @@ if run:
     plt.close("all")
 
     fig, ax = plt.subplots()
-    c = ax.pcolor(x, y, heatmapOrientation, cmap="Blues", vmin=0, vmax=90)
+    c = ax.pcolor(x, y, heatmapOrientation, cmap="bwr", vmin=0, vmax=90)
     plt.xlabel("Time (mins)")
-    plt.ylabel(r"Distance from wound center $(\mu m)$")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Division Orientation")
     fig.colorbar(c, ax=ax)
     fig.savefig(
@@ -324,13 +328,24 @@ if run:
     )
     plt.close("all")
 
-    # fig, ax = plt.subplots()
-    # c = ax.pcolor(x, y, heatmapArea, cmap="Blues")
-    # plt.xlabel("Time (mins)")
-    # plt.ylabel(r"Distance from wound center $(\mu m)$")
-    # plt.title(f"Division Density")
-    # fig.colorbar(c, ax=ax)
-    # fig.savefig(
-    #     f"results/Division Area Distance Heatmap {fileType}", dpi=300, transparent=True,
-    # )
-    # plt.close("all")
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmapNumber, cmap="Blues")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(f"Division Number")
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/Division Number Heatmap {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots()
+    c = ax.pcolor(x, y, heatmapArea, cmap="Blues")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Distance from wound edge $(\mu m)$")
+    plt.title(r"Division Area $\mu m^{2}$")
+    fig.colorbar(c, ax=ax)
+    fig.savefig(
+        f"results/Division Area Distance Heatmap {fileType}", dpi=300, transparent=True,
+    )
+    plt.close("all")

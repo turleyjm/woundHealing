@@ -31,7 +31,8 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
-filenames = cl.getFiles()
+# filenames = cl.getFiles()
+filenames, fileType = cl.getFilesType()
 
 for filename in filenames:
 
