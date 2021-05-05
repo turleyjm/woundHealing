@@ -125,11 +125,11 @@ for filename in filenames:
 
     for t in range(T):
         dft = df[df["Time"] == t]
-        x = int(xList[t])
-        y = int(yList[t])
+        xc = int(xList[t])
+        yc = int(yList[t])
         Q = np.mean(dft["q"])
         for i in range(len(dft)):
-            [x, y] = [dft["Centroid"].iloc[i][0] - x, dft["Centroid"].iloc[i][1] - y]
+            [x, y] = [dft["Centroid"].iloc[i][0] - xc, dft["Centroid"].iloc[i][1] - yc]
             r = dist[
                 int(t), int(dft["Centroid"].iloc[i][0]), int(dft["Centroid"].iloc[i][1])
             ]
@@ -189,7 +189,9 @@ if run:
         plt.ylabel(r"Distance from wound edge $(\mu m)$")
         plt.title(f"Area {fileType}")
         fig.savefig(
-            f"results/Area kymograph {filename}", dpi=300, transparent=True,
+            f"results/Area kymograph {filename}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
@@ -224,7 +226,9 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Area {fileType}")
     fig.savefig(
-        f"results/Area kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Area kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 #  ------------------- Shape Factor kymograph
@@ -258,7 +262,9 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Shape Factor {fileType}")
     fig.savefig(
-        f"results/Shape Factor kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Shape Factor kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -299,7 +305,9 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Orientation {fileType}")
     fig.savefig(
-        f"results/Orientation kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Orientation kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -340,7 +348,9 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Q1 {fileType}")
     fig.savefig(
-        f"results/Q1 kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Q1 kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -351,7 +361,8 @@ if run:
     plt.ylabel(r"Distance from wound edge $(\mu m)$")
     plt.title(f"Q2 {fileType}")
     fig.savefig(
-        f"results/Q2 kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Q2 kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
-

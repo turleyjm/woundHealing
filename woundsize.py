@@ -28,7 +28,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 10})
 
 # -------------------
 
@@ -75,7 +75,9 @@ plt.gcf().subplots_adjust(left=0.2)
 plt.xlabel("Time")
 plt.ylabel(r"Area ($\mu m ^2$)")
 fig.savefig(
-    f"results/Wound Area {fileType}", dpi=300, transparent=True,
+    f"results/Wound Area {fileType}",
+    dpi=300,
+    transparent=True,
 )
 plt.close("all")
 
@@ -98,32 +100,37 @@ for filename in filenames:
 
 meanFinish = np.mean(meanFinish)
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.errorbar(time, R, yerr=err)
-plt.gcf().subplots_adjust(left=0.2)
-plt.title(f"Mean finish time = {meanFinish}")
-plt.suptitle("Wound Area")
-plt.xlabel("Time (mins)")
-plt.ylabel(r"Area ($\mu m ^2$)")
-fig.savefig(
-    f"results/Wound Area Mean {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+if False:
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.errorbar(time, R, yerr=err)
+    plt.gcf().subplots_adjust(left=0.2)
+    plt.title(f"Mean finish time = {meanFinish}")
+    plt.suptitle("Wound Area")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Area ($\mu m ^2$)")
+    fig.savefig(
+        f"results/Wound Area Mean {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-R = np.array(R)
-err = np.array(err)
+    R = np.array(R)
+    err = np.array(err)
 
-fig = plt.figure(1, figsize=(9, 8))
-plt.errorbar(time, (R / np.pi) ** 0.5, yerr=(err / np.pi) ** 0.5)
-plt.gcf().subplots_adjust(left=0.2)
-plt.title(f"Mean finish time = {meanFinish}")
-plt.suptitle("Wound Radius")
-plt.xlabel("Time (mins)")
-plt.ylabel(r"Radius ($\mu m$)")
-fig.savefig(
-    f"results/Wound Radius Mean {fileType}", dpi=300, transparent=True,
-)
-plt.close("all")
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.errorbar(time, (R / np.pi) ** 0.5, yerr=(err / np.pi) ** 0.5)
+    plt.gcf().subplots_adjust(left=0.2)
+    plt.title(f"Mean finish time = {meanFinish}")
+    plt.suptitle("Wound Radius")
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r"Radius ($\mu m$)")
+    fig.savefig(
+        f"results/Wound Radius Mean {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
 #  ------------------- Radius around wound thats fully in frame
 
@@ -153,7 +160,9 @@ if run:
     plt.ylabel(r"distance from wound edge to frame edge ($\mu m$)")
 
     fig.savefig(
-        f"results/max distance from wound edge {fileType}", dpi=300, transparent=True,
+        f"results/max distance from wound edge {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -166,7 +175,9 @@ if run:
     plt.ylabel(r"end time")
 
     fig.savefig(
-        f"results/correlation {fileType}", dpi=300, transparent=True,
+        f"results/correlation {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -187,7 +198,7 @@ if run:
     )
     plt.close("all")
 
-run = True
+run = False
 if run:
     x = np.array(range(len(endTime))) + 1
     fig = plt.figure(1, figsize=(9, 8))
@@ -196,6 +207,62 @@ if run:
     plt.ylabel(r"end time")
 
     fig.savefig(
-        f"results/end time {fileType}", dpi=300, transparent=True,
+        f"results/end time {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
+
+
+if True:
+    for filename in filenames:
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        vid = sm.io.imread(f"dat/{filename}/ecadFocus{filename}.tif").astype(int)
+        woundsite = sm.io.imread(f"dat/{filename}/woundsite{filename}.tif").astype(int)
+
+        wound = np.zeros([181, 20])
+        intWound = np.zeros([181, 20])
+        for t in range(T):
+            x, y = dfWound["Position"].iloc[t]
+            x = int(x)
+            y = 512 - int(y)
+            img = np.zeros([512, 512])
+            img[y, x] = 1
+            img = sp.ndimage.morphology.distance_transform_edt(1 - img)
+            intensity = []
+            intensityWound = []
+            for r in range(20):
+                intensity.append(
+                    np.mean(vid[t][(5 * r / scale < img) & (img < 5 * (r + 1) / scale)])
+                )
+                intensityWound.append(
+                    np.mean(
+                        woundsite[t][
+                            (5 * r / scale < img) & (img < 5 * (r + 1) / scale)
+                        ]
+                    )
+                )
+
+            wound[t] = intensity
+            intWound[t] = intensityWound
+
+        t, r = np.mgrid[0:181:1, 1:100:5]
+        fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+
+        c = ax[0].pcolor(t, r, wound)
+        fig.colorbar(c, ax=ax[0])
+        ax[0].set_xlabel("Time (mins)")
+        ax[0].set_ylabel(r"Distance from wound center $(\mu m)$")
+        ax[0].title.set_text(f"Intensity {filename}")
+
+        c = ax[1].pcolor(t, r, 255 - intWound)
+        fig.colorbar(c, ax=ax[1])
+        ax[1].set_xlabel("Time (mins)")
+        ax[1].set_ylabel(r"Distance from wound center $(\mu m)$")
+        ax[1].title.set_text(f"Wound {filename}")
+        fig.savefig(
+            f"results/Radial Wound {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")

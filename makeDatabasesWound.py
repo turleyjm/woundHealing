@@ -52,7 +52,7 @@ f = open("pythonText.txt", "r")
 
 filename = f.read()
 
-start = (256, 299)  # if not all wounds are centred
+start = 256, 256  # if not all wounds are centred
 
 vidFile = f"dat/{filename}/outPlane{filename}.tif"  # change
 
@@ -83,7 +83,6 @@ _dfWound.append(
         "Time": t,
         "Polygon": polygon,
         "Position": (Cx, Cy),
-        "Centroid": (Cx, Cy),
         "Contour": contour,
         "Area": polygon.area,
         "Shape Factor": cell.shapeFactor(polygon),
@@ -100,7 +99,6 @@ finished = False
 
 xf = Cx
 yf = Cy
-position = []
 
 dfNucleus = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 _df2 = []
@@ -129,7 +127,13 @@ for i in range(len(dfNucleus)):
                 v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
 
                 _df2.append(
-                    {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v,}
+                    {
+                        "Label": label,
+                        "T": t0,
+                        "X": x0,
+                        "Y": y0,
+                        "velocity": v,
+                    }
                 )
             else:
                 tEnd = t[-1]
@@ -139,28 +143,16 @@ for i in range(len(dfNucleus)):
                 v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
 
                 _df2.append(
-                    {"Label": label, "T": t0, "X": x0, "Y": y0, "velocity": v,}
+                    {
+                        "Label": label,
+                        "T": t0,
+                        "X": x0,
+                        "Y": y0,
+                        "velocity": v,
+                    }
                 )
 
 dfVelocity = pd.DataFrame(_df2)
-
-for t in range(T - 1):
-
-    x = [xf - 150, xf + 150]
-    y = [yf - 150, yf + 150]
-    dfxy = sortGrid(dfVelocity[dfVelocity["T"] == t], x, y)
-
-    v = np.mean(list(dfxy["velocity"]), axis=0)
-
-    xf = xf + v[0]
-    yf = yf + v[1]
-
-    position.append((xf, yf))
-
-    x = 512 - int(yf)  # change coord
-    y = int(xf)
-
-position.append((xf, yf))
 
 # track wound with time
 t = 0
@@ -201,8 +193,7 @@ while t < 180 and finished != True:
                 {
                     "Time": t,
                     "Polygon": polygon,
-                    "Position": position[t - 1],
-                    "Centroid": cell.centroid(polygon),
+                    "Position": cell.centroid(polygon),
                     "Contour": contour,
                     "Area": polygon.area,
                     "Shape Factor": cell.shapeFactor(polygon),
@@ -223,15 +214,35 @@ vidH2[vidWound == 255] = 0
 vidH2 = np.asarray(vidH2, "uint8")
 tifffile.imwrite(f"dat/{filename}/h2Woundmask{filename}.tif", vidH2)
 
-
-tf = t
+xf, yf = cell.centroid(polygon)
+tf = t + 1
 for t in range(tf, T - 1):
+
+    x = [xf - 150, xf + 150]
+    y = [yf - 150, yf + 150]
+    dfxy = sortGrid(dfVelocity[dfVelocity["T"] == t], x, y)
+
+    v = np.mean(list(dfxy["velocity"]), axis=0)
+
+    xf = xf + v[0]
+    yf = yf + v[1]
+
     vidWound[t + 1][vidLabels[t + 1] != 256] = 0
-    [x, y] = [int(position[t - 1][0]), int(512 - position[t - 1][1])]
+    [x, y] = [int(xf), int(512 - yf)]
     vidWound[t + 1][y - 2 : y + 2, x - 2 : x + 2] = 255
     _dfWound.append(
-        {"Time": t, "Position": position[t - 1],}
+        {
+            "Time": t,
+            "Position": (xf, yf),
+        }
     )
+
+_dfWound.append(
+    {
+        "Time": t + 1,
+        "Position": (xf, yf),
+    }
+)
 
 dfWound = pd.DataFrame(_dfWound)
 dfWound.to_pickle(f"dat/{filename}/woundsite{filename}.pkl")
@@ -247,7 +258,6 @@ vid[:, :, :, 2][vidWound == 255] = 100
 
 vid = np.asarray(vid, "uint8")
 tifffile.imwrite(f"dat/{filename}/highlightWound{filename}.tif", vid)
-
 dist = []
 for t in range(T):
     img = 255 - fi.imgrcxy(vidWound[t])
@@ -255,4 +265,3 @@ for t in range(T):
 
 dist = np.asarray(dist, "uint16")
 tifffile.imwrite(f"dat/{filename}/distanceWound{filename}.tif", dist)
-

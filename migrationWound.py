@@ -396,6 +396,284 @@ if run:
     shutil.rmtree("results/video")
 
 
+#  ------------------- Velocity feild single video
+
+run = False
+if run:
+    for filename in filenames:
+
+        radius = []
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        # area = dfWound["Area"].iloc[0] * (scale) ** 2
+        # print(f"{filename} {area} {2*(area/np.pi)**0.5}")
+
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+
+        t = 0
+        while pd.notnull(area[t]):
+            t += 1
+
+        finish = t - 1
+
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
+
+        for t in range(T):
+            radius.append((area[t] / np.pi) ** 0.5)
+
+        df = dfVelocity[dfVelocity["Filename"] == filename]
+        cl.createFolder("results/video/")
+        for t in range(T - 1):
+            dfVelocityT = df[df["Time"] == t]
+
+            a = cl.ThreeD(grid)
+
+            for i in range(grid):
+                for j in range(grid):
+                    x = [(512 / grid) * j - 256, (512 / grid) * j + 512 / grid - 256]
+                    y = [(512 / grid) * i - 256, (512 / grid) * i + 512 / grid - 256]
+                    dfxy = cl.sortGrid(dfVelocityT, x, y)
+                    a[i][j] = list(dfxy["Velocity"])
+                    if a[i][j] == []:
+                        a[i][j] = np.array([0, 0])
+                    else:
+                        a[i][j] = np.mean(a[i][j], axis=0)
+
+            x, y = np.meshgrid(
+                np.linspace(-256 * scale, 256 * scale, grid),
+                np.linspace(-256 * scale, 256 * scale, grid),
+            )
+
+            u = np.zeros([grid, grid])
+            v = np.zeros([grid, grid])
+
+            for i in range(grid):
+                for j in range(grid):
+                    u[i, j] = a[i][j][0]
+                    v[i, j] = a[i][j][1]
+
+            circle1 = plt.Circle((0, 0), radius[t], color="r")
+
+            fig, ax = plt.subplots(figsize=(5, 5))
+            plt.quiver(x, y, u, v, scale=10)
+            ax.add_patch(circle1)
+            plt.title(f"time = {t}")
+            fig.savefig(
+                f"results/video/Velocity field wound centred {t}",
+                dpi=300,
+                transparent=True,
+            )
+            plt.close("all")
+
+        # make video
+        img_array = []
+
+        for t in range(T - 1):
+            img = cv2.imread(f"results/video/Velocity field wound centred {t}.png")
+            height, width, layers = img.shape
+            size = (width, height)
+            img_array.append(img)
+
+        out = cv2.VideoWriter(
+            f"results/Velocity field wound centred {filename}.mp4",
+            cv2.VideoWriter_fourcc(*"DIVX"),
+            3,
+            size,
+        )
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+
+        out.release()
+        cv2.destroyAllWindows()
+
+        shutil.rmtree("results/video")
+
+#  ------------------- Winding number
+
+run = False
+if run:
+    for filename in filenames:
+
+        try:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+            radius = (area[0] / np.pi) ** 0.5
+
+            df = dfVelocity[dfVelocity["Filename"] == filename]
+            dfVelocityT = df[df["Time"] < 10]
+
+            r = [0, 20 / scale]
+            Theta = np.linspace(-np.pi, np.pi, 11)
+            x = []
+            y = []
+            U = []
+            V = []
+            for i in range(10):
+                theta = [Theta[i], Theta[i + 1]]
+                df = cl.sortSection(dfVelocityT, r, theta)
+                x.append((radius + 20) * np.cos(np.mean(theta)))
+                y.append((radius + 20) * np.sin(np.mean(theta)))
+                v = np.mean(df["Velocity"])
+                U.append(v[0])
+                V.append(v[1])
+
+            r = [40 / scale, 60 / scale]
+            for i in range(10):
+                theta = [Theta[i], Theta[i + 1]]
+                df = cl.sortSection(dfVelocityT, r, theta)
+                x.append((radius + 50) * np.cos(np.mean(theta)))
+                y.append((radius + 50) * np.sin(np.mean(theta)))
+                v = np.mean(df["Velocity"])
+                np.isnan(v)
+                U.append(v[0])
+                V.append(v[1])
+
+            thetaInner = []
+            thetaOuter = []
+            for i in range(10):
+                thetaInner.append(np.arctan2(V[i], U[i]))
+                thetaOuter.append(np.arctan2(V[10 + i], U[10 + i]))
+            thetaInner.append(np.arctan2(V[0], U[0]))
+            thetaOuter.append(np.arctan2(V[10], U[10]))
+
+            windingInner = 0
+            windingOuter = 0
+            for i in range(10):
+                dtheta = thetaInner[i + 1] - thetaInner[i]
+                if dtheta > np.pi:
+                    dtheta = -2 * np.pi + dtheta
+                elif dtheta < -np.pi:
+                    dtheta = 2 * np.pi + dtheta
+
+                windingInner += dtheta
+
+                dtheta = thetaOuter[i + 1] - thetaOuter[i]
+                if dtheta > np.pi:
+                    dtheta = -2 * np.pi + dtheta
+                elif dtheta < -np.pi:
+                    dtheta = 2 * np.pi + dtheta
+
+                windingOuter += dtheta
+
+            windingInner = windingInner / (2 * np.pi)
+            windingOuter = windingOuter / (2 * np.pi)
+
+            circle1 = plt.Circle((0, 0), radius, color="r")
+            fig, ax = plt.subplots(figsize=(5, 5))
+            plt.quiver(x, y, U, V, scale=10)
+            ax.add_patch(circle1)
+            plt.suptitle(f"Winding number bins {filename}")
+            plt.title(
+                f"Outer = {round(windingOuter,1)}, Inner = {round(windingInner,1)}"
+            )
+            fig.savefig(
+                f"results/Winding number bins {filename}",
+                dpi=300,
+                transparent=True,
+            )
+            plt.close("all")
+        except:
+            continue
+
+
+#  ------------------- Winding number
+
+run = True
+if run:
+    for filename in filenames:
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        radius = (area[0] / np.pi) ** 0.5
+
+        dfFile = dfVelocity[dfVelocity["Filename"] == filename]
+
+        windingI = []
+        windingO = []
+        for t in range(T):
+            try:
+                dfVelocityT = dfFile[dfFile["Time"] == t]
+
+                r = [0, 20 / scale]
+                Theta = np.linspace(-np.pi, np.pi, 11)
+                x = []
+                y = []
+                U = []
+                V = []
+                for i in range(10):
+                    theta = [Theta[i], Theta[i + 1]]
+                    df = cl.sortSection(dfVelocityT, r, theta)
+                    x.append((radius + 20) * np.cos(np.mean(theta)))
+                    y.append((radius + 20) * np.sin(np.mean(theta)))
+                    v = np.mean(df["Velocity"])
+                    U.append(v[0])
+                    V.append(v[1])
+
+                r = [40 / scale, 60 / scale]
+                for i in range(10):
+                    theta = [Theta[i], Theta[i + 1]]
+                    df = cl.sortSection(dfVelocityT, r, theta)
+                    x.append((radius + 50) * np.cos(np.mean(theta)))
+                    y.append((radius + 50) * np.sin(np.mean(theta)))
+                    v = np.mean(df["Velocity"])
+                    np.isnan(v)
+                    U.append(v[0])
+                    V.append(v[1])
+
+                thetaInner = []
+                thetaOuter = []
+                for i in range(10):
+                    thetaInner.append(np.arctan2(V[i], U[i]))
+                    thetaOuter.append(np.arctan2(V[10 + i], U[10 + i]))
+                thetaInner.append(np.arctan2(V[0], U[0]))
+                thetaOuter.append(np.arctan2(V[10], U[10]))
+
+                windingInner = 0
+                windingOuter = 0
+                for i in range(10):
+                    dtheta = thetaInner[i + 1] - thetaInner[i]
+                    if dtheta > np.pi:
+                        dtheta = -2 * np.pi + dtheta
+                    elif dtheta < -np.pi:
+                        dtheta = 2 * np.pi + dtheta
+
+                    windingInner += dtheta
+
+                    dtheta = thetaOuter[i + 1] - thetaOuter[i]
+                    if dtheta > np.pi:
+                        dtheta = -2 * np.pi + dtheta
+                    elif dtheta < -np.pi:
+                        dtheta = 2 * np.pi + dtheta
+
+                    windingOuter += dtheta
+
+                windingI.append(windingInner / (2 * np.pi))
+                windingO.append(windingOuter / (2 * np.pi))
+            except:
+                windingI.append(np.nan)
+                windingO.append(np.nan)
+
+        windingI = np.array(windingI)
+        windingO = np.array(windingO) + 0.10
+
+        t = range(T)
+        fig, ax = plt.subplots(figsize=(5, 5))
+        plt.scatter(t, windingI, marker=".", label="Inner")
+        plt.scatter(t, windingO, marker=".", label="Outer")
+        plt.legend()
+        plt.title(f"Winding Number {filename}")
+        fig.savefig(
+            f"results/Winding number with time {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+
 #  ------------------- Mean migration path
 
 run = False
@@ -418,7 +696,9 @@ if run:
     plt.xlabel("x")
     plt.ylabel(f"y")
     fig.savefig(
-        f"results/migration path {fileType}", dpi=300, transparent=True,
+        f"results/migration path {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -515,7 +795,9 @@ if run:
     ax[2].legend()
 
     fig.savefig(
-        f"results/Model Coeff {fileType}", dpi=300, transparent=True,
+        f"results/Model Coeff {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -545,7 +827,9 @@ if run:
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.legend()
     fig.savefig(
-        f"results/Migration {fileType}", dpi=300, transparent=True,
+        f"results/Migration {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -586,7 +870,9 @@ if run:
     ax[2].title.set_text(f"Velocity difference {fileType}")
 
     fig.savefig(
-        f"results/Radial Velocity kymograph {fileType}", dpi=300, transparent=True,
+        f"results/Radial Velocity kymograph {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -887,7 +1173,10 @@ if run:
             )
         else:
             t0.append(
-                [np.nan, np.nan,]
+                [
+                    np.nan,
+                    np.nan,
+                ]
             )
 
         if finish < fast:
@@ -929,7 +1218,9 @@ if run:
     plt.xlabel("filename")
     plt.ylabel("t0")
     fig.savefig(
-        f"results/t0 coeff", dpi=300, transparent=True,
+        f"results/t0 coeff",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -980,7 +1271,9 @@ if run:
     ax[1, 2].set(ylabel=r"$C_0$")
 
     fig.savefig(
-        f"results/model coeff of each vid {fileType}", dpi=300, transparent=True,
+        f"results/model coeff of each vid {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -1000,7 +1293,9 @@ if run:
     ax.set(ylabel=r"$t_0$")
 
     fig.savefig(
-        f"results/velocity t0 {fileType}", dpi=300, transparent=True,
+        f"results/velocity t0 {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -1137,4 +1432,3 @@ if run:
         transparent=True,
     )
     plt.close("all")
-

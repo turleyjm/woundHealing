@@ -12,7 +12,7 @@ import pandas as pd
 import random
 import scipy as sp
 import scipy.linalg as linalg
-from scipy.stats import chisquare
+from scipy.stats import mannwhitneyu
 import shapely
 import skimage as sm
 import skimage.feature
@@ -220,6 +220,12 @@ def findtcjMean(polygons, binarys):
     return I / n, False
 
 
+def dist(polygon, polygon0):
+    [x1, y1] = cell.centroid(polygon)
+    [x0, y0] = cell.centroid(polygon0)
+    return ((x0 - x1) ** 2 + (y0 - y1) ** 2) ** 0.5
+
+
 # -------------------
 
 plt.rcParams.update({"font.size": 8})
@@ -283,10 +289,10 @@ if run:
 
             tc = t_i - 1
 
-            if tc > 29:
+            if tc > 30:
                 T = range(tc - 29, tc + 1)
             else:
-                T = range(0, tc + 1)
+                T = range(1, tc + 1)
 
             polyList = []
             for t in T:
@@ -296,9 +302,15 @@ if run:
                     )[0]
                     poly = sm.measure.approximate_polygon(contour, tolerance=1)
                     polygon = Polygon(poly)
-                    if polygon.area > meanArea + 6 * stdArea:
+                    contour = sm.measure.find_contours(
+                        np.all((tracks[t - 1] - colour) == 0, axis=2), level=0
+                    )[0]
+                    poly = sm.measure.approximate_polygon(contour, tolerance=1)
+                    polygon0 = Polygon(poly)
+                    if polygon.area == 0:
                         polyList.append(False)
-                    elif polygon.area == 0:
+                    elif dist(polygon, polygon0) > 10:
+                        # [t, cell.centroid(polygon)[0], 512 - cell.centroid(polygon)[1], filename, colour]
                         polyList.append(False)
                     else:
                         polyList.append(polygon)
@@ -345,6 +357,8 @@ if run:
         T = len(polyList)
         t = 1 - T
         if False in polyList:
+            continue
+        elif polyList == []:
             continue
         else:
             Area0 = polyList[0].area
@@ -569,7 +583,7 @@ df20 = pd.DataFrame(_df20)
 
 
 # All division
-run = False
+run = True
 if run:
     _dftcj = []
     diffOri20 = []
@@ -639,55 +653,13 @@ if run:
     dftcj = pd.DataFrame(_dftcj)
     dftcj.to_pickle(f"databases/dftcj{fileType}.pkl")
 
-    dist_diffOri20 = []
-    dist_diffOriA = []
-    dist_diffOri20_tcj = []
-    dist_diffOriA_tcj = []
-
-    for i in range(9):
-        dist_diffOri20.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
-                )
-            )
-        )
-        dist_diffOriA.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
-                )
-            )
-        )
-        dist_diffOri20_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20_tcj) < 10 * i + 10,
-                    np.array(diffOri20_tcj) > 10 * i,
-                )
-            )
-        )
-        dist_diffOriA_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA_tcj) < 10 * i + 10,
-                    np.array(diffOriA_tcj) > 10 * i,
-                )
-            )
-        )
-
-    dist_diffOri20 = np.array(dist_diffOri20)
-    dist_diffOriA = np.array(dist_diffOriA)
-    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
-    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
-
     yMax = (
         max(
             [
-                max(dist_diffOri20),
-                max(dist_diffOriA),
-                max(dist_diffOri20_tcj),
-                max(dist_diffOriA_tcj),
+                max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
             ]
         )
         * 1.1
@@ -697,34 +669,26 @@ if run:
     plt.suptitle(f"divsion orientation predictors {fileType}")
 
     ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
-    ax[0, 0].axvline(np.mean(diffOri20), color="r")
     ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 0].title.set_text(
-        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
-    )
+    ax[0, 0].title.set_text(f"Pre round up orientation")
     ax[0, 0].set_ylim([0, yMax])
 
     ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
-    ax[0, 1].axvline(np.mean(diffOriA), color="r")
     ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 1].title.set_text(
-        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
-    )
+    ax[0, 1].title.set_text(f"Anaphase orientation")
     ax[0, 1].set_ylim([0, yMax])
 
     ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
-    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
     ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 0].title.set_text(
-        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+        f"Pre round up TCJ orientation P={round(mannwhitneyu(diffOri20, diffOri20_tcj)[1],3)}"
     )
     ax[1, 0].set_ylim([0, yMax])
 
     ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
-    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
     ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 1].title.set_text(
-        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+        f"Anaphase TCJ orientation P={round(mannwhitneyu(diffOriA, diffOriA_tcj)[1],3)}"
     )
     ax[1, 1].set_ylim([0, yMax])
 
@@ -737,7 +701,7 @@ else:
 
 
 # low and high shape factor
-run = False
+run = True
 if run:
     diffOri20 = []
     diffOriA = []
@@ -758,55 +722,13 @@ if run:
             diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
             diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
 
-    dist_diffOri20 = []
-    dist_diffOriA = []
-    dist_diffOri20_tcj = []
-    dist_diffOriA_tcj = []
-
-    for i in range(9):
-        dist_diffOri20.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
-                )
-            )
-        )
-        dist_diffOriA.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
-                )
-            )
-        )
-        dist_diffOri20_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20_tcj) < 10 * i + 10,
-                    np.array(diffOri20_tcj) > 10 * i,
-                )
-            )
-        )
-        dist_diffOriA_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA_tcj) < 10 * i + 10,
-                    np.array(diffOriA_tcj) > 10 * i,
-                )
-            )
-        )
-
-    dist_diffOri20 = np.array(dist_diffOri20)
-    dist_diffOriA = np.array(dist_diffOriA)
-    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
-    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
-
     yMax = (
         max(
             [
-                max(dist_diffOri20),
-                max(dist_diffOriA),
-                max(dist_diffOri20_tcj),
-                max(dist_diffOriA_tcj),
+                max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
             ]
         )
         * 1.1
@@ -816,34 +738,26 @@ if run:
     plt.suptitle(f"divsion orientation predictors sf < 0.15 {fileType}")
 
     ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
-    ax[0, 0].axvline(np.mean(diffOri20), color="r")
     ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 0].title.set_text(
-        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
-    )
+    ax[0, 0].title.set_text(f"Pre round up orientation")
     ax[0, 0].set_ylim([0, yMax])
 
     ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
-    ax[0, 1].axvline(np.mean(diffOriA), color="r")
     ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 1].title.set_text(
-        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
-    )
+    ax[0, 1].title.set_text(f"Anaphase orientation")
     ax[0, 1].set_ylim([0, yMax])
 
     ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
-    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
     ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 0].title.set_text(
-        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+        f"Pre round up TCJ orientation P={round(mannwhitneyu(diffOri20, diffOri20_tcj)[1],3)}"
     )
     ax[1, 0].set_ylim([0, yMax])
 
     ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
-    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
     ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 1].title.set_text(
-        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+        f"Anaphase TCJ orientation P={round(mannwhitneyu(diffOriA, diffOriA_tcj)[1],3)}"
     )
     ax[1, 1].set_ylim([0, yMax])
 
@@ -873,55 +787,13 @@ if run:
             diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
             diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
 
-    dist_diffOri20 = []
-    dist_diffOriA = []
-    dist_diffOri20_tcj = []
-    dist_diffOriA_tcj = []
-
-    for i in range(9):
-        dist_diffOri20.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20) < 10 * i + 10, np.array(diffOri20) > 10 * i
-                )
-            )
-        )
-        dist_diffOriA.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA) < 10 * i + 10, np.array(diffOriA) > 10 * i
-                )
-            )
-        )
-        dist_diffOri20_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOri20_tcj) < 10 * i + 10,
-                    np.array(diffOri20_tcj) > 10 * i,
-                )
-            )
-        )
-        dist_diffOriA_tcj.append(
-            sum(
-                np.logical_and(
-                    np.array(diffOriA_tcj) < 10 * i + 10,
-                    np.array(diffOriA_tcj) > 10 * i,
-                )
-            )
-        )
-
-    dist_diffOri20 = np.array(dist_diffOri20)
-    dist_diffOriA = np.array(dist_diffOriA)
-    dist_diffOri20_tcj = np.array(dist_diffOri20_tcj)
-    dist_diffOriA_tcj = np.array(dist_diffOriA_tcj)
-
     yMax = (
         max(
             [
-                max(dist_diffOri20),
-                max(dist_diffOriA),
-                max(dist_diffOri20_tcj),
-                max(dist_diffOriA_tcj),
+                max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
             ]
         )
         * 1.1
@@ -931,34 +803,26 @@ if run:
     plt.suptitle(f"divsion orientation predictors sf > 0.5 {fileType}")
 
     ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
-    ax[0, 0].axvline(np.mean(diffOri20), color="r")
     ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 0].title.set_text(
-        f"Pre round up orientation P={round(chisquare(dist_diffOri20)[1],3)}"
-    )
+    ax[0, 0].title.set_text(f"Pre round up orientation")
     ax[0, 0].set_ylim([0, yMax])
 
     ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
-    ax[0, 1].axvline(np.mean(diffOriA), color="r")
     ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
-    ax[0, 1].title.set_text(
-        f"Anaphase orientation P={round(chisquare(dist_diffOriA)[1],3)}"
-    )
+    ax[0, 1].title.set_text(f"Anaphase orientation")
     ax[0, 1].set_ylim([0, yMax])
 
     ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
-    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
     ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 0].title.set_text(
-        f"Pre round up TCJ orientation P={round(chisquare(dist_diffOri20_tcj)[1],3)}"
+        f"Pre round up TCJ orientation P={round(mannwhitneyu(diffOri20, diffOri20_tcj)[1],3)}"
     )
     ax[1, 0].set_ylim([0, yMax])
 
     ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
-    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
     ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 1].title.set_text(
-        f"Anaphase TCJ orientation P={round(chisquare(dist_diffOriA_tcj)[1],3)}"
+        f"Anaphase TCJ orientation P={round(mannwhitneyu(diffOriA, diffOriA_tcj)[1],3)}"
     )
     ax[1, 1].set_ylim([0, yMax])
 
@@ -990,13 +854,16 @@ if run:
             diffOri20_tcj.append(angleDiff(divisionOri, shapeOri20_tcj))
             diffOriA_tcj.append(angleDiff(divisionOri, shapeOriA_tcj))
 
-    yMax = max(
-        [
-            max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
-            max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
-            max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
-            max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
-        ]
+    yMax = (
+        max(
+            [
+                max(plt.hist(diffOri20, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOri20_tcj, bins=9, range=[0, 90])[0]),
+                max(plt.hist(diffOriA_tcj, bins=9, range=[0, 90])[0]),
+            ]
+        )
+        * 1.1
     )
 
     fig, ax = plt.subplots(2, 2, figsize=(8, 8))
@@ -1005,25 +872,21 @@ if run:
     )
 
     ax[0, 0].hist(diffOri20, bins=9, range=[0, 90])
-    ax[0, 0].axvline(np.mean(diffOri20), color="r")
     ax[0, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[0, 0].title.set_text(f"Pre round up orientation")
     ax[0, 0].set_ylim([0, yMax])
 
     ax[0, 1].hist(diffOriA, bins=9, range=[0, 90])
-    ax[0, 1].axvline(np.mean(diffOriA), color="r")
     ax[0, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[0, 1].title.set_text(f"Anaphase orientation")
     ax[0, 1].set_ylim([0, yMax])
 
     ax[1, 0].hist(diffOri20_tcj, bins=9, range=[0, 90])
-    ax[1, 0].axvline(np.mean(diffOri20_tcj), color="r")
     ax[1, 0].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 0].title.set_text(f"Pre round up TCJ orientation")
     ax[1, 0].set_ylim([0, yMax])
 
     ax[1, 1].hist(diffOriA_tcj, bins=9, range=[0, 90])
-    ax[1, 1].axvline(np.mean(diffOriA_tcj), color="r")
     ax[1, 1].set(xlabel="Orientation Diffence", ylabel="freqency")
     ax[1, 1].title.set_text(f"Anaphase TCJ orientation")
     ax[1, 1].set_ylim([0, yMax])

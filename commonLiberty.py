@@ -114,6 +114,22 @@ def sortGrid(dfVelocity, x, y):
     return df
 
 
+def sortSection(dfVelocity, r, theta):
+
+    rMin = r[0]
+    rMax = r[1]
+    thetaMin = theta[0]
+    thetaMax = theta[1]
+
+    dfxmin = dfVelocity[dfVelocity["R"] > rMin]
+    dfx = dfxmin[dfxmin["R"] < rMax]
+
+    dfymin = dfx[dfx["Theta"] > thetaMin]
+    df = dfymin[dfymin["Theta"] < thetaMax]
+
+    return df
+
+
 def sortBand(dfRadial, band, pixelWidth):
 
     if band == 1:
@@ -135,7 +151,12 @@ def createFolder(directory):
 
 def rotation_matrix(theta):
 
-    R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)],])
+    R = np.array(
+        [
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)],
+        ]
+    )
 
     return R
 
@@ -152,7 +173,7 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name="shiftedcmap"):
       start : Offset from lowest point in the colormap's range.
           Defaults to 0.0 (no lower offset). Should be between
           0.0 and `midpoint`.
-      midpoint : The new center of the colormap. Defaults to 
+      midpoint : The new center of the colormap. Defaults to
           0.5 (no shift). Should be between 0.0 and 1.0. In
           general, this should be  1 - vmax / (vmax + abs(vmin))
           For example if your data range from -15.0 to +5.0 and

@@ -27,7 +27,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
