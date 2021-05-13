@@ -658,16 +658,73 @@ if run:
                 windingO.append(np.nan)
 
         windingI = np.array(windingI)
-        windingO = np.array(windingO) + 0.10
+        windingO = np.array(windingO)
 
         t = range(T)
+        # fig, ax = plt.subplots(figsize=(5, 5))
+        # plt.scatter(t, windingI, marker=".", label="Inner")
+        # plt.scatter(t, windingO + 0.10, marker=".", label="Outer")
+        # plt.legend()
+        # plt.title(f"Winding Number {filename}")
+        # fig.savefig(
+        #     f"results/Winding number with time {filename}",
+        #     dpi=300,
+        #     transparent=True,
+        # )
+        # plt.close("all")
+
+        for i in range(T):
+            try:
+                windingI[i] = round(windingI[i])
+                windingO[i] = round(windingO[i])
+            except:
+                windingI[i] = np.nan
+                windingO[i] = np.nan
+
+        inRowInner = [0]
+        for i in range(T - 2):
+            if windingI[i] == windingI[i + 1] == windingI[i + 2]:
+                inRowInner.append(1)
+            else:
+                inRowInner.append(0)
+        inRowInner.append(0)
+        inRowInner = np.array(inRowInner)
+
+        inRowOuter = [0]
+        for i in range(T - 2):
+            if windingO[i] == windingO[i + 1] == windingO[i + 2]:
+                inRowOuter.append(1)
+            else:
+                inRowOuter.append(0)
+        inRowOuter.append(0)
+        inRowOuter = np.array(inRowOuter)
+
+        windingInnerRow = sp.ndimage.morphology.binary_dilation(inRowInner).astype(
+            windingI.dtype
+        )
+        windingOuterRow = sp.ndimage.morphology.binary_dilation(inRowOuter).astype(
+            windingO.dtype
+        )
+
+        for i in range(T):
+            if windingInnerRow[i] == 1:
+                windingInnerRow[i] = windingI[i]
+            else:
+                windingInnerRow[i] = np.nan
+
+        for i in range(T):
+            if windingOuterRow[i] == 1:
+                windingOuterRow[i] = windingO[i]
+            else:
+                windingOuterRow[i] = np.nan
+
         fig, ax = plt.subplots(figsize=(5, 5))
-        plt.scatter(t, windingI, marker=".", label="Inner")
-        plt.scatter(t, windingO, marker=".", label="Outer")
+        plt.scatter(t, windingInnerRow, marker=".", label="Inner")
+        plt.scatter(t, windingOuterRow + 0.10, marker=".", label="Outer")
         plt.legend()
         plt.title(f"Winding Number {filename}")
         fig.savefig(
-            f"results/Winding number with time {filename}",
+            f"results/Winding number with time 3 in row {filename}",
             dpi=300,
             transparent=True,
         )

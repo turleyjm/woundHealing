@@ -55,11 +55,12 @@ halfLifes = []
 quarterLifes = []
 healTimes = []
 
-if False:
+if True:
     for filename in filenames:
         T = 181
-        plt.rcParams.update({"font.size": 8})
+        plt.rcParams.update({"font.size": 16})
         fig, ax = plt.subplots(2, 2, figsize=(9, 8))
+        plt.subplots_adjust(wspace=0.4, bottom=0.1)
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         area = np.array(dfWound["Area"]) * (scale) ** 2
 
@@ -219,9 +220,9 @@ if False:
         else:
             limWound = [-40, 10]
 
-        plt.rcParams.update({"font.size": 14})
+        plt.rcParams.update({"font.size": 18})
         fig, ax = plt.subplots(2, 2, figsize=(12, 12))
-        plt.subplots_adjust(wspace=0.4)
+        plt.subplots_adjust(wspace=0.5)
         plt.gcf().subplots_adjust(bottom=0.15)
         ax[0, 0].scatter(
             dw[0 : finish - 5], dA[0 : finish - 5], c=range(finish - 5), cmap="RdBu"
@@ -267,7 +268,6 @@ if False:
     limWound = [-120, 20]
     xx = np.linspace(-120, 20, num=500)
 
-    plt.rcParams.update({"font.size": 14})
     fig, ax = plt.subplots(2, 2, figsize=(12, 12))
     plt.subplots_adjust(wspace=0.4, bottom=0.1)
     result = sp.stats.linregress(All_dw, All_dA)
@@ -312,15 +312,13 @@ if False:
     )
     plt.close("all")
 
-    print(halfLifes)
-    print(quarterLifes)
-    print(healTimes)
 
 if True:
     for filename in filenames:
         T = 181
-        plt.rcParams.update({"font.size": 8})
+        plt.rcParams.update({"font.size": 14})
         fig, ax = plt.subplots(2, 2, figsize=(9, 8))
+        plt.subplots_adjust(wspace=0.5)
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         area = np.array(dfWound["Area"]) * (scale) ** 2
 
