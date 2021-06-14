@@ -721,6 +721,7 @@ if run:
         fig, ax = plt.subplots(figsize=(5, 5))
         plt.scatter(t, windingInnerRow, marker=".", label="Inner")
         plt.scatter(t, windingOuterRow + 0.10, marker=".", label="Outer")
+        plt.xlim([0,181])
         plt.legend()
         plt.title(f"Winding Number {filename}")
         fig.savefig(

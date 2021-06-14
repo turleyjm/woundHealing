@@ -454,7 +454,8 @@ if run:
 
     ax[2].errorbar(t, muSfL, yerr=sdSfL, marker="o")
     ax[2].set(
-        xlabel="Time", ylabel="shape factor change",
+        xlabel="Time",
+        ylabel="shape factor change",
     )
     ax[2].set_ylim([-0.5, 0.3])
     ax[2].title.set_text(r"$s_f  > 0.5$")
@@ -492,7 +493,8 @@ if run:
     ax[0, 0].set(xlabel="Time", ylabel="Max Area")
 
     ax[0, 1].hist(
-        timeDif, bins=20,
+        timeDif,
+        bins=20,
     )
     ax[0, 1].set(xlabel="Time", ylabel="Anaphase")
 
@@ -506,7 +508,9 @@ if run:
     ax[1, 1].set_ylim([0, 0.2])
 
     fig.savefig(
-        f"results/time properties cytokineses {fileType}", dpi=300, transparent=True,
+        f"results/time properties cytokineses {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -693,7 +697,9 @@ if run:
     ax[1, 1].set_ylim([0, yMax])
 
     fig.savefig(
-        f"results/divsion orientation predictor {fileType}", dpi=300, transparent=True,
+        f"results/divsion orientation predictor {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 else:
