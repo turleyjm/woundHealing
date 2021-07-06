@@ -97,7 +97,7 @@ for filename in filenames:
                         "q": cell.qTensor(polygon),
                         "Trace(S)": cell.traceS(polygon),
                         "Polar": np.array(
-                            cell.mayorPolar(polygon), cell.minorPolar(polygon)
+                            [cell.mayorPolar(polygon), cell.minorPolar(polygon)]
                         ),
                     }
                 )
@@ -150,7 +150,7 @@ for filename in filenames:
                         "q": cell.qTensor(polygon),
                         "Trace(S)": cell.traceS(polygon),
                         "Polar": np.array(
-                            cell.mayorPolar(polygon), cell.minorPolar(polygon)
+                            [cell.mayorPolar(polygon), cell.minorPolar(polygon)]
                         ),
                     }
                 )

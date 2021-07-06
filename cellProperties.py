@@ -361,7 +361,7 @@ def findContourCurvature(contour, m):
             return ri - ri.mean()
 
         def df(self, c):
-            """ Jacobian of f_2b
+            """Jacobian of f_2b
             The axis corresponding to derivatives must be coherent with the col_deriv option of leastsq"""
             xc, yc = c
             df_dc = np.empty((len(c), x.size))
@@ -405,4 +405,3 @@ def findContourCurvature(contour, m):
         else:
             curvature.append(comp_curv.fit(x, y)[0])
     return curvature
-

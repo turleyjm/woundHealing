@@ -29,6 +29,8 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
+plt.rcParams.update({"font.size": 16})
+
 # -------------------
 
 
@@ -234,8 +236,9 @@ filenames, fileType = cl.getFilesType()
 scale = 147.91 / 512
 
 _dfOrientation = []
-run = False
-if run:
+
+
+if False:
     for filename in filenames:
 
         dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
@@ -374,8 +377,8 @@ if run:
                         "Anaphase Time": dfOrientation["Anaphase Time"].iloc[i],
                         "Polygon": polygon,
                         "Precytokineses Time": t,
-                        "Area": polygon.area - Area0,
-                        "Shape Factor": cell.shapeFactor(polygon) - sf0,
+                        "Area": polygon.area,  # - Area0
+                        "Shape Factor": cell.shapeFactor(polygon),  # - sf0
                         "Area Start": Area0,
                         "Shape Factor Start": sf0,
                         "Colour": dfOrientation["Colour"].iloc[i],
@@ -388,8 +391,56 @@ if run:
 else:
     dfPolgyons = pd.read_pickle(f"databases/dfPolgyons{fileType}.pkl")
 
-run = False
-if run:
+
+if True:
+
+    _dfArea = []
+    for filename in filenames:
+        df = dfPolgyons[dfPolgyons["Filename"] == filename]
+        labels = list(set(df["Label"]))
+        labels.sort()
+
+        for label in labels:
+            n = len(df[df["Label"] == label])
+            if n == 30:
+                area = np.array(df["Area"][df["Label"] == label])[0]
+                t = df["Cytokineses Time"][df["Label"] == label].iloc[0] - 29
+                filename = list(df["Filename"][df["Label"] == label])[0]
+                _dfArea.append(
+                    {
+                        "Filename": filename,
+                        "Area": area,
+                        "T": t,
+                    }
+                )
+
+    areaDiff = []
+    dfArea = pd.DataFrame(_dfArea)
+    for filename in filenames:
+        dfShape = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        dfFilename = dfArea[dfArea["Filename"] == filename]
+
+        for i in range(len(dfFilename)):
+            area = dfFilename["Area"].iloc[i]
+            t = dfFilename["T"].iloc[i]
+            areaDiff.append(area - np.mean(dfShape["Area"][dfShape["Time"] == t]))
+    areaDiff = np.array(areaDiff) * scale ** 2
+
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.hist(areaDiff, 20, density=True)
+    plt.axvline(x=np.mean(areaDiff), color="Red")
+    plt.xlabel("Area different")
+    plt.title(f"Different between cell area of dividing cell and mean area")
+    # plt.ylim([0, 0.015])
+    fig.savefig(
+        f"results/Area different {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if False:
 
     _df30 = []
     for filename in filenames:
@@ -587,8 +638,8 @@ df20 = pd.DataFrame(_df20)
 
 
 # All division
-run = True
-if run:
+
+if False:
     _dftcj = []
     diffOri20 = []
     diffOriA = []
@@ -707,8 +758,8 @@ else:
 
 
 # low and high shape factor
-run = True
-if run:
+
+if False:
     diffOri20 = []
     diffOriA = []
     diffOri20_tcj = []
@@ -840,8 +891,7 @@ if run:
     plt.close("all")
 
 
-run = True
-if run:
+if False:
     diffOri20 = []
     diffOriA = []
     diffOri20_tcj = []

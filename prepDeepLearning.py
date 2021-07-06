@@ -1,3 +1,4 @@
+from re import I
 import numpy as np
 import os
 import scipy
@@ -6,6 +7,8 @@ import skimage as sm
 import skimage.io
 import pandas as pd
 import tifffile
+from PIL import Image
+import cv2
 
 import commonLiberty as cl
 
@@ -107,7 +110,7 @@ def normalise(vid, calc, mu0):
 
 filenames, fileType = cl.getFilesType()
 
-if True:
+if False:
     for filename in filenames:
 
         stackFile = f"dat/{filename}/{filename}.tif"
@@ -140,9 +143,6 @@ if True:
         tifffile.imwrite(f"dat/{filename}/depth{filename}.tif", depth)
 
         print("Normalising images")
-
-        ecadNormalise = normalise(ecadFocus, "MEDIAN", 25)
-        h2Normalise = normalise(h2Focus, "UPPER_Q", 60)
 
         vid = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
 
@@ -211,9 +211,9 @@ if False:
         for i in range(len(T)):
 
             division = sphere(
-                [181, 512, 512], 10, (round(T[i]), round(512 - Y[i]), round(X[i]))
+                [181, 512, 512], 5, (round(T[i]), round(512 - Y[i]), round(X[i]))
             ).astype(int)
-            segmentation[division == 1] = 255
+            segmentation[division == 1] = 1
 
         segmentation = np.asarray(segmentation, "uint8")
         tifffile.imwrite(
@@ -222,7 +222,174 @@ if False:
 
         vid = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
 
-        vid[:, :, :, 2] = segmentation
+        vid[:, :, :, 2] = segmentation * 150
 
         vid = np.asarray(vid, "uint8")
         tifffile.imwrite(f"dat/{filename}/segmentationLabelFocus{filename}.tif", vid)
+
+
+def reorder16(stack):
+
+    out = []
+
+    if len(stack.shape) == 3:
+        T, X, Y = stack.shape
+        steps = T // 8 - 1
+
+        for i in range(4):
+            for j in range(4):
+                for t in range(steps):
+                    img = np.zeros([515, 515])
+                    substack = stack[
+                        t * 8 : t * 8 + 16,
+                        i * 128 : i * 128 + 128,
+                        j * 128 : j * 128 + 128,
+                    ]
+
+                    for n in range(4):
+                        for m in range(4):
+                            img[
+                                n * 129 : n * 129 + 128, m * 129 : m * 129 + 128
+                            ] = substack[n * 4 + m]
+
+                    out.append(img)
+    else:
+        T, X, Y, C = stack.shape
+        steps = T // 8 - 1
+
+        for i in range(4):
+            for j in range(4):
+                for t in range(steps):
+                    img = np.zeros([515, 515, 3])
+                    substack = stack[
+                        t * 8 : t * 8 + 16,
+                        i * 128 : i * 128 + 128,
+                        j * 128 : j * 128 + 128,
+                    ]
+
+                    for n in range(4):
+                        for m in range(4):
+                            img[
+                                n * 129 : n * 129 + 128, m * 129 : m * 129 + 128
+                            ] = substack[n * 4 + m]
+
+                    out.append(img)
+
+    return np.asarray(out, "uint8")
+
+
+# time depentant data
+if False:
+    for filename in filenames:
+        segmentation = sm.io.imread(
+            f"dat/{filename}/segmentationLabel{filename}.tif"
+        ).astype(int)
+        prepDeep = sm.io.imread(f"dat/{filename}/prepDeep{filename}.tif").astype(int)
+
+        segmentation16 = reorder16(segmentation)
+        prepDeep16 = reorder16(prepDeep)
+
+        tifffile.imwrite(f"dat/{filename}/segmentation16{filename}.tif", segmentation16)
+        tifffile.imwrite(f"dat/{filename}/prepDeep16{filename}.tif", prepDeep16)
+
+        print("d")
+
+
+if False:
+    for filename in filenames:
+        dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+        df = dfDivisions[dfDivisions["Chain"] == "parent"]
+        _dfSpaceTime = []
+
+        for i in range(len(df)):
+
+            label = df["Label"].iloc[i]
+            t = df["Time"].iloc[i][-1]
+            [x, y] = df["Position"].iloc[i][-1]
+            ori = df["Division Orientation"].iloc[i]
+
+            _dfSpaceTime.append(
+                {
+                    "Filename": filename,
+                    "Label": label,
+                    "Orientation": ori,
+                    "T": t,
+                    "X": x,
+                    "Y": y,
+                }
+            )
+
+        dfSpaceTime = pd.DataFrame(_dfSpaceTime)
+
+        dfSpaceTime = dfSpaceTime[dfSpaceTime["T"] < 180]
+
+        segmentation = np.zeros([180, 552, 552])
+
+        T = np.array(dfSpaceTime["T"])
+        X = np.array(dfSpaceTime["X"])
+        Y = np.array(dfSpaceTime["Y"])
+
+        for i in range(len(T)):
+
+            rr0, cc0 = sm.draw.disk([551 - round(Y[i] + 20), round(X[i]) + 20], 10)
+            segmentation[round(T[i])][rr0, cc0] = 1
+
+        segmentation = segmentation[:, 20:532, 20:532]
+        segmentation = np.asarray(segmentation, "uint8")
+        tifffile.imwrite(
+            f"dat/{filename}/segmentationLabel3{filename}.tif", segmentation
+        )
+
+        prepDeep3 = np.zeros([180, 512, 512, 3])
+
+        h2Focus = sm.io.imread(f"dat/{filename}/h2Focus{filename}.tif").astype(int)
+        ecadFocus = sm.io.imread(f"dat/{filename}/ecadFocus{filename}.tif").astype(int)
+
+        for i in range(180):
+            prepDeep3[i, :, :, 0] = h2Focus[i]
+            prepDeep3[i, :, :, 2] = h2Focus[i + 1]
+            prepDeep3[i, :, :, 1] = ecadFocus[i]
+            # im = Image.fromarray(prepDeep3[i])
+            # im.save(f"train/{filename}_{i}.jpeg")
+
+        prepDeep3 = np.asarray(prepDeep3, "uint8")
+        tifffile.imwrite(f"dat/{filename}/prepDeep3{filename}.tif", prepDeep3)
+
+
+if False:
+    for filename in filenames:
+
+        prepDeep3 = np.zeros([60, 512, 512, 3])
+
+        h2Focus = sm.io.imread(f"dat/{filename}/h2Focus{filename}.tif").astype(int)
+        ecadFocus = sm.io.imread(f"dat/{filename}/ecadFocus{filename}.tif").astype(int)
+        h2Focus = h2Focus[::3]
+        ecadFocus = ecadFocus[::3]
+
+        for i in range(60):
+            prepDeep3[i, :, :, 0] = h2Focus[i]
+            prepDeep3[i, :, :, 2] = h2Focus[i + 1]
+            prepDeep3[i, :, :, 1] = ecadFocus[i]
+
+        prepDeep3 = np.asarray(prepDeep3, "uint8")
+        tifffile.imwrite(f"dat/{filename}/prepDeep3-3{filename}.tif", prepDeep3)
+
+
+# boundary segmentation
+if True:
+    overlay = sm.io.imread(f"train/deepOverlayBinaryEdits.tif").astype(int)
+    ecad = sm.io.imread(f"train/deepEcad.tif").astype(int)
+
+    binary = np.zeros([30, 512, 512])
+    ecad3 = np.zeros([30, 512, 512, 3])
+
+    for i in range(30):
+        binary[i] = overlay[3 * i + 1, :, :, 0]
+        ecad3[i, :, :, 0] = overlay[3 * i, :, :, 1]
+        ecad3[i, :, :, 1] = ecad[i]
+        ecad3[i, :, :, 2] = overlay[3 * i + 2, :, :, 1]
+
+    binary = np.asarray(binary, "uint8")
+    tifffile.imwrite(f"train/binaryLabel.tif", binary)
+    ecad3 = np.asarray(ecad3, "uint8")
+    tifffile.imwrite(f"train/prepDeepEcad3.tif", ecad3)

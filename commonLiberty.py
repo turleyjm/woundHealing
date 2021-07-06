@@ -83,6 +83,17 @@ def ThreeD(a):
     return lst
 
 
+def sortTime(df, t):
+
+    tMin = t[0]
+    tMax = t[1]
+
+    dftmin = df[df["Time"] >= tMin]
+    df = dftmin[dftmin["Time"] < tMax]
+
+    return df
+
+
 def sortRadius(dfVelocity, t, r):
 
     rMin = r[0]
