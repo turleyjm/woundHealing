@@ -42,7 +42,7 @@ T = 181
 
 _dfEntropy = []
 
-if False:
+if True:
     for filename in filenames:
         print(filename)
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
@@ -61,29 +61,32 @@ if False:
                 Q[:, 0], Q[:, 1], range=[[-0.3, 0.3], [-0.3, 0.3]], bins=60
             )
 
-            if False:
-                x, y = np.mgrid[-0.3:0.3:0.01, -0.3:0.3:0.01]
-                fig, ax = plt.subplots(figsize=(8, 8))
-
-                c = ax.pcolor(x, y, heatmap, cmap="Reds")
-                fig.colorbar(c, ax=ax)
-                ax.set_xlabel("Time (min)")
-                ax.set_ylabel(r"$R (\mu m)$ ")
-                ax.title.set_text(f"Correlation {filename}")
-
-                fig.savefig(
-                    f"results/entropy q1 {filename}",
-                    dpi=300,
-                    transparent=True,
-                )
-                plt.close("all")
-
             prob = heatmap / m
+            _heatmap = prob * np.log(prob)
             prob[prob != 0]
             p = prob[prob != 0]
 
             entropy = p * np.log(p)
             entropyQ = -sum(entropy)
+
+            if True:
+                x, y = np.mgrid[-0.3:0.3:0.01, -0.3:0.3:0.01]
+                fig, ax = plt.subplots(figsize=(8, 8))
+
+                c = ax.pcolor(x, y, -_heatmap, cmap="Reds", vmax=0.15)
+                fig.colorbar(c, ax=ax)
+                ax.set_xlabel("Time (min)")
+                ax.set_ylabel(r"$R (\mu m)$ ")
+                ax.title.set_text(r"$-p\log(p)$" + f" {filename}")
+                ax.axvline(x=0, color="Black")
+                ax.axhline(0, color="Black")
+
+                fig.savefig(
+                    f"results/entropy q1 {filename} {round(t)}",
+                    dpi=300,
+                    transparent=True,
+                )
+                plt.close("all")
 
             P = np.zeros([m, 2])
             for i in range(m):
@@ -101,11 +104,19 @@ if False:
                 P[:, 0], P[:, 1], range=[[-0.15, 0.15], [-0.15, 0.15]], bins=60
             )
 
+            prob = heatmap / m
+            _heatmap = prob * np.log(prob)
+            prob[prob != 0]
+            p = prob[prob != 0]
+
+            entropy = p * np.log(p)
+            entropyP = -sum(entropy)
+
             if False:
                 x, y = np.mgrid[-0.3:0.3:0.01, -0.3:0.3:0.01]
                 fig, ax = plt.subplots(figsize=(8, 8))
 
-                c = ax.pcolor(x, y, heatmap, cmap="Reds")
+                c = ax.pcolor(x, y, _heatmap, cmap="Reds", vmax=0.15)
                 fig.colorbar(c, ax=ax)
                 ax.set_xlabel("Time (min)")
                 ax.set_ylabel(r"$R (\mu m)$ ")
@@ -117,13 +128,6 @@ if False:
                     transparent=True,
                 )
                 plt.close("all")
-
-            prob = heatmap / m
-            prob[prob != 0]
-            p = prob[prob != 0]
-
-            entropy = p * np.log(p)
-            entropyP = -sum(entropy)
 
             _dfEntropy.append(
                 {

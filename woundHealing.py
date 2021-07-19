@@ -1,6 +1,6 @@
 import os
 import shutil
-from math import floor, log10
+from math import floor, log10, tau
 
 from collections import Counter
 import cv2
@@ -55,7 +55,7 @@ halfLifes = []
 quarterLifes = []
 healTimes = []
 
-if True:
+if False:
     for filename in filenames:
         T = 181
         plt.rcParams.update({"font.size": 16})
@@ -313,7 +313,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
     for filename in filenames:
         T = 181
         plt.rcParams.update({"font.size": 14})
@@ -502,3 +502,195 @@ if True:
             transparent=True,
         )
         plt.close("all")
+
+# q0_dq1_dq2 close and far from wounds
+
+
+def rotation_matrix(theta):
+
+    R = np.array(
+        [
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)],
+        ]
+    )
+
+    return R
+
+
+if True:
+
+    T = 181
+    scale = 147.91 / 512
+
+    finish = []
+    woundEdge = []
+    for filename in filenames:
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+        t = 0
+        while pd.notnull(area[t]):
+            t += 1
+
+        finish.append(t - 1)
+        woundEdge.append((area[0] / np.pi) ** 0.5)
+
+    meanFinish = int(np.mean(finish))
+
+    _df = []
+    for filename in filenames:
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        distance = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
+            int
+        )
+
+        T = np.linspace(0, 170, 18)
+        for t in T:
+
+            dft = cl.sortTime(df, [t, t + 10])
+            m = len(dft)
+
+            q_c = []
+            q_f = []
+            for i in range(m):
+                x, y = dft["Centroid"].iloc[i]
+                tau = dft["Time"].iloc[i]
+                dist = distance[int(tau), int(x), int(y)]
+                if dist * scale < 40:
+                    q_c.append(dft["q"].iloc[i])
+                else:
+                    q_f.append(dft["q"].iloc[i])
+
+            Q_c = np.mean(q_c, axis=0)
+            thetastar = np.arctan2(Q_c[0, 1], Q_c[0, 0])
+            q0_c = (2 * Q_c[0, 0] ** 2 + 2 * Q_c[0, 1] ** 2) ** 0.5
+
+            R = rotation_matrix(thetastar)
+
+            qr_c = np.matmul(R.transpose(), q_c)
+            Qr_c = np.matmul(R.transpose(), Q_c)
+
+            dQr_c = qr_c - Qr_c
+
+            dQr1_c = []
+            dQr2_c = []
+            for i in range(len(dQr_c)):
+                dQr1_c.append(dQr_c[i][0, 0])
+                dQr2_c.append(dQr_c[i][0, 1])
+            dQr1_c = np.array(dQr1_c)
+            dQr2_c = np.array(dQr2_c)
+
+            # ----
+
+            Q_f = np.mean(q_f, axis=0)
+            thetastar = np.arctan2(Q_f[0, 1], Q_f[0, 0])
+            q0_f = (2 * Q_f[0, 0] ** 2 + 2 * Q_f[0, 1] ** 2) ** 0.5
+
+            R = rotation_matrix(thetastar)
+
+            qr_f = np.matmul(R.transpose(), q_f)
+            Qr_f = np.matmul(R.transpose(), Q_f)
+
+            dQr_f = qr_f - Qr_f
+
+            dQr1_f = []
+            dQr2_f = []
+            for i in range(len(dQr_f)):
+                dQr1_f.append(dQr_f[i][0, 0])
+                dQr2_f.append(dQr_f[i][0, 1])
+            dQr1_f = np.array(dQr1_f)
+            dQr2_f = np.array(dQr2_f)
+
+            _df.append(
+                {
+                    "Filename": filename,
+                    "q0_c": q0_c,
+                    "dQr1_c": np.mean(dQr1_c ** 2),
+                    "dQr2_c": np.mean(dQr2_c ** 2),
+                    "q0_f": q0_f,
+                    "dQr1_f": np.mean(dQr1_f ** 2),
+                    "dQr2_f": np.mean(dQr2_f ** 2),
+                    "T": t,
+                }
+            )
+
+    df = pd.DataFrame(_df)
+    df.to_pickle(f"databases/dfq0_dq1_dq2CloseFar{fileType}.pkl")
+else:
+    df = pd.read_pickle(f"databases/dfq0_dq1_dq2CloseFar{fileType}.pkl")
+
+
+if True:
+
+    T = np.linspace(0, 170, 18)
+    q0_c = []
+    dQr1_c = []
+    dQr2_c = []
+    mseq0_c = []
+    msedQr1_c = []
+    msedQr2_c = []
+    q0_f = []
+    dQr1_f = []
+    dQr2_f = []
+    mseq0_f = []
+    msedQr1_f = []
+    msedQr2_f = []
+    n = len(filenames)
+    for t in T:
+        q0_c.append(np.mean(df["q0_c"][df["T"] == t]))
+        dQr1_c.append(np.mean(df["dQr1_c"][df["T"] == t]))
+        dQr2_c.append(np.mean(df["dQr2_c"][df["T"] == t]))
+        mseq0_c.append(np.std(df["q0_c"][df["T"] == t]) / n ** 0.5)
+        msedQr1_c.append(np.std(df["dQr1_c"][df["T"] == t]) / n ** 0.5)
+        msedQr2_c.append(np.std(df["dQr2_c"][df["T"] == t]) / n ** 0.5)
+        q0_f.append(np.mean(df["q0_f"][df["T"] == t]))
+        dQr1_f.append(np.mean(df["dQr1_f"][df["T"] == t]))
+        dQr2_f.append(np.mean(df["dQr2_f"][df["T"] == t]))
+        mseq0_f.append(np.std(df["q0_f"][df["T"] == t]) / n ** 0.5)
+        msedQr1_f.append(np.std(df["dQr1_f"][df["T"] == t]) / n ** 0.5)
+        msedQr2_f.append(np.std(df["dQr2_f"][df["T"] == t]) / n ** 0.5)
+
+    fig, ax = plt.subplots(2, 3, figsize=(30, 18))
+
+    ax[0, 0].errorbar(T, q0_c, yerr=mseq0_c)
+    ax[0, 0].set_xlabel("Time (mins)")
+    ax[0, 0].set_ylabel(r"$q_0$")
+    ax[0, 0].set_ylim([0, 0.06])
+
+    ax[0, 1].errorbar(T, dQr1_c, yerr=msedQr1_c)
+    ax[0, 1].set_xlabel("Time (mins)")
+    ax[0, 1].set_ylabel(r"$(\delta q_1)^2$")
+    ax[0, 1].set_ylim([0.0004, 0.001])
+    ax[0, 1].title.set_text("Close to Wound")
+
+    ax[0, 2].errorbar(T, dQr2_c, yerr=msedQr2_c)
+    ax[0, 2].set_xlabel("Time (mins)")
+    ax[0, 2].set_ylabel(r"$(\delta q_2)^2$")
+    ax[0, 2].set_ylim([0.0004, 0.001])
+
+    ax[1, 0].errorbar(T, q0_f, yerr=mseq0_f)
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$q_0$")
+    ax[1, 0].set_ylim([0, 0.06])
+
+    ax[1, 1].errorbar(T, dQr1_f, yerr=msedQr1_f)
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$(\delta q_1)^2$")
+    ax[1, 1].set_ylim([0.0004, 0.001])
+    ax[1, 1].title.set_text("Far from Wound")
+
+    ax[1, 2].errorbar(T, dQr2_f, yerr=msedQr2_f)
+    ax[1, 2].set_xlabel("Time (mins)")
+    ax[1, 2].set_ylabel(r"$(\delta q_2)^2$")
+    ax[1, 2].set_ylim([0.0004, 0.001])
+
+    plt.suptitle(f"Shape with time {fileType}")
+
+    fig.savefig(
+        f"results/q0_dq1_dq2 close far {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")

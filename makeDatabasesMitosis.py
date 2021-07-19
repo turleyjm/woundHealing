@@ -1271,9 +1271,6 @@ for filename in filenames:
 
         for label in uniqueLabels:
 
-            if label == 52:
-                print("d")
-
             dfTrack = dfDivisions4.loc[
                 lambda dfDivisions4: dfDivisions4["Label"] == label, :
             ]

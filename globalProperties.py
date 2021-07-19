@@ -151,9 +151,6 @@ if False:
     plt.close("all")
 
 
-_dfEntropy = []
-
-
 def rotation_matrix(theta):
 
     R = np.array(
@@ -167,12 +164,6 @@ def rotation_matrix(theta):
 
 
 if False:
-    q0 = []
-    dQr12 = []
-    dQr22 = []
-    mseq0 = []
-    msedQr12 = []
-    msedQr22 = []
     _df = []
     for filename in filenames:
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
@@ -185,7 +176,7 @@ if False:
 
             q = []
             for i in range(m):
-                q.append(df["q"].iloc[i])
+                q.append(dft["q"].iloc[i])
 
             Q = np.mean(q, axis=0)
             thetastar = np.arctan2(Q[0, 1], Q[0, 0])
@@ -208,7 +199,7 @@ if False:
 
             _df.append(
                 {
-                    "filename": filename,
+                    "Filename": filename,
                     "q0": q0,
                     "dQr1": np.mean(dQr1 ** 2),
                     "dQr2": np.mean(dQr2 ** 2),
@@ -245,19 +236,52 @@ if True:
     ax[0].errorbar(T, q0, yerr=mseq0)
     ax[0].set_xlabel("Time (mins)")
     ax[0].set_ylabel(r"$q_0$")
-    ax[0].set_ylim([0, 0.04])
+    ax[0].set_ylim([0, 0.06])
 
     ax[1].errorbar(T, dQr1, yerr=msedQr1, label=r"$(\delta q_1)^2$")
     ax[1].errorbar(T, dQr2, yerr=msedQr2, label=r"$(\delta q_2)^2$")
     ax[1].legend()
     ax[1].set_xlabel("Time (mins)")
     ax[1].set_ylabel(r"$(\delta q_i)^2$")
-    ax[1].set_ylim([0.0005, 0.001])
+    ax[1].set_ylim([0.0004, 0.001])
 
     plt.suptitle(f"Shape with time {fileType}")
 
     fig.savefig(
         f"results/q0_dq1_dq2 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if True:
+
+    T = np.linspace(0, 170, 18)
+
+    fig, ax = plt.subplots(1, 3, figsize=(30, 8))
+
+    for filename in filenames:
+
+        ax[0].plot(T, list(df["q0"][df["filename"] == filename]))
+        ax[0].set_xlabel("Time (mins)")
+        ax[0].set_ylabel(r"$q_0$")
+        ax[0].set_ylim([0, 0.08])
+
+        ax[1].errorbar(T, list(df["dQr1"][df["filename"] == filename]))
+        ax[1].set_xlabel("Time (mins)")
+        ax[1].set_ylabel(r"$(\delta q_i)^2$")
+        ax[1].set_ylim([0.0004, 0.0014])
+
+        ax[2].errorbar(T, list(df["dQr2"][df["filename"] == filename]))
+        ax[2].set_xlabel("Time (mins)")
+        ax[2].set_ylabel(r"$(\delta q_i)^2$")
+        ax[2].set_ylim([0.0004, 0.0014])
+
+    plt.suptitle(f"Shape with time {fileType}")
+
+    fig.savefig(
+        f"results/q0_dq1_dq2 multi {fileType}",
         dpi=300,
         transparent=True,
     )
