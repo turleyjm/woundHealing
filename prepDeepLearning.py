@@ -336,7 +336,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label1e2h1f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([180, 512, 512, 3])
 
@@ -351,7 +351,7 @@ if True:
             # im.save(f"train/{filename}_{i}.jpeg")
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train1e2h1f{filename}.tif", prepDeep3)
 
 if True:
     for filename in filenames:
@@ -394,7 +394,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3h2{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label3h1f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([179, 512, 512, 3])
 
@@ -408,7 +408,8 @@ if True:
             # im.save(f"train/{filename}_{i}.jpeg")
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3h2{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train3h1f{filename}.tif", prepDeep3)
+
 
 if True:
     for filename in filenames:
@@ -451,7 +452,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3-2{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label1e2h2f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([90, 512, 512, 3])
 
@@ -466,7 +467,7 @@ if True:
             prepDeep3[i, :, :, 1] = ecadFocus[i]
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3-2{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train1e2h2f{filename}.tif", prepDeep3)
 
 
 if True:
@@ -510,7 +511,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3-2h2{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label3h2f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([89, 512, 512, 3])
 
@@ -523,7 +524,7 @@ if True:
             prepDeep3[i, :, :, 2] = h2Focus[i + 2]
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3-2h2{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train3h2f{filename}.tif", prepDeep3)
 
 if True:
     for filename in filenames:
@@ -566,7 +567,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3-3{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label1e2h3f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([60, 512, 512, 3])
 
@@ -581,7 +582,7 @@ if True:
             prepDeep3[i, :, :, 1] = ecadFocus[i]
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3-3{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train1e2h3f{filename}.tif", prepDeep3)
 
 
 if True:
@@ -625,7 +626,7 @@ if True:
 
         segmentation = segmentation[:, 20:532, 20:532]
         segmentation = np.asarray(segmentation, "uint8")
-        tifffile.imwrite(f"train/segmentationLabel3-3h2{filename}.tif", segmentation)
+        tifffile.imwrite(f"train/label3h3f{filename}.tif", segmentation)
 
         prepDeep3 = np.zeros([59, 512, 512, 3])
 
@@ -638,7 +639,7 @@ if True:
             prepDeep3[i, :, :, 2] = h2Focus[i + 2]
 
         prepDeep3 = np.asarray(prepDeep3, "uint8")
-        tifffile.imwrite(f"train/prepDeep3-3h2{filename}.tif", prepDeep3)
+        tifffile.imwrite(f"train/train3h3f{filename}.tif", prepDeep3)
 
 
 # boundary segmentation

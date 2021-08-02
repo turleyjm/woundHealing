@@ -222,20 +222,20 @@ if False:
 
             filename = filenames[m]
             print(filename)
-            divisions = np.zeros([181, 149, 149])
-            orientations = np.zeros([181, 149, 149])
+            divisions = np.zeros([181, 148, 148])
+            orientations = np.zeros([181, 148, 148])
             outPlanePixel = sm.io.imread(
                 f"dat/{filename}/outPlane{filename}.tif"
             ).astype(float)
             outPlane = []
             for t in range(len(outPlanePixel)):
                 img = Image.fromarray(outPlanePixel[t])
-                outPlane.append(np.array(img.resize((149, 149))))
+                outPlane.append(np.array(img.resize((148, 148))))
             outPlane = np.array(outPlane)
             outPlane[outPlane > 50] = 255
             outPlane[outPlane < 0] = 0
 
-            N.append(181 * 149 ** 2 - np.sum(outPlane) / 255)
+            N.append(181 * 148 ** 2 - np.sum(outPlane) / 255)
 
             df = dfSpaceTime[dfSpaceTime["Filename"] == filename]
             x = np.array(df["X"])
@@ -246,8 +246,8 @@ if False:
             divisionNum.append(len(x))
 
             for i in range(len(x)):
-                divisions[round(t[i]), round(x[i]), round(y[i])] = 1
-                orientations[round(t[i]), round(x[i]), round(y[i])] = ori[i]
+                divisions[int(t[i]), int(x[i]), int(y[i])] = 1
+                orientations[int(t[i]), int(x[i]), int(y[i])] = ori[i]
 
             for i in range(len(T)):
                 print(i)
@@ -259,7 +259,7 @@ if False:
                     for k in range(len(x)):
                         if t[k] + t0 < 181:
                             shell = inPlaneShell(
-                                round(x[k]), round(y[k]), t[k], t0, t1, r0, r1, outPlane
+                                int(x[k]), int(y[k]), t[k], t0, t1, r0, r1, outPlane
                             )
                             if np.sum(shell) != 0:
                                 correlationFile[i][j][m].append(
@@ -322,11 +322,11 @@ if False:
                     r1 = r0 + 10
                     for k in range(len(x)):
                         if t[k] + t0 < 181:
-                            if outPlane[round(t[k]), round(x[k]), round(y[k])] == 0:
+                            if outPlane[int(t[k]), int(x[k]), int(y[k])] == 0:
                                 shell = inPlaneShell(
-                                    round(x[k]),
-                                    round(y[k]),
-                                    round(t[k]),
+                                    int(x[k]),
+                                    int(y[k]),
+                                    int(t[k]),
                                     t0,
                                     t1,
                                     r0,
@@ -559,8 +559,8 @@ if False:
     )[0]
 
     fig, ax = plt.subplots(2, 2, figsize=(15, 15))
-    ax[0, 0].plot(R, R0)
-    ax[0, 0].plot(R, exponential(R, mR))
+    ax[0, 0].plot(R + 10, R0)
+    ax[0, 0].plot(R + 10, exponential(R, mR))
     ax[0, 0].set(xlabel=r"Distance $(\mu m)$", ylabel="Correlation")
     ax[0, 0].title.set_text(r"$\alpha$ = " + f"{round(mR[1],3)}")
 
@@ -570,8 +570,8 @@ if False:
         args=(T0, T),
     )[0]
 
-    ax[0, 1].plot(T, T0)
-    ax[0, 1].plot(T, exponential(T, mT))
+    ax[0, 1].plot(T + 10, T0)
+    ax[0, 1].plot(T + 10, exponential(T, mT))
     ax[0, 1].set(xlabel="Time (mins)", ylabel="Correlation")
     ax[0, 1].title.set_text(r"$\beta$ = " + f"{round(mT[1],3)}")
 
@@ -634,26 +634,26 @@ if False:
 
             filename = filenames[m]
             print(filename)
-            cells = np.zeros([181, 149, 149])
+            cells = np.zeros([181, 148, 148])
             outPlanePixel = sm.io.imread(
                 f"dat/{filename}/outPlane{filename}.tif"
             ).astype(float)
             outPlane = []
             for t in range(len(outPlanePixel)):
                 img = Image.fromarray(outPlanePixel[t])
-                outPlane.append(np.array(img.resize((149, 149))))
+                outPlane.append(np.array(img.resize((148, 148))))
             outPlane = np.array(outPlane)
             outPlane[outPlane > 50] = 255
             outPlane[outPlane < 0] = 0
 
-            N.append(181 * 149 ** 2 - np.sum(outPlane) / 255)
+            N.append(181 * 148 ** 2 - np.sum(outPlane) / 255)
 
             dfShape = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
             for i in range(len(dfShape)):
                 x = dfShape["Centroid"].iloc[i][0] * scale
                 y = dfShape["Centroid"].iloc[i][1] * scale
                 t = dfShape["Time"].iloc[i]
-                cells[round(t), round(x), round(y)] = 1
+                cells[int(t), int(x), int(y)] = 1
 
             df = dfSpaceTime[dfSpaceTime["Filename"] == filename]
             x = np.array(df["X"])
@@ -671,7 +671,7 @@ if False:
                     for k in range(len(x)):
                         if t[k] + t0 < 181:
                             shell = inPlaneShell(
-                                round(x[k]), round(y[k]), t[k], t0, t1, r0, r1, outPlane
+                                int(x[k]), int(y[k]), t[k], t0, t1, r0, r1, outPlane
                             )
                             if np.sum(shell) != 0:
                                 correlationFile[i][j][m].append(
@@ -965,371 +965,7 @@ if False:
     plt.close("all")
 
 
-# correction of divisions band from wound
-if True:
-    _filenames = filenames
-    for filename in _filenames:
-        filenames = [filename]
-
-        T = np.array(range(15)) * 10
-        R = np.array(range(10)) * 10
-        correlationFileClose = [
-            [[[] for col in range(len(filenames))] for col in range(len(R))]
-            for col in range(len(T))
-        ]
-        correlationFileFar = [
-            [[[] for col in range(len(filenames))] for col in range(len(R))]
-            for col in range(len(T))
-        ]
-
-        N = []
-        divisionNum = np.zeros([len(filenames), 2])
-
-        for m in range(len(filenames)):
-
-            filename = filenames[m]
-            print(filename)
-            divisions = np.zeros([181, 149, 149])
-            outPlanePixel = sm.io.imread(
-                f"dat/{filename}/outPlane{filename}.tif"
-            ).astype(float)
-            distance512 = sm.io.imread(
-                f"dat/{filename}/distanceWound{filename}.tif"
-            ).astype(float)
-            outPlane = []
-            distance = []
-            for t in range(len(outPlanePixel)):
-                img = Image.fromarray(outPlanePixel[t])
-                outPlane.append(np.array(img.resize((149, 149))))
-                img = Image.fromarray(distance512[t])
-                distance.append(np.array(img.resize((149, 149))))
-
-            outPlane = np.array(outPlane)
-            distance = np.array(distance)
-            outPlane[outPlane > 50] = 255
-            outPlane[outPlane < 0] = 0
-
-            N.append(181 * 149 ** 2 - np.sum(outPlane) / 255)
-
-            df = dfSpaceTime[dfSpaceTime["Filename"] == filename]
-            x = np.array(df["X"])
-            y = np.array(df["Y"])
-            t = np.array(df["T"])
-            ori = np.array(df["Orientation"])
-
-            for i in range(len(x)):
-                divisions[round(t[i]), round(x[i]), round(y[i])] = 1
-
-            for i in range(len(T)):
-                print(i)
-                t0 = T[i]
-                t1 = t0 + 10
-                for j in range(len(R)):
-                    r0 = R[j]
-                    r1 = r0 + 10
-                    for k in range(len(x)):
-                        if t[k] + t0 < 181:
-                            shell = inPlaneShell(
-                                round(x[k]), round(y[k]), t[k], t0, t1, r0, r1, outPlane
-                            )
-                            if np.sum(shell) != 0:
-                                if (
-                                    distance[t[k], round(x[k]), round(y[k])]
-                                    < 40 / scale
-                                ):
-                                    correlationFileClose[i][j][m].append(
-                                        np.sum(divisions[shell == 1]) / np.sum(shell)
-                                    )
-
-                                else:
-                                    correlationFileFar[i][j][m].append(
-                                        np.sum(divisions[shell == 1]) / np.sum(shell)
-                                    )
-
-        correlationClose = [[] for col in range(len(T))]
-        correlationFar = [[] for col in range(len(T))]
-        for i in range(len(T)):
-            for j in range(len(R)):
-                corC = []
-                corF = []
-                for m in range(len(filenames)):
-                    corC.append(np.sum(correlationFileClose[i][j][m]) / N[m])
-                    corF.append(np.sum(correlationFileFar[i][j][m]) / N[m])
-
-                correlationClose[i].append(np.mean(corC))
-                correlationFar[i].append(np.mean(corF))
-
-        # ------------
-
-        correlation_ranClose = [
-            [[[] for col in range(len(filenames))] for col in range(len(R))]
-            for col in range(len(T))
-        ]
-        correlation_ranFar = [
-            [[[] for col in range(len(filenames))] for col in range(len(R))]
-            for col in range(len(T))
-        ]
-
-        for m in range(len(filenames)):
-            print(filenames[m])
-            df = dfSpaceTime[dfSpaceTime["Filename"] == filenames[m]]
-            n = 300
-
-            x = 148 * np.random.random_sample(n)
-            y = 148 * np.random.random_sample(n)
-            t = 180 * np.random.random_sample(n)
-
-            for i in range(len(T)):
-                print(i)
-                t0 = T[i]
-                t1 = t0 + 10
-                for j in range(len(R)):
-                    r0 = R[j]
-                    r1 = r0 + 10
-                    for k in range(len(x)):
-                        if t[k] + t0 < 181:
-                            if outPlane[round(t[k]), round(x[k]), round(y[k])] == 0:
-                                shell = inPlaneShell(
-                                    round(x[k]),
-                                    round(y[k]),
-                                    round(t[k]),
-                                    t0,
-                                    t1,
-                                    r0,
-                                    r1,
-                                    outPlane,
-                                )
-                                if np.sum(shell) != 0:
-                                    if (
-                                        distance[round(t[k]), round(x[k]), round(y[k])]
-                                        < 40 / scale
-                                    ):
-                                        correlation_ranClose[i][j][m].append(
-                                            np.sum(divisions[shell == 1])
-                                            / np.sum(shell)
-                                        )
-                                        divisionNum[m, 0] += 1
-                                    else:
-                                        correlation_ranFar[i][j][m].append(
-                                            np.sum(divisions[shell == 1])
-                                            / np.sum(shell)
-                                        )
-                                        divisionNum[m, 1] += 1
-
-        correlationRanClose = [[] for col in range(len(T))]
-        correlationRanFar = [[] for col in range(len(T))]
-        for i in range(len(T)):
-            for j in range(len(R)):
-                corC = []
-                corF = []
-                for m in range(len(filenames)):
-                    corC.append(
-                        np.sum(correlation_ranClose[i][j][m])
-                        * (divisionNum[m, 0] / (N[m] * n))
-                    )
-                    corF.append(
-                        np.sum(correlation_ranFar[i][j][m])
-                        * (divisionNum[m, 1] / (N[m] * n))
-                    )
-
-                correlationRanClose[i].append(np.mean(corC))
-                correlationRanFar[i].append(np.mean(corF))
-
-        correlationClose = np.nan_to_num(np.array(correlationClose)[:15, :10])
-        correlationFar = np.nan_to_num(np.array(correlationFar)[:15, :10])
-        correlationRanClose = np.nan_to_num(np.array(correlationRanClose)[:15, :10])
-        correlationRanFar = np.nan_to_num(np.array(correlationRanFar)[:15, :10])
-
-        correlationDiffClose = correlationClose - correlationRanClose
-        correlationDiffFar = correlationFar - correlationRanFar
-
-        # correlationClose = correlationClose / correlationDiffClose[0][0]
-        # correlationRanClose = correlationRanClose / correlationDiffClose[0][0]
-        # correlationDiffClose = correlationDiffClose / correlationDiffClose[0][0]
-        # correlationFar = correlationFar / correlationDiffFar[0][0]
-        # correlationRanFar = correlationRanFar / correlationDiffFar[0][0]
-        # correlationDiffFar = correlationDiffFar / correlationDiffFar[0][0]
-
-        _df = []
-
-        _df.append(
-            {
-                "correlationFileClose": correlationFileClose,
-                "correlationFileFar": correlationFileFar,
-                "correlation_ranClose": correlation_ranClose,
-                "correlation_ranFar": correlation_ranFar,
-                "correlation": correlationClose,
-                "correlation": correlationFar,
-                "correlationRanClose": correlationRanClose,
-                "correlationRanFar": correlationRanFar,
-            }
-        )
-
-        df = pd.DataFrame(_df)
-        df.to_pickle(f"databases/correlationArraysCloseFar{filename}.pkl")
-
-        t, r = np.mgrid[0:160:10, 0:110:10]
-        fig, ax = plt.subplots(2, 3, figsize=(30, 20))
-        plt.subplots_adjust(wspace=0.3)
-        plt.gcf().subplots_adjust(bottom=0.15)
-
-        maxCorr = np.max(correlationClose)
-
-        c = ax[0, 0].pcolor(t, r, correlationClose, cmap="Reds", vmin=0, vmax=maxCorr)
-        fig.colorbar(c, ax=ax[0, 0])
-        ax[0, 0].set_xlabel("Time (min)")
-        ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-        ax[0, 0].title.set_text(f"Correlation Close {filename}")
-
-        c = ax[0, 1].pcolor(
-            t, r, correlationRanClose, cmap="Reds", vmin=0, vmax=maxCorr
-        )
-        fig.colorbar(c, ax=ax[0, 1])
-        ax[0, 1].set_xlabel("Time (min)")
-        ax[0, 1].set_ylabel(r"$R (\mu m)$")
-        ax[0, 1].title.set_text(f"Correlation Close of Random i {filename}")
-
-        z_min, z_max = -maxCorr, maxCorr
-        midpoint = 1 - z_max / (z_max + abs(z_min))
-        orig_cmap = matplotlib.cm.RdBu_r
-        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
-
-        c = ax[0, 2].pcolor(
-            t,
-            r,
-            correlationClose - correlationRanClose,
-            cmap=shifted_cmap,
-            vmin=-maxCorr,
-            vmax=maxCorr,
-        )
-        fig.colorbar(c, ax=ax[0, 2])
-        ax[0, 2].set_xlabel("Time (min)")
-        ax[0, 2].set_ylabel(r"$R (\mu m)$")
-        ax[0, 2].title.set_text(f"Difference in Correlation Close {filename}")
-
-        # -----------
-
-        maxCorr = np.max(correlationFar)
-
-        c = ax[1, 0].pcolor(t, r, correlationFar, cmap="Reds")
-        fig.colorbar(c, ax=ax[1, 0])
-        ax[1, 0].set_xlabel("Time (min)")
-        ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-        ax[1, 0].title.set_text(f"Correlation Far {filename}")
-
-        c = ax[1, 1].pcolor(t, r, correlationRanFar, cmap="Reds")
-        fig.colorbar(c, ax=ax[1, 1])
-        ax[1, 1].set_xlabel("Time (min)")
-        ax[1, 1].set_ylabel(r"$R (\mu m)$")
-        ax[1, 1].title.set_text(f"Correlation Far of Random i {filename}")
-
-        # z_min, z_max = -maxCorr, maxCorr
-        # midpoint = 1 - z_max / (z_max + abs(z_min))
-        # orig_cmap = matplotlib.cm.RdBu_r
-        # shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
-
-        c = ax[1, 2].pcolor(
-            t,
-            r,
-            correlationDiffFar,
-            cmap="RdBu_r",
-        )
-        fig.colorbar(c, ax=ax[1, 2])
-        ax[1, 2].set_xlabel("Time (min)")
-        ax[1, 2].set_ylabel(r"$R (\mu m)$")
-        ax[1, 2].title.set_text(f"Difference in Correlation Far {filename}")
-
-        fig.savefig(
-            f"results/Division Correlation CloseFar {filename}",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
-
-    filenames, fileType = cl.getFilesType()
-
-
-if True:
-
-    correlations = np.zeros([len(filenames), 15, 10])
-    correlationRans = np.zeros([len(filenames), 15, 10])
-    oriCorrelations = np.zeros([len(filenames), 15, 10])
-    for m in range(len(filenames)):
-        filename = filenames[m]
-
-        df = pd.read_pickle(f"databases/correlationArraysV2-1{filename}.pkl")
-
-        correlations[m] = df["correlation"][0]
-        correlationRans[m] = df["correlationRan"][0]
-        oriCorrelations[m] = df["oriCorrelation"][0]
-
-    oriCorrelations = np.nan_to_num(oriCorrelations)
-
-    correlation = np.mean(correlations, axis=0)
-    correlationRan = np.mean(correlationRans, axis=0)
-    oriCorrelation = np.mean(oriCorrelations, axis=0)
-
-    t, r = np.mgrid[0:160:10, 0:110:10]
-    fig, ax = plt.subplots(2, 2, figsize=(20, 20))
-    plt.subplots_adjust(wspace=0.3)
-    plt.gcf().subplots_adjust(bottom=0.15)
-
-    maxCorr = np.max(correlation)
-
-    c = ax[0, 0].pcolor(t, r, correlation, cmap="Reds", vmin=0, vmax=maxCorr)
-    fig.colorbar(c, ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Time (min)")
-    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(f"Correlation {fileType}")
-
-    c = ax[0, 1].pcolor(t, r, correlationRan, cmap="Reds", vmin=0, vmax=maxCorr)
-    fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (min)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$")
-    ax[0, 1].title.set_text(f"Correlation of Random i {fileType}")
-
-    correlationDiff = correlation - correlationRan
-
-    z_min, z_max = -maxCorr, maxCorr
-    midpoint = 1 - z_max / (z_max + abs(z_min))
-    orig_cmap = matplotlib.cm.RdBu_r
-    shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
-
-    c = ax[1, 0].pcolor(
-        t,
-        r,
-        correlation - correlationRan,
-        cmap=shifted_cmap,
-        vmin=-maxCorr,
-        vmax=maxCorr,
-    )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (min)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$")
-    ax[1, 0].title.set_text(f"Difference in Correlation {fileType}")
-
-    c = ax[1, 1].pcolor(
-        t,
-        r,
-        oriCorrelation,
-        cmap="RdBu_r",
-        vmin=-np.max(oriCorrelation),
-        vmax=np.max(oriCorrelation),
-    )
-    fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (min)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$")
-    ax[1, 1].title.set_text(f"Correlation Orientation {fileType}")
-
-    fig.savefig(
-        f"results/Division Correlation V2-1 {fileType}",
-        dpi=300,
-        transparent=True,
-    )
-    plt.close("all")
-
-
-if True:
+if False:
 
     correlations = np.zeros([len(filenames), 15, 10])
     correlationRans = np.zeros([len(filenames), 15, 10])
@@ -1411,6 +1047,343 @@ if True:
 
     fig.savefig(
         f"results/Correlation Fit {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+# Division Velocity Correlation
+if True:
+    _filenames = filenames
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
+    for filename in _filenames:
+        filenames = [filename]
+
+        T = np.array(range(15)) * 10
+        R = np.array(range(10)) * 10
+        velCorrelation = [
+            [[[] for col in range(len(filenames))] for col in range(len(R))]
+            for col in range(len(T))
+        ]
+        thetaCorrelation = [
+            [[[] for col in range(len(filenames))] for col in range(len(R))]
+            for col in range(len(T))
+        ]
+
+        N = []
+        divisionNum = []
+
+        for m in range(len(filenames)):
+
+            filename = filenames[m]
+            print(filename)
+            radialVel = np.zeros([180, 148, 148])
+            thetaVel = np.zeros([180, 148, 148])
+
+            outPlanePixel = sm.io.imread(
+                f"dat/{filename}/outPlane{filename}.tif"
+            ).astype(float)
+            outPlane = []
+            for t in range(180):
+                img = Image.fromarray(outPlanePixel[t])
+                outPlane.append(np.array(img.resize((148, 148))))
+            outPlane = np.array(outPlane)
+            outPlane[outPlane > 50] = 255
+            outPlane[outPlane < 0] = 0
+
+            N.append(180 * 148 ** 2 - np.sum(outPlane) / 255)
+
+            df = dfSpaceTime[dfSpaceTime["Filename"] == filename]
+            x = np.array(df["X"])
+            y = np.array(df["Y"])
+            t = np.array(df["T"])
+            ori = np.array(df["Orientation"])
+
+            divisionNum.append(len(x))
+
+            dfVelFilename = dfVelocity[dfVelocity["Filename"] == filename]
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+            x_v = np.array(dfVelFilename["X"]) * scale
+            y_v = np.array(dfVelFilename["Y"]) * scale
+            t_v = np.array(dfVelFilename["Time"])
+            V = np.array(dfVelFilename["Velocity"]) * scale
+
+            Vmu = []
+            for tau in range(180):
+                dft = dfVelFilename[dfVelFilename["Time"] == tau]
+                Vmu.append(np.mean(list(dft["Velocity"]), axis=0))
+
+            for i in range(len(x_v)):
+                wx = dfWound["Position"].iloc[int(t_v[i])][0] * scale
+                wy = dfWound["Position"].iloc[int(t_v[i])][1] * scale
+                theta = np.arctan2(y_v[i] - wy, x_v[i] - wx)
+                R = cl.rotation_matrix(-theta)
+                v = -np.matmul(R, V[i] - Vmu[int(t_v[i])])
+                radialVel[int(t_v[i]), int(x_v[i]), int(y_v[i])] = v[0]
+                thetaVel[int(t_v[i]), int(x_v[i]), int(y_v[i])] = np.arctan2(v[1], v[0])
+
+            for i in range(len(T)):
+                print(i)
+                t0 = T[i]
+                t1 = t0 + 10
+                for j in range(len(R)):
+                    r0 = R[j]
+                    r1 = r0 + 10
+                    for k in range(len(x)):
+                        if t[k] + t0 < 180:
+                            shell = inPlaneShell(
+                                int(x[k]), int(y[k]), t[k], t0, t1, r0, r1, outPlane
+                            )
+                            if np.sum(shell) != 0:
+                                velocities = radialVel[shell == 1]
+                                velocities = velocities[velocities != 0]
+                                velCorrelation[i][j][m].append(np.mean(velocities))
+                            thetas = thetaVel[shell == 1]
+                            thetas = thetas[thetas != 0]
+                            if len(thetas) != 0:
+                                corr = []
+                                v = np.array(
+                                    [
+                                        np.cos(np.pi * ori[k] / 90),
+                                        np.sin(np.pi * ori[k] / 90),
+                                    ]
+                                )
+                                for theta in thetas:
+                                    u = np.array(
+                                        [
+                                            np.cos(np.pi * theta),
+                                            np.sin(np.pi * theta),
+                                        ]
+                                    )
+                                    thetaCorrelation[i][j][m].append(np.dot(v, u))
+
+        correlation = [[] for col in range(len(T))]
+        oriCorrelation = [[] for col in range(len(T))]
+        for i in range(len(T)):
+            for j in range(len(R)):
+                cor = []
+                ori = []
+                for m in range(len(filenames)):
+                    cor.append(np.sum(velCorrelation[i][j][m]) / N[m])
+                    ori.append(np.mean(thetaCorrelation[i][j][m]))
+
+                correlation[i].append(np.mean(cor))
+                oriCorrelation[i].append(np.mean(ori))
+
+        # ------------
+
+        correlation_ran = [
+            [[[] for col in range(len(filenames))] for col in range(len(R))]
+            for col in range(len(T))
+        ]
+
+        for m in range(len(filenames)):
+            print(filenames[m])
+            df = dfSpaceTime[dfSpaceTime["Filename"] == filenames[m]]
+            n = 300
+
+            x = 148 * np.random.random_sample(n)
+            y = 148 * np.random.random_sample(n)
+            t = 180 * np.random.random_sample(n)
+
+            for i in range(len(T)):
+                print(i)
+                t0 = T[i]
+                t1 = t0 + 10
+                for j in range(len(R)):
+                    r0 = R[j]
+                    r1 = r0 + 10
+                    for k in range(len(x)):
+                        if t[k] + t0 < 180:
+                            if outPlane[int(t[k]), int(x[k]), int(y[k])] == 0:
+                                shell = inPlaneShell(
+                                    int(x[k]),
+                                    int(y[k]),
+                                    int(t[k]),
+                                    t0,
+                                    t1,
+                                    r0,
+                                    r1,
+                                    outPlane,
+                                )
+                                if np.sum(shell) != 0:
+                                    velocities = radialVel[shell == 1]
+                                    velocities = velocities[velocities != 0]
+                                    velCorrelation[i][j][m].append(np.mean(velocities))
+
+        correlationRan = [[] for col in range(len(T))]
+        for i in range(len(T)):
+            for j in range(len(R)):
+                cor = []
+                for m in range(len(filenames)):
+                    cor.append(
+                        np.sum(correlation_ran[i][j][m]) * (divisionNum[m] / (N[m] * n))
+                    )
+
+                correlationRan[i].append(np.mean(cor))
+
+        t, r = np.mgrid[0:160:10, 0:110:10]
+        fig, ax = plt.subplots(2, 2, figsize=(20, 20))
+        plt.subplots_adjust(wspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        correlation = np.array(correlation)[:15, :10]
+        correlationRan = np.array(correlationRan)[:15, :10]
+        oriCorrelation = np.array(oriCorrelation)[:15, :10]
+        oriCorrelation = np.nan_to_num(oriCorrelation)
+
+        correlationDiff = correlation - correlationRan
+
+        # correlation = correlation / correlationDiff[0][0]
+        # correlationRan = correlationRan / correlationDiff[0][0]
+        # correlationDiff = correlationDiff / correlationDiff[0][0]
+
+        _df = []
+
+        _df.append(
+            {
+                "correlationFile": velCorrelation,
+                "correlation_ran": correlation_ran,
+                "correlation": correlation,
+                "correlationRan": correlationRan,
+                "oriCorrelation": oriCorrelation,
+            }
+        )
+
+        df = pd.DataFrame(_df)
+        df.to_pickle(f"databases/divisionVelocityCorrelation{filename}.pkl")
+
+        maxCorr = np.max(correlation)
+
+        c = ax[0, 0].pcolor(t, r, correlation, cmap="Reds", vmin=0, vmax=maxCorr)
+        fig.colorbar(c, ax=ax[0, 0])
+        ax[0, 0].set_xlabel("Time (min)")
+        ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+        ax[0, 0].title.set_text(r"$\frac{1}{N}M^i V^i$")
+
+        c = ax[0, 1].pcolor(t, r, correlationRan, cmap="Reds", vmin=0, vmax=maxCorr)
+        fig.colorbar(c, ax=ax[0, 1])
+        ax[0, 1].set_xlabel("Time (min)")
+        ax[0, 1].set_ylabel(r"$R (\mu m)$")
+        ax[0, 1].title.set_text(r"$(\frac{N_d}{N})(\frac{1}{N}M^i)$")
+
+        z_min, z_max = -maxCorr, maxCorr
+        midpoint = 1 - z_max / (z_max + abs(z_min))
+        orig_cmap = matplotlib.cm.RdBu_r
+        shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+        c = ax[1, 0].pcolor(
+            t,
+            r,
+            correlation - correlationRan,
+            cmap=shifted_cmap,
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+        fig.colorbar(c, ax=ax[1, 0])
+        ax[1, 0].set_xlabel("Time (min)")
+        ax[1, 0].set_ylabel(r"$R (\mu m)$")
+        ax[1, 0].title.set_text(f"Correlation Division-Velocity {filename}")
+
+        c = ax[1, 1].pcolor(
+            t,
+            r,
+            oriCorrelation,
+            cmap="RdBu_r",
+            vmin=-np.max(oriCorrelation),
+            vmax=np.max(oriCorrelation),
+        )
+        fig.colorbar(c, ax=ax[1, 1])
+        ax[1, 1].set_xlabel("Time (min)")
+        ax[1, 1].set_ylabel(r"$R (\mu m)$")
+        ax[1, 1].title.set_text(f"Correlation Division-Velocity Orientation {filename}")
+
+        fig.savefig(
+            f"results/Division-Velocity Correlation {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    filenames, fileType = cl.getFilesType()
+
+
+if False:
+
+    correlations = np.zeros([len(filenames), 15, 10])
+    correlationRans = np.zeros([len(filenames), 15, 10])
+    oriCorrelations = np.zeros([len(filenames), 15, 10])
+    for m in range(len(filenames)):
+        filename = filenames[m]
+
+        df = pd.read_pickle(f"databases/divisionVelocityCorrelation{filename}.pkl")
+
+        correlations[m] = df["correlation"][0]
+        correlationRans[m] = df["correlationRan"][0]
+        oriCorrelations[m] = df["oriCorrelation"][0]
+
+    oriCorrelations = np.nan_to_num(oriCorrelations)
+
+    correlation = np.mean(correlations, axis=0)
+    correlationRan = np.mean(correlationRans, axis=0)
+    oriCorrelation = np.mean(oriCorrelations, axis=0)
+
+    t, r = np.mgrid[0:160:10, 0:110:10]
+    fig, ax = plt.subplots(2, 2, figsize=(20, 20))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    maxCorr = np.max(correlation)
+
+    c = ax[0, 0].pcolor(t, r, correlation, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(f"Correlation {fileType}")
+
+    c = ax[0, 1].pcolor(t, r, correlationRan, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$")
+    ax[0, 1].title.set_text(f"Correlation of Random i {fileType}")
+
+    correlationDiff = correlation - correlationRan
+
+    z_min, z_max = -maxCorr, maxCorr
+    midpoint = 1 - z_max / (z_max + abs(z_min))
+    orig_cmap = matplotlib.cm.RdBu_r
+    shifted_cmap = cl.shiftedColorMap(orig_cmap, midpoint=midpoint, name="shifted")
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        correlation - correlationRan,
+        cmap=shifted_cmap,
+        vmin=-maxCorr,
+        vmax=maxCorr,
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$")
+    ax[1, 0].title.set_text(f"Difference in Correlation {fileType}")
+
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        oriCorrelation,
+        cmap="RdBu_r",
+        vmin=-np.max(oriCorrelation),
+        vmax=np.max(oriCorrelation),
+    )
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (min)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$")
+    ax[1, 1].title.set_text(f"Correlation Orientation {fileType}")
+
+    fig.savefig(
+        f"results/Division Velocity Correlation {fileType}",
         dpi=300,
         transparent=True,
     )

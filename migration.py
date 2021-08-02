@@ -72,68 +72,71 @@ T = 181
 scale = 147.91 / 512
 grid = 10
 
+if True:
+    _df2 = []
+    for filename in filenames:
 
-_df2 = []
-for filename in filenames:
+        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 
-    df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        for i in range(len(df)):
+            t = df["t"][i]
+            x = df["x"][i]
+            y = df["y"][i]
+            label = df["Label"][i]
 
-    for i in range(len(df)):
-        t = df["t"][i]
-        x = df["x"][i]
-        y = df["y"][i]
-        label = df["Label"][i]
+            m = len(t)
+            tMax = t[-1]
 
-        m = len(t)
-        tMax = t[-1]
+            if m > 1:
+                for j in range(m - 1):
+                    t0 = t[j]
+                    x0 = x[j]
+                    y0 = y[j]
 
-        if m > 1:
-            for j in range(m - 1):
-                t0 = t[j]
-                x0 = x[j]
-                y0 = y[j]
+                    tdelta = tMax - t0
+                    if tdelta > 5:
+                        t5 = t[j + 5]
+                        x5 = x[j + 5]
+                        y5 = y[j + 5]
 
-                tdelta = tMax - t0
-                if tdelta > 5:
-                    t5 = t[j + 5]
-                    x5 = x[j + 5]
-                    y5 = y[j + 5]
+                        v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
 
-                    v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
+                        _df2.append(
+                            {
+                                "Filename": filename,
+                                "Label": label,
+                                "Time": t0,
+                                "X": x0,
+                                "Y": y0,
+                                "Velocity": v,
+                            }
+                        )
+                    else:
+                        tEnd = t[-1]
+                        xEnd = x[-1]
+                        yEnd = y[-1]
 
-                    _df2.append(
-                        {
-                            "Filename": filename,
-                            "Label": label,
-                            "Time": t0,
-                            "X": x0,
-                            "Y": y0,
-                            "Velocity": v,
-                        }
-                    )
-                else:
-                    tEnd = t[-1]
-                    xEnd = x[-1]
-                    yEnd = y[-1]
+                        v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
 
-                    v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
+                        _df2.append(
+                            {
+                                "Filename": filename,
+                                "Label": label,
+                                "Time": int(t0),
+                                "X": x0,
+                                "Y": y0,
+                                "Velocity": v,
+                            }
+                        )
 
-                    _df2.append(
-                        {
-                            "Filename": filename,
-                            "Label": label,
-                            "Time": int(t0),
-                            "X": x0,
-                            "Y": y0,
-                            "Velocity": v,
-                        }
-                    )
-
-dfVelocity = pd.DataFrame(_df2)
+    dfVelocity = pd.DataFrame(_df2)
+    dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
+else:
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 #  ------------------- Velocity feild
-run = False
-if run:
+
+if False:
     cl.createFolder("results/video/")
     for t in range(T - 1):
         dfVelocityT = dfVelocity[dfVelocity["Time"] == t]
@@ -152,7 +155,8 @@ if run:
                     a[i][j] = np.mean(a[i][j], axis=0)
 
         x, y = np.meshgrid(
-            np.linspace(0, 512 * scale, grid), np.linspace(0, 512 * scale, grid),
+            np.linspace(0, 512 * scale, grid),
+            np.linspace(0, 512 * scale, grid),
         )
 
         u = np.zeros([grid, grid])
@@ -167,7 +171,9 @@ if run:
         plt.quiver(x, y, u, v, scale=10)
         plt.title(f"time = {t}")
         fig.savefig(
-            f"results/video/Velocity field{t}", dpi=300, transparent=True,
+            f"results/video/Velocity field{t}",
+            dpi=300,
+            transparent=True,
         )
         plt.close("all")
 
@@ -196,8 +202,8 @@ if run:
 
 #  ------------------- Mean migration path
 
-run = False
-if run:
+
+if False:
     fig = plt.figure(1, figsize=(9, 8))
     x = []
     y = []
@@ -216,14 +222,16 @@ if run:
     plt.xlabel("x")
     plt.ylabel(f"y")
     fig.savefig(
-        f"results/migration path {fileType}", dpi=300, transparent=True,
+        f"results/migration path {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
 #  ------------------- Compare migration path of unwounded, wounded and woundsite
 
-run = False
-if run:
+
+if False:
 
     fig = plt.figure(1, figsize=(9, 8))
 
@@ -343,7 +351,9 @@ if run:
     plt.ylabel("y")
     plt.title("Diffence between final migration path of Wounded and Wounsite")
     fig.savefig(
-        f"results/Final Migration Wounded and Wounsite", dpi=300, transparent=True,
+        f"results/Final Migration Wounded and Wounsite",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -351,8 +361,7 @@ if run:
 #  ------------------- Radial Velocity
 
 
-run = True
-if run:
+if False:
 
     position = []
     xf = 256
@@ -448,7 +457,9 @@ if run:
     plt.ylabel(r"Distance from wound center $(\mu m)$")
     plt.title(f"Velocity {fileType}")
     fig.savefig(
-        f"results/Radial Velocity kymograph DDC {fileType}", dpi=300, transparent=True,
+        f"results/Radial Velocity kymograph DDC {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -463,6 +474,8 @@ if run:
     plt.xlabel(r"Start from Wound Edge $(\mu m)$")
     plt.ylabel(r"Migration $(\mu m)$")
     fig.savefig(
-        f"results/Migration {fileType}", dpi=300, transparent=True,
+        f"results/Migration {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")

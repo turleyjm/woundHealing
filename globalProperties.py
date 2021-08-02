@@ -31,6 +31,20 @@ plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
+
+def exponential(x, coeffs):
+    m = coeffs[0]
+    c = coeffs[1]
+    A = coeffs[2]
+    return A * np.exp(m * x) + c
+
+
+def residualsExponential(coeffs, y, x):
+    return y - exponential(x, coeffs)
+
+# -------------------
+
+
 filenames, fileType = cl.getFilesType()
 
 T = 181
@@ -255,7 +269,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
 
     T = np.linspace(0, 170, 18)
 

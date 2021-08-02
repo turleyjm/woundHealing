@@ -63,8 +63,7 @@ yw = 256
 Rbin = 5
 Tbin = 10
 
-run = False
-if run:
+if True:
     for filename in filenames:
 
         dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
@@ -190,7 +189,9 @@ if run:
     plt.title(f"Division Orientation")
     plt.ylim([0, 0.015])
     fig.savefig(
-        f"results/Division Orientation {fileType}", dpi=300, transparent=True,
+        f"results/Division Orientation {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -213,7 +214,9 @@ if run:
     plt.ylim([0, 0.01])
     plt.title(f"Division Density")
     fig.savefig(
-        f"results/Division Density {fileType}", dpi=300, transparent=True,
+        f"results/Division Density {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -231,7 +234,9 @@ if run:
     plt.ylim([0, 0.012])
     plt.title(f"Division time")
     fig.savefig(
-        f"results/Division time {fileType}", dpi=300, transparent=True,
+        f"results/Division time {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -250,7 +255,9 @@ if run:
     c = ax.pcolor(x, y, heatmap, cmap="Reds")
     fig.colorbar(c, ax=ax)
     fig.savefig(
-        f"results/Division heatmap {fileType}", dpi=300, transparent=True,
+        f"results/Division heatmap {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -304,7 +311,9 @@ if run:
     plt.title(f"Division Density")
     fig.colorbar(c, ax=ax)
     fig.savefig(
-        f"results/Division Time Distance Heatmap {fileType}", dpi=300, transparent=True,
+        f"results/Division Time Distance Heatmap {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -315,7 +324,9 @@ if run:
     plt.title(f"Division Orientation")
     fig.colorbar(c, ax=ax)
     fig.savefig(
-        f"results/Division Orientation Heatmap {fileType}", dpi=300, transparent=True,
+        f"results/Division Orientation Heatmap {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -326,7 +337,9 @@ if run:
     plt.title(f"Division Density")
     fig.colorbar(c, ax=ax)
     fig.savefig(
-        f"results/Division Area Distance Heatmap {fileType}", dpi=300, transparent=True,
+        f"results/Division Area Distance Heatmap {fileType}",
+        dpi=300,
+        transparent=True,
     )
     plt.close("all")
 
@@ -342,4 +355,3 @@ if run:
         transparent=True,
     )
     plt.close("all")
-

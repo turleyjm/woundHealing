@@ -219,9 +219,7 @@ def importDividingTracks(trackmate_xml_path):
 
     # get tracks
 
-    features = root.find("Model").find("FeatureDeclarations").find("EdgeFeatures")
-    features = [c.get("feature") for c in features.getchildren()] + ["ID"]
-    features = features[0:2]
+    features = ["SPOT_SOURCE_ID", "SPOT_TARGET_ID"]
 
     tracks = root.find("Model").find("AllTracks")
     track = tracks[-1]
@@ -591,7 +589,16 @@ def heightOfMitosis(img, polygon):
 
 costLim = 0.5
 
-filenames = cl.getFiles()
+filenames, fileType = cl.getFilesType()
+# filenames = cl.getFiles()
+filenames = [
+    "WoundS18h04",
+    "WoundS18h05",
+    "WoundS18h06",
+    "WoundS18h07",
+    "WoundS18h08",
+    "WoundS18h09",
+]
 
 for filename in filenames:
     print(filename)
@@ -1280,8 +1287,8 @@ for filename in filenames:
             x = int(x)
             y = int(y)
 
-            rr0, cc0 = sm.draw.circle(551 - (y + 20), x + 20, 15)
-            rr1, cc1 = sm.draw.circle(551 - (y + 20), x + 20, 12)
+            rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 15)
+            rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 12)
 
             times = range(t0 - 5, t0 + 5)
 

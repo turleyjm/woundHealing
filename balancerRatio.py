@@ -35,7 +35,7 @@ import commonLiberty as cl
 
 b = 1
 nb = 0
-T = 40
+T = 10
 
 generation_b = [b]
 generation_nb = [nb]
@@ -60,9 +60,9 @@ plt.plot(t, generation_nb, label="non-balancer")
 plt.xlabel("Generation")
 plt.ylabel("Frequency")
 plt.legend()
-plt.title(f"balancer ratio")
+plt.title(f"balancer proportion")
 fig.savefig(
-    f"results/balancer ratio",
+    f"results/balancer proportion",
     dpi=300,
     transparent=True,
 )
