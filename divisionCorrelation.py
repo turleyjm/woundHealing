@@ -85,10 +85,12 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
     t0 = t + t0
     t1 = t + t1
 
-    if t1 > 180:
-        t1 = 180
+    T = outPlane.shape[0]
 
-    background = np.zeros([181, 500 + 149, 500 + 149])
+    if t1 > T - 1:
+        t1 = T - 1
+
+    background = np.zeros([T, 500 + 148, 500 + 148])
 
     rr1, cc1 = sm.draw.disk((250 + x, 250 + y), r0)
     rr2, cc2 = sm.draw.disk((250 + x, 250 + y), r1)
@@ -96,7 +98,7 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
     background[t0:t1, rr2, cc2] = 1
     background[t0:t1, rr1, cc1] = 0
 
-    inPlane = background[:, 250 : 250 + 149, 250 : 250 + 149]
+    inPlane = background[:, 250 : 250 + 148, 250 : 250 + 148]
 
     inPlane[outPlane == 255] = 0
 
@@ -1113,14 +1115,14 @@ if True:
             Vmu = []
             for tau in range(180):
                 dft = dfVelFilename[dfVelFilename["Time"] == tau]
-                Vmu.append(np.mean(list(dft["Velocity"]), axis=0))
+                Vmu.append(np.mean(list(dft["Velocity"]), axis=0) * scale)
 
             for i in range(len(x_v)):
                 wx = dfWound["Position"].iloc[int(t_v[i])][0] * scale
                 wy = dfWound["Position"].iloc[int(t_v[i])][1] * scale
                 theta = np.arctan2(y_v[i] - wy, x_v[i] - wx)
-                R = cl.rotation_matrix(-theta)
-                v = -np.matmul(R, V[i] - Vmu[int(t_v[i])])
+                rotation = cl.rotation_matrix(-theta)
+                v = -np.matmul(rotation, V[i] - Vmu[int(t_v[i])])
                 radialVel[int(t_v[i]), int(x_v[i]), int(y_v[i])] = v[0]
                 thetaVel[int(t_v[i]), int(x_v[i]), int(y_v[i])] = np.arctan2(v[1], v[0])
 
@@ -1136,10 +1138,12 @@ if True:
                             shell = inPlaneShell(
                                 int(x[k]), int(y[k]), t[k], t0, t1, r0, r1, outPlane
                             )
-                            if np.sum(shell) != 0:
-                                velocities = radialVel[shell == 1]
-                                velocities = velocities[velocities != 0]
+                            velocities = radialVel[shell == 1]
+                            velocities = velocities[velocities != 0]
+                            if np.sum(velocities) != 0:
                                 velCorrelation[i][j][m].append(np.mean(velocities))
+                                if np.isnan(np.mean(velocities)):
+                                    print(0)
                             thetas = thetaVel[shell == 1]
                             thetas = thetas[thetas != 0]
                             if len(thetas) != 0:
@@ -1208,10 +1212,10 @@ if True:
                                     r1,
                                     outPlane,
                                 )
-                                if np.sum(shell) != 0:
-                                    velocities = radialVel[shell == 1]
-                                    velocities = velocities[velocities != 0]
-                                    velCorrelation[i][j][m].append(np.mean(velocities))
+                                velocities = radialVel[shell == 1]
+                                velocities = velocities[velocities != 0]
+                                if np.sum(velocities) != 0:
+                                    correlation_ran[i][j][m].append(np.mean(velocities))
 
         correlationRan = [[] for col in range(len(T))]
         for i in range(len(T)):
@@ -1232,6 +1236,8 @@ if True:
         correlation = np.array(correlation)[:15, :10]
         correlationRan = np.array(correlationRan)[:15, :10]
         oriCorrelation = np.array(oriCorrelation)[:15, :10]
+        correlation = np.nan_to_num(correlation)
+        correlationRan = np.nan_to_num(correlationRan)
         oriCorrelation = np.nan_to_num(oriCorrelation)
 
         correlationDiff = correlation - correlationRan

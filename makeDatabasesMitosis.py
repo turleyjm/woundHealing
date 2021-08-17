@@ -591,14 +591,7 @@ costLim = 0.5
 
 filenames, fileType = cl.getFilesType()
 # filenames = cl.getFiles()
-filenames = [
-    "WoundS18h04",
-    "WoundS18h05",
-    "WoundS18h06",
-    "WoundS18h07",
-    "WoundS18h08",
-    "WoundS18h09",
-]
+filenames = ["WoundS18h13"]
 
 for filename in filenames:
     print(filename)

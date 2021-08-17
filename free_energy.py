@@ -304,6 +304,7 @@ if False:
 if True:
     num_frames = 14
     num_videos = int(n / 14)
+    _dfCor = []
     for video in range(num_videos):
 
         img_video = img_list[video * num_frames : video * num_frames + num_frames]
@@ -317,3 +318,55 @@ if True:
             filename = img_file.replace("dat_binary/", "")
             filename = filename.replace(".tiff", "")
             df = pd.read_pickle(f"databases/df_of_{filename}.pkl")
+
+            Q = np.mean(df["Q"], axis=0)
+
+            Q0 = []
+            Qhat = []
+            for i in range(len(df)):
+                q = df["Q"].iloc[i]
+                q0 = (2 * (q[0, 0]) ** 2 + 2 * (q[0, 1]) ** 2) ** 0.5
+                qhat = q / q0
+                Q0.append(q0)
+                Qhat.append(qhat)
+
+            Q0 = np.mean(Q0, axis=0)
+            Qhat = np.mean(Qhat, axis=0)
+            Q_corr = Q - Q0 * Qhat
+            corr = (2 * (Q_corr[0, 0]) ** 2 + 2 * (Q_corr[0, 1]) ** 2) ** 0.5
+
+            _dfCor.append(
+                {
+                    "Filename": filename,
+                    "Time": frame,
+                    "Q": Q,
+                    "Q0": Q0,
+                    "Qhat": Qhat,
+                    "Correlation": corr,
+                }
+            )
+
+    dfCor = pd.DataFrame(_dfCor)
+    dfCor.to_pickle(f"databases/dfCorOldSamples.pkl")
+
+    T = np.linspace(0, 13, 14)
+    corr = []
+    mseCorr = []
+    n = num_videos
+    for t in T:
+        corr.append(np.mean(dfCor["Correlation"][dfCor["Time"] == t]))
+        mseCorr.append(np.std(dfCor["Correlation"][dfCor["Time"] == t]) / n ** 0.5)
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    ax.errorbar(T, corr, yerr=mseCorr)
+    ax.set_xlabel("Time (mins)")
+    ax.set_ylabel("correlation")
+    # ax.set_ylim([4.3, 5])
+
+    fig.savefig(
+        f"results/Q0 and Qhat correlation OldSamples",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")

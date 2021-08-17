@@ -41,6 +41,38 @@ import matplotlib.pyplot as plt
 # -------------------
 
 
+def sort1e2h_3h(df, t, x, y):
+
+    a = df[df["T"] == t - 2]
+    b = df[df["T"] == t - 1]
+    c = df[df["T"] == t]
+    d = df[df["T"] == t + 1]
+    e = df[df["T"] == t + 2]
+
+    df = pd.concat([a, b, c, d, e])
+
+    xMax = x + 9
+    xMin = x - 9
+    yMax = y + 9
+    yMin = y - 9
+    if xMax > 511:
+        xMax = 511
+    if yMax > 511:
+        yMax = 511
+    if xMin < 0:
+        xMin = 0
+    if yMin < 0:
+        yMin = 0
+
+    dfxmin = df[df["X"] >= xMin]
+    dfx = dfxmin[dfxmin["X"] < xMax]
+
+    dfymin = dfx[dfx["Y"] >= yMin]
+    df = dfymin[dfymin["Y"] < yMax]
+
+    return df
+
+
 def sortDL(df, t, x, y):
 
     a = df[df["T"] == t - 2]
@@ -150,47 +182,47 @@ def findT(segType):
 
 segTypes = ["1e2h1f", "3h1f", "1e2h2f", "3h2f", "1e2h3f", "3h3f"]
 
-# filenames = [
-#     "Unwound18h11",
-#     "Unwound18h12",
-#     "WoundL18h07",
-#     "WoundL18h08",
-#     "WoundL18h09",
-#     "WoundS18h10",
-#     "WoundS18h11",
-#     "WoundS18h12",
-#     "WoundS18h13",
-# ]
+filenames = [
+    "Unwound18h11",
+    #     "Unwound18h12",
+    #     "WoundL18h07",
+    #     "WoundL18h08",
+    #     "WoundL18h09",
+    #     "WoundS18h10",
+    #     "WoundS18h11",
+    #     "WoundS18h12",
+    #     "WoundS18h13",
+]
 # fileType = "validation"
 
-filenames = [
-    "Unwound18h01",
-    "Unwound18h02",
-    "Unwound18h03",
-    "Unwound18h04",
-    "Unwound18h05",
-    "Unwound18h06",
-    "Unwound18h07",
-    "Unwound18h08",
-    "Unwound18h09",
-    "Unwound18h10",
-    "WoundL18h01",
-    "WoundL18h02",
-    "WoundL18h03",
-    "WoundL18h04",
-    "WoundL18h05",
-    "WoundL18h06",
-    "WoundS18h01",
-    "WoundS18h02",
-    "WoundS18h03",
-    "WoundS18h04",
-    "WoundS18h05",
-    "WoundS18h06",
-    "WoundS18h07",
-    "WoundS18h08",
-    "WoundS18h09",
-]
-fileType = "training"
+# filenames = [
+#     "Unwound18h01",
+#     "Unwound18h02",
+#     "Unwound18h03",
+#     "Unwound18h04",
+#     "Unwound18h05",
+#     "Unwound18h06",
+#     "Unwound18h07",
+#     "Unwound18h08",
+#     "Unwound18h09",
+#     "Unwound18h10",
+#     "WoundL18h01",
+#     "WoundL18h02",
+#     "WoundL18h03",
+#     "WoundL18h04",
+#     "WoundL18h05",
+#     "WoundL18h06",
+#     "WoundS18h01",
+#     "WoundS18h02",
+#     "WoundS18h03",
+#     "WoundS18h04",
+#     "WoundS18h05",
+#     "WoundS18h06",
+#     "WoundS18h07",
+#     "WoundS18h08",
+#     "WoundS18h09",
+# ]
+# fileType = "training"
 
 for segType in segTypes:
     if False:
@@ -247,7 +279,7 @@ for segType in segTypes:
                 )
                 blobs_logs = np.concatenate((blobs_logs, blobs_log))
 
-                if False:
+                if True:
                     fig, ax = plt.subplots(1, 1, figsize=(8, 8))
 
                     ax.set_title(f"Laplacian of Gaussian {t}")
@@ -420,7 +452,7 @@ for segType in segTypes:
 
     # confusion matrix
 
-    if True:
+    if False:
         _dfConfusion = []
         for filename in filenames:
 
@@ -572,7 +604,7 @@ for segType in segTypes:
             )
 
     # frame9 for DL
-    if True:
+    if False:
         dfConfusion = pd.read_pickle(f"databases/dfConfusion{segType}{fileType}.pkl")
         for filename in filenames:
 
@@ -646,11 +678,19 @@ for segType in segTypes:
                         i = 0
                         j += 1
 
-                frames9 = np.asarray(frames9, "uint8")
-                tifffile.imwrite(
-                    f"train/{segType}/falseDivision/{filename}_{int(label_DL)}.tif",
-                    frames9,
-                )
+                if fileType == "training":
+
+                    frames9 = np.asarray(frames9, "uint8")
+                    tifffile.imwrite(
+                        f"train/frame9 training/{segType}/division{filename}_{int(label_DL)}.tif",
+                        frames9,
+                    )
+                else:
+                    frames9 = np.asarray(frames9, "uint8")
+                    tifffile.imwrite(
+                        f"train/{segType}/falseDivision/{filename}_{int(label_DL)}.tif",
+                        frames9,
+                    )
 
             for k in range(len(dfTruePos)):
                 t0 = int(dfTruePos["T"].iloc[k] / frameNum)
@@ -714,7 +754,7 @@ for segType in segTypes:
 
                     frames9 = np.asarray(frames9, "uint8")
                     tifffile.imwrite(
-                        f"train/frame9 training/{segType}/division/{filename}_{int(label_DL)}.tif",
+                        f"train/frame9 training/{segType}/Division{filename}_{int(label_DL)}.tif",
                         frames9,
                     )
                 else:
@@ -725,7 +765,7 @@ for segType in segTypes:
                     )
 
 
-if True:
+if False:
     segTypes = ["1e2h1f", "3h1f", "1e2h2f", "3h2f", "1e2h3f", "3h3f"]
     # fileType = "validation"
     # filenames = [
@@ -804,3 +844,256 @@ if True:
         count += len(dfSpaceTime)
 
     print(f"Total divisons {count}")
+
+
+# combine 1e2h and 3h
+
+if False:
+    for filename in filenames:
+
+        vidFocus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(float)
+        [T, X, Y, rgb] = vidFocus.shape
+
+        highlightDivisions = np.zeros([T, 552, 552, 3])
+
+        for x in range(X):
+            for y in range(Y):
+                highlightDivisions[:, 20 + x, 20 + y, :] = vidFocus[:, x, y, :]
+
+        df1e2h1f = pd.read_pickle(f"databases/dfDivisionDL1e2h1f{filename}.pkl")
+        df3h1f = pd.read_pickle(f"databases/dfDivisionDL3h1f{filename}.pkl")
+
+        for i in range(len(df1e2h1f)):
+            ti, xi, yi = (
+                df1e2h1f["T"].iloc[i],
+                df1e2h1f["X"].iloc[i],
+                df1e2h1f["Y"].iloc[i],
+            )
+            labeli = df1e2h1f["Label"].iloc[i]
+            dfmulti = sort1e2h_3h(df3h1f, ti, xi, yi)
+
+            if len(dfmulti) > 0:
+                for j in range(len(dfmulti)):
+                    labelj = dfmulti["Label"].iloc[j]
+
+                    indexNames = df3h1f[df3h1f["Label"] == labelj].index
+                    df3h1f.drop(indexNames, inplace=True)
+
+        df1f = pd.concat([df1e2h1f, df3h1f])
+
+        df1f.to_pickle(f"databases/dfDivisionDL1f{filename}.pkl")
+
+        for i in range(len(df1f)):
+            t, x, y = (
+                df1f["T"].iloc[i],
+                df1f["X"].iloc[i],
+                df1f["Y"].iloc[i],
+            )
+            x = int(x)
+            y = int(y)
+            t0 = int(t)
+
+            rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 14)
+            rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 12)
+
+            times = range(t0, t0 + 2)
+
+            timeVid = []
+            for t in times:
+                if t >= 0 and t <= T - 1:
+                    timeVid.append(t)
+
+            for t in timeVid:
+                highlightDivisions[t][rr0, cc0, 2] = 200
+                highlightDivisions[t][rr1, cc1, 2] = 0
+
+        highlightDivisions = highlightDivisions[:, 20:532, 20:532]
+
+        highlightDivisions = np.asarray(highlightDivisions, "uint8")
+        tifffile.imwrite(
+            f"results/divisionsDeepLearning1f{filename}.tif",
+            highlightDivisions,
+        )
+
+if False:
+    _dfConfusion = []
+    for filename in filenames:
+
+        dfDivisionDL = pd.read_pickle(f"databases/dfDivisionDL1f{filename}.pkl")
+        vid = sm.io.imread(f"dat/{filename}/predict3h1f{filename}.tif").astype(int)
+
+        dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+        df = dfDivisions[dfDivisions["Chain"] == "parent"]
+        _dfSpaceTime = []
+
+        for i in range(len(df)):
+
+            label = df["Label"].iloc[i]
+            t = df["Time"].iloc[i][-1]
+            [x, y] = df["Position"].iloc[i][-1]
+            ori = df["Division Orientation"].iloc[i]
+
+            _dfSpaceTime.append(
+                {
+                    "Filename": filename,
+                    "Label": label,
+                    "Orientation": ori,
+                    "T": t,
+                    "X": x,
+                    "Y": y,
+                }
+            )
+
+        dfSpaceTime = pd.DataFrame(_dfSpaceTime)
+
+        for i in range(len(dfSpaceTime)):
+            label = dfSpaceTime["Label"].iloc[i]
+            t = int(dfSpaceTime["T"].iloc[i])
+            x = dfSpaceTime["X"].iloc[i]
+            y = dfSpaceTime["Y"].iloc[i]
+            mu = intensity(vid, t, x, 512 - y)
+
+            dfCon = sortConfusion(dfDivisionDL, t, x, y, 1)
+
+            if len(dfCon) > 0:
+                label_DL = dfCon["Label"].iloc[0]
+                _dfConfusion.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "Label DL": label_DL,
+                        "T": int(t),
+                        "X": x,
+                        "Y": y,
+                        "Intensity": mu,
+                    }
+                )
+            elif len(dfCon) == 0:
+                _dfConfusion.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "T": int(t),
+                        "X": x,
+                        "Y": y,
+                        "Intensity": mu,
+                    }
+                )
+
+        uniqueLabel = list(set(dfDivisionDL["Label"]))
+        dfConfusion_ = pd.DataFrame(_dfConfusion)
+        dfConfusion_ = dfConfusion_[dfConfusion_["Filename"] == filename]
+        linkedLabels = np.sort(dfConfusion_["Label DL"])
+
+        for label_DL in uniqueLabel:
+            if label_DL not in linkedLabels:
+                t = dfDivisionDL["T"][dfDivisionDL["Label"] == label_DL].iloc[0]
+                x = dfDivisionDL["X"][dfDivisionDL["Label"] == label_DL].iloc[0]
+                y = dfDivisionDL["Y"][dfDivisionDL["Label"] == label_DL].iloc[0]
+                mu = intensity(vid, int(t), int(x), int(512 - y))
+                _dfConfusion.append(
+                    {
+                        "Filename": filename,
+                        "Label DL": label_DL,
+                        "T": int(t),
+                        "X": x,
+                        "Y": y,
+                        "Intensity": mu,
+                    }
+                )
+
+    dfConfusion = pd.DataFrame(_dfConfusion)
+    dfConfusion.to_pickle(f"databases/dfConfusion1f{filename}.pkl")
+
+
+# Test DL
+
+
+filenames = ["Unwound18h11"]
+frameRates = ["1f"]
+fileType = "test"
+if True:
+    for frameRate in frameRates:
+        _dfConfusion = []
+        for filename in filenames:
+            dfDL = pd.read_pickle(f"dat/{filename}/divisions{frameRate}{filename}.pkl")
+            dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+            df = dfDivisions[dfDivisions["Chain"] == "parent"]
+            _dfSpaceTime = []
+
+            for i in range(len(df)):
+
+                label = df["Label"].iloc[i]
+                t = df["Time"].iloc[i][-1]
+                [x, y] = df["Position"].iloc[i][-1]
+                ori = df["Division Orientation"].iloc[i]
+
+                _dfSpaceTime.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "Orientation": ori,
+                        "T": t,
+                        "X": x,
+                        "Y": y,
+                    }
+                )
+
+            dfSpaceTime = pd.DataFrame(_dfSpaceTime)
+
+            for i in range(len(dfSpaceTime)):
+                label = dfSpaceTime["Label"].iloc[i]
+                t = int(dfSpaceTime["T"].iloc[i])
+                x = dfSpaceTime["X"].iloc[i]
+                y = dfSpaceTime["Y"].iloc[i]
+
+                dfCon = sortConfusion(dfDL, t, x, y, 1)
+
+                if len(dfCon) > 0:
+                    label_DL = dfCon["Label"].iloc[0]
+                    _dfConfusion.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "Label DL": label_DL,
+                            "T": int(t),
+                            "X": x,
+                            "Y": y,
+                        }
+                    )
+                elif len(dfCon) == 0:
+                    _dfConfusion.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "T": int(t),
+                            "X": x,
+                            "Y": y,
+                        }
+                    )
+
+            uniqueLabel = list(set(dfDL["Label"]))
+            dfConfusion_ = pd.DataFrame(_dfConfusion)
+            dfConfusion_ = dfConfusion_[dfConfusion_["Filename"] == filename]
+            linkedLabels = np.sort(dfConfusion_["Label DL"])
+
+            for label_DL in uniqueLabel:
+                if label_DL not in linkedLabels:
+                    t = dfDL["T"][dfDL["Label"] == label_DL].iloc[0]
+                    x = dfDL["X"][dfDL["Label"] == label_DL].iloc[0]
+                    y = dfDL["Y"][dfDL["Label"] == label_DL].iloc[0]
+                    _dfConfusion.append(
+                        {
+                            "Filename": filename,
+                            "Label DL": label_DL,
+                            "T": int(t),
+                            "X": x,
+                            "Y": y,
+                        }
+                    )
+
+        dfConfusion = pd.DataFrame(_dfConfusion)
+        dfConfusion.to_pickle(f"databases/dfConfusion{frameRate}{filename}.pkl")
+        falseNeg = len(dfConfusion[dfConfusion["Label DL"].isnull()])
+        falsePos = len(dfConfusion[dfConfusion["Label"].isnull()])
+        print(frameRate, len(dfConfusion) - falsePos - falseNeg, falsePos, falseNeg)
