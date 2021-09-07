@@ -591,7 +591,6 @@ costLim = 0.5
 
 filenames, fileType = cl.getFilesType()
 # filenames = cl.getFiles()
-filenames = ["WoundS18h13"]
 
 for filename in filenames:
     print(filename)
@@ -853,123 +852,46 @@ for filename in filenames:
 
         uniqueLabel = list(set(dfDivisions2["Label"]))
 
-        if wound == True:
-            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        for label in uniqueLabel:
+            df3 = dfDivisions2.loc[
+                lambda dfDivisions2: dfDivisions2["Label"] == label, :
+            ]
 
-            dist = []
+            if len(df3["Time"].iloc[1]) > 2:
+                delta_t0 = 2
+            elif len(df3["Time"].iloc[1]) > 1:
+                delta_t0 = 1
+            else:
+                delta_t0 = 0
 
-            for label in uniqueLabel:
-                df3 = dfDivisions2.loc[
-                    lambda dfDivisions2: dfDivisions2["Label"] == label, :
-                ]
+            if len(df3["Time"].iloc[2]) > 2:
+                delta_t1 = 2
+            elif len(df3["Time"].iloc[2]) > 1:
+                delta_t1 = 1
+            else:
+                delta_t1 = 0
 
-                tm = df3["Time"].iloc[1][0]
+            [x0, y0] = df3["Position"].iloc[1][delta_t0]
+            [x1, y1] = df3["Position"].iloc[2][delta_t1]
 
-                if len(df3["Time"].iloc[1]) > 2:
-                    delta_t0 = 2
-                    t0 = df3["Time"].iloc[1][2]
-                elif len(df3["Time"].iloc[1]) > 1:
-                    delta_t0 = 1
-                    t0 = df3["Time"].iloc[1][1]
-                else:
-                    delta_t0 = 0
-                    t0 = df3["Time"].iloc[1][0]
+            divOri = np.mod(np.arctan2(y0 - y1, x0 - x1), np.pi) * (180 / np.pi)
 
-                if len(df3["Time"].iloc[2]) > 2:
-                    delta_t1 = 2
-                    t0 = df3["Time"].iloc[2][2]
-                elif len(df3["Time"].iloc[2]) > 1:
-                    delta_t1 = 1
-                    t0 = df3["Time"].iloc[2][1]
-                else:
-                    delta_t1 = 0
-                    t0 = df3["Time"].iloc[2][0]
-
-                (Cx, Cy) = dfWound["Position"].iloc[t0]
-                [x0, y0] = df3["Position"].iloc[1][delta_t0]
-                [x1, y1] = df3["Position"].iloc[2][delta_t1]
-
-                xm = (x0 + x1) / 2
-                ym = (y0 + y1) / 2
-                v = np.array([x0 - x1, y0 - y1])
-                w = np.array([xm - Cx, ym - Cy])
-
-                phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
-
-                if phi > np.pi / 2:
-                    theta = np.pi - phi
-                else:
-                    theta = phi
-                divOri = theta * (180 / np.pi)
-
-                for i in range(3):
-                    _dfDivisions3.append(
-                        {
-                            "Label": df3["Label"].iloc[i],
-                            "Time": df3["Time"].iloc[i],
-                            "Position": df3["Position"].iloc[i],
-                            "Chain": df3["Chain"].iloc[i],
-                            "Shape Factor": df3["Shape Factor"].iloc[i],
-                            "Height": df3["Height"].iloc[i],
-                            "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
-                            "Polygons": df3["Polygons"].iloc[i],
-                            "Division Orientation": divOri,
-                            "Original Label": df3["Original Label"].iloc[i],
-                            "Spot": df3["Spot"].iloc[i],
-                        }
-                    )
-
-        else:
-
-            for label in uniqueLabel:
-                df3 = dfDivisions2.loc[
-                    lambda dfDivisions2: dfDivisions2["Label"] == label, :
-                ]
-
-                if len(df3["Time"].iloc[1]) > 2:
-                    delta_t0 = 2
-                elif len(df3["Time"].iloc[1]) > 1:
-                    delta_t0 = 1
-                else:
-                    delta_t0 = 0
-
-                if len(df3["Time"].iloc[2]) > 2:
-                    delta_t1 = 2
-                elif len(df3["Time"].iloc[2]) > 1:
-                    delta_t1 = 1
-                else:
-                    delta_t1 = 0
-
-                [x0, y0] = df3["Position"].iloc[1][delta_t0]
-                [x1, y1] = df3["Position"].iloc[2][delta_t1]
-
-                v = np.array([x0 - x1, y0 - y1])
-                w = np.array([1, 0])
-
-                phi = np.arccos(np.dot(v, w) / (np.linalg.norm(v) * np.linalg.norm(w)))
-
-                if phi > np.pi:
-                    theta = np.pi - phi
-                else:
-                    theta = phi
-                divOri = theta * (180 / np.pi)
-
-                for i in range(3):
-                    _dfDivisions3.append(
-                        {
-                            "Label": df3["Label"].iloc[i],
-                            "Time": df3["Time"].iloc[i],
-                            "Position": df3["Position"].iloc[i],
-                            "Chain": df3["Chain"].iloc[i],
-                            "Shape Factor": df3["Shape Factor"].iloc[i],
-                            "Height": df3["Height"].iloc[i],
-                            "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
-                            "Polygons": df3["Polygons"].iloc[i],
-                            "Division Orientation": divOri,
-                            "Original Label": df3["Original Label"].iloc[i],
-                            "Spot": df3["Spot"].iloc[i],
-                        }
-                    )
+            for i in range(3):
+                _dfDivisions3.append(
+                    {
+                        "Label": df3["Label"].iloc[i],
+                        "Time": df3["Time"].iloc[i],
+                        "Position": df3["Position"].iloc[i],
+                        "Chain": df3["Chain"].iloc[i],
+                        "Shape Factor": df3["Shape Factor"].iloc[i],
+                        "Height": df3["Height"].iloc[i],
+                        "Necleus Orientation": df3["Necleus Orientation"].iloc[i],
+                        "Polygons": df3["Polygons"].iloc[i],
+                        "Division Orientation": divOri,
+                        "Original Label": df3["Original Label"].iloc[i],
+                        "Spot": df3["Spot"].iloc[i],
+                    }
+                )
 
         dfDivisions3 = pd.DataFrame(_dfDivisions3)
 

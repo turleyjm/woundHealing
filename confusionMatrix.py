@@ -1,6 +1,6 @@
 import os
 import shutil
-from math import floor, log10
+from math import dist, floor, log10
 
 from collections import Counter
 import cv2
@@ -84,47 +84,47 @@ def findT(frameRate):
     return T, frameNum
 
 
-# fileType = "validation"
-# filenames = [
-#     "Unwound18h11",
-#     "Unwound18h12",
-#     "WoundL18h07",
-#     "WoundL18h08",
-#     "WoundL18h09",
-#     "WoundS18h10",
-#     "WoundS18h11",
-#     "WoundS18h12",
-#     "WoundS18h13",
-# ]
-
-fileType = "training"
+fileType = "validation"
 filenames = [
-    "Unwound18h01",
-    "Unwound18h02",
-    "Unwound18h03",
-    "Unwound18h04",
-    "Unwound18h05",
-    "Unwound18h06",
-    "Unwound18h07",
-    "Unwound18h08",
-    "Unwound18h09",
-    "Unwound18h10",
-    "WoundL18h01",
-    "WoundL18h02",
-    "WoundL18h03",
-    "WoundL18h04",
-    "WoundL18h05",
-    "WoundL18h06",
-    "WoundS18h01",
-    "WoundS18h02",
-    "WoundS18h03",
-    "WoundS18h04",
-    "WoundS18h05",
-    "WoundS18h06",
-    "WoundS18h07",
-    "WoundS18h08",
-    "WoundS18h09",
+    "Unwound18h11",
+    "Unwound18h12",
+    "WoundL18h07",
+    "WoundL18h08",
+    "WoundL18h09",
+    "WoundS18h10",
+    "WoundS18h11",
+    "WoundS18h12",
+    "WoundS18h13",
 ]
+
+# fileType = "training"
+# filenames = [
+#     "Unwound18h01",
+#     "Unwound18h02",
+#     "Unwound18h03",
+#     "Unwound18h04",
+#     "Unwound18h05",
+#     "Unwound18h06",
+#     "Unwound18h07",
+#     "Unwound18h08",
+#     "Unwound18h09",
+#     "Unwound18h10",
+#     "WoundL18h01",
+#     "WoundL18h02",
+#     "WoundL18h03",
+#     "WoundL18h04",
+#     "WoundL18h05",
+#     "WoundL18h06",
+#     "WoundS18h01",
+#     "WoundS18h02",
+#     "WoundS18h03",
+#     "WoundS18h04",
+#     "WoundS18h05",
+#     "WoundS18h06",
+#     "WoundS18h07",
+#     "WoundS18h08",
+#     "WoundS18h09",
+# ]
 
 # fileType = "test"
 # filenames = ["Unwound18h11"]
@@ -392,7 +392,7 @@ if False:
 
 
 # orientation training set
-if True:
+if False:
     for frameRate in frameRates:
         dfConfusion = pd.read_pickle(f"databases/dfConfusionFS1f{fileType}.pkl")
         label = 0
@@ -975,3 +975,113 @@ if False:
     print("")
     print("Total number of divisions", len(dfConfusion) - falsePos)
     print("")
+
+
+# orientation error
+if True:
+    for frameRate in frameRates:
+        _dfConfusion = []
+        T, frameNum = findT(frameRate)
+        for filename in filenames:
+            dfDL = pd.read_pickle(
+                f"databases/outputDL/divisions{frameRate}{filename}.pkl"
+            )
+
+            dfDivisions = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+            df = dfDivisions[dfDivisions["Chain"] == "parent"]
+            _dfSpaceTime = []
+
+            for i in range(len(df)):
+
+                label = df["Label"].iloc[i]
+                t = df["Time"].iloc[i][-1]
+                [x, y] = df["Position"].iloc[i][-1]
+                ori = df["Division Orientation"].iloc[i]
+
+                _dfSpaceTime.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "Orientation": ori,
+                        "T": int(t / frameNum),
+                        "X": x,
+                        "Y": y,
+                    }
+                )
+
+            dfSpaceTime = pd.DataFrame(_dfSpaceTime)
+
+            for i in range(len(dfSpaceTime)):
+                t = int(dfSpaceTime["T"].iloc[i])
+                x = dfSpaceTime["X"].iloc[i]
+                y = dfSpaceTime["Y"].iloc[i]
+                ori = np.pi * dfSpaceTime["Orientation"].iloc[i] / 180
+
+                dfCon = sortConfusion(dfDL, t, x, y, 1)
+
+                if len(dfCon) > 0:
+                    label = dfCon["Label"].iloc[0]
+                    ori_DL = dfCon["Ori"].iloc[0]
+                    dist = dfCon["distance"].iloc[0]
+                    error = 1 - np.dot(
+                        np.array([np.cos(2 * ori), np.sin(2 * ori)]),
+                        np.array([np.cos(2 * ori_DL), np.sin(2 * ori_DL)]),
+                    )
+                    dtheta = np.arccos(1 - error) / 2
+                    _dfConfusion.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "T": int(t),
+                            "X": x,
+                            "Y": y,
+                            "Orientation Error": error,
+                            "Delta Theta": dtheta,
+                            "Distance": dist,
+                        }
+                    )
+
+        dfConfusion = pd.DataFrame(_dfConfusion)
+        dfConfusion.to_pickle(
+            f"databases/dfConfusionOrientation{frameRate}{fileType}.pkl"
+        )
+
+        # err = np.array(dfConfusion["Orientation Error"])
+
+        # fig, ax = plt.subplots()
+        # ax.hist(err, density=False, bins=40)
+        # ax.set_xlim([0, 2])
+        # ax.set_xlabel("error", y=0.13)
+        # ax.axvline(np.median(err), c="k", label="mean")
+        # fig.savefig(
+        #     f"results/orientationError{frameRate}{fileType}.png",
+        #     dpi=200,
+        #     transparent=True,
+        # )
+        # plt.close("all")
+
+        err = abs(np.array(dfConfusion["Delta Theta"])) * 180 / np.pi
+        dist = np.array(dfConfusion["Distance"])
+
+        fig, ax = plt.subplots()
+        ax.hist(err, density=False, bins=18, range=[0, 90])
+        ax.set_xlim([0, 90])
+        ax.set_ylim([0, 800])
+        ax.set_xlabel("error", y=0.13)
+        ax.axvline(np.median(err), c="k", label="mean")
+        fig.savefig(
+            f"results/orientationDiff{frameRate}{fileType}.png",
+            dpi=200,
+            transparent=True,
+        )
+        plt.close("all")
+
+        # fig, ax = plt.subplots()
+        # ax.scatter(err, dist)
+        # ax.set_xlim([0, 90])
+        # fig.savefig(
+        #     f"results/orientationDiffErr{frameRate}{fileType}.png",
+        #     dpi=200,
+        #     transparent=True,
+        # )
+        # plt.close("all")

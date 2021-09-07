@@ -41,8 +41,8 @@ generation_b = [b]
 generation_nb = [nb]
 
 for i in range(T):
-    _b = b * nb + (2 / 3) * b ** 2
-    _nb = nb ** 2 + b * nb + (1 / 3) * b ** 2
+    _b = (1 / (1 - (1 / 4) * b ** 2)) * (b * nb + (1 / 2) * b ** 2)
+    _nb = (1 / (1 - (1 / 4) * b ** 2)) * (nb ** 2 + b * nb + (1 / 4) * b ** 2)
 
     b = _b
     nb = _nb
