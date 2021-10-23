@@ -42,25 +42,24 @@ def exponential(x, coeffs):
 def residualsExponential(coeffs, y, x):
     return y - exponential(x, coeffs)
 
+
 # -------------------
 
 
 filenames, fileType = cl.getFilesType()
 
-T = 181
-scale = 147.91 / 512
+T = 93
+scale = 123.26 / 512
 
 count = 0
 
-if False:
+if True:
     fig = plt.figure(1, figsize=(9, 8))
     time = range(T)
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
         count += len(df)
-
-        sf0 = np.mean(list(df["Shape Factor"][df["Time"] == 0]))
 
         mu = []
         err = []
@@ -70,10 +69,10 @@ if False:
             mu.append(np.mean(prop))
             err.append(np.std(prop) / len(prop) ** 0.5)
 
-        plt.plot(time, mu)
+        plt.plot(np.array(time) * 2, mu)
 
     plt.xlabel("Time")
-    plt.ylabel(f"Shape Factor relative")
+    plt.ylabel(f"Shape Factor")
     fig.savefig(
         f"results/Shape Factor",
         dpi=300,
@@ -83,28 +82,60 @@ if False:
 
 # ----------------------------
 
-
-if False:
+if True:
     fig = plt.figure(1, figsize=(9, 8))
     time = range(T)
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
-        A0 = np.mean(list(df["Area"][df["Time"] == 0] * scale ** 2))
+        count += len(df)
+
+        sf0 = np.mean(list(df["Shape Factor"][df["Time"] == 0]))
+        sfF = np.mean(list(df["Shape Factor"][df["Time"] == T - 1]))
+
+        mu = []
+        err = []
+
+        for t in time:
+            prop = list(df["Shape Factor"][df["Time"] == t])
+            mu.append(np.mean(prop))
+            err.append(np.std(prop) / len(prop) ** 0.5)
+
+        mu = (np.array(mu) - sf0) / (sfF - sf0)
+
+        plt.plot(np.array(time) * 2, mu)
+
+    plt.xlabel("Time")
+    plt.ylabel(f"Shape Factor Normalised")
+    fig.savefig(
+        f"results/Shape Factor Normalised",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+# ----------------------------
+
+if True:
+    fig = plt.figure(1, figsize=(9, 8))
+    time = range(T)
+    for filename in filenames:
+
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
 
         mu = []
         err = []
 
         for t in time:
             prop = list(df["Area"][df["Time"] == t] * scale ** 2)
-            mu.append(np.mean(prop) / A0)
+            mu.append(np.mean(prop))
             err.append(np.std(prop) / len(prop) ** 0.5)
 
-        plt.plot(time, mu)
+        plt.plot(np.array(time) * 2, mu)
         mu = np.array(mu)
 
     plt.xlabel("Time")
-    plt.ylabel("Area relative")
+    plt.ylabel("Area")
     fig.savefig(
         f"results/Area",
         dpi=300,
@@ -115,50 +146,86 @@ if False:
 
 # ----------------------------
 
+if True:
+    fig = plt.figure(1, figsize=(9, 8))
+    time = range(T)
+    for filename in filenames:
 
-if False:
-    df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
 
-    iso = []
-    for t in range(T):
-        prop = list(df[f"Q"][df["Time"] == t])
-        Ori = []
-        for i in range(len(prop)):
+        A0 = np.mean(list(df["Area"][df["Time"] == 0])) * scale ** 2
+        Af = np.mean(list(df["Area"][df["Time"] == T - 1])) * scale ** 2
 
-            Q = prop[i]
-            v1 = Q[0]
-            x = v1[0]
-            y = v1[1]
+        mu = []
+        err = []
 
-            c = (x ** 2 + y ** 2) ** 0.5
+        for t in time:
+            prop = list(df["Area"][df["Time"] == t] * scale ** 2)
+            mu.append(np.mean(prop))
+            err.append(np.std(prop) / len(prop) ** 0.5)
 
-            if x == 0 and y == 0:
-                continue
-            else:
-                Ori.append(np.array([x, y]) / c)
+        mu = -(np.array(mu) - A0) / (Af - A0)
 
-        n = len(Ori)
+        plt.plot(np.array(time) * 2, mu)
 
-        OriDash = sum(Ori) / n
+    plt.xlabel("Time")
+    plt.ylabel("Area Normalised")
+    fig.savefig(
+        f"results/Area Normalised",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-        rho = ((OriDash[0]) ** 2 + (OriDash[1]) ** 2) ** 0.5
 
-        OriSigma = sum(((Ori - OriDash) ** 2) / n) ** 0.5
+# ----------------------------
 
-        OriSigma = sum(OriSigma)
 
-        iso.append(rho / OriSigma)
-
-    x = range(T)
+if True:
     fig = plt.figure(1, figsize=(9, 8))
     plt.gcf().subplots_adjust(left=0.2)
-    plt.plot(x, iso)
+    for filename in filenames:
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+
+        iso = []
+        for t in range(T):
+            prop = list(df[f"q"][df["Time"] == t])
+            Ori = []
+            for i in range(len(prop)):
+
+                Q = prop[i]
+                v1 = Q[0]
+                x = v1[0]
+                y = v1[1]
+
+                c = (x ** 2 + y ** 2) ** 0.5
+
+                if x == 0 and y == 0:
+                    continue
+                else:
+                    Ori.append(np.array([x, y]) / c)
+
+            n = len(Ori)
+
+            OriDash = sum(Ori) / n
+
+            rho = ((OriDash[0]) ** 2 + (OriDash[1]) ** 2) ** 0.5
+
+            OriSigma = sum(((Ori - OriDash) ** 2) / n) ** 0.5
+
+            OriSigma = sum(OriSigma)
+
+            iso.append(rho / OriSigma)
+
+        time = range(T)
+
+        plt.plot(np.array(time) * 2, iso)
 
     plt.xlabel("Time")
     plt.ylabel(f"isotopy of the tissue")
     plt.gcf().subplots_adjust(bottom=0.2)
     fig.savefig(
-        f"results/Orientation of {filename}",
+        f"results/Orientation of {fileType}",
         dpi=300,
         transparent=True,
     )
@@ -177,12 +244,12 @@ def rotation_matrix(theta):
     return R
 
 
-if False:
+if True:
     _df = []
     for filename in filenames:
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
 
-        T = np.linspace(0, 170, 18)
+        T = np.linspace(0, 80, 9)
         for t in T:
 
             dft = cl.sortTime(df, [t, t + 10])
@@ -229,7 +296,7 @@ else:
 
 if True:
 
-    T = np.linspace(0, 170, 18)
+    T = np.linspace(0, 80, 9)
     q0 = []
     dQr1 = []
     dQr2 = []
@@ -247,17 +314,24 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(20, 8))
 
-    ax[0].errorbar(T, q0, yerr=mseq0)
+    time = T
+    ax[0].errorbar(np.array(time + 5) * 2, q0, yerr=mseq0)
     ax[0].set_xlabel("Time (mins)")
     ax[0].set_ylabel(r"$q_0$")
     ax[0].set_ylim([0, 0.06])
+    ax[0].set_xlim([0, 180])
 
-    ax[1].errorbar(T, dQr1, yerr=msedQr1, label=r"$(\delta q_1)^2$")
-    ax[1].errorbar(T, dQr2, yerr=msedQr2, label=r"$(\delta q_2)^2$")
+    ax[1].errorbar(
+        np.array(time + 5) * 2, dQr1, yerr=msedQr1, label=r"$(\delta q_1)^2$"
+    )
+    ax[1].errorbar(
+        np.array(time + 5) * 2, dQr2, yerr=msedQr2, label=r"$(\delta q_2)^2$"
+    )
     ax[1].legend()
     ax[1].set_xlabel("Time (mins)")
     ax[1].set_ylabel(r"$(\delta q_i)^2$")
     ax[1].set_ylim([0.0004, 0.001])
+    ax[1].set_xlim([0, 180])
 
     plt.suptitle(f"Shape with time {fileType}")
 
@@ -269,28 +343,35 @@ if True:
     plt.close("all")
 
 
-if False:
+if True:
 
-    T = np.linspace(0, 170, 18)
+    T = np.linspace(0, 80, 9)
 
     fig, ax = plt.subplots(1, 3, figsize=(30, 8))
 
     for filename in filenames:
 
-        ax[0].plot(T, list(df["q0"][df["filename"] == filename]))
+        ax[0].plot(np.array(time + 5) * 2, list(df["q0"][df["Filename"] == filename]))
         ax[0].set_xlabel("Time (mins)")
         ax[0].set_ylabel(r"$q_0$")
         ax[0].set_ylim([0, 0.08])
+        ax[0].set_xlim([0, 180])
 
-        ax[1].errorbar(T, list(df["dQr1"][df["filename"] == filename]))
+        ax[1].errorbar(
+            np.array(time + 5) * 2, list(df["dQr1"][df["Filename"] == filename])
+        )
         ax[1].set_xlabel("Time (mins)")
-        ax[1].set_ylabel(r"$(\delta q_i)^2$")
+        ax[1].set_ylabel(r"$(\delta q_1)^2$")
         ax[1].set_ylim([0.0004, 0.0014])
+        ax[1].set_xlim([0, 180])
 
-        ax[2].errorbar(T, list(df["dQr2"][df["filename"] == filename]))
+        ax[2].errorbar(
+            np.array(time + 5) * 2, list(df["dQr2"][df["Filename"] == filename])
+        )
         ax[2].set_xlabel("Time (mins)")
-        ax[2].set_ylabel(r"$(\delta q_i)^2$")
+        ax[2].set_ylabel(r"$(\delta q_2)^2$")
         ax[2].set_ylim([0.0004, 0.0014])
+        ax[2].set_xlim([0, 180])
 
     plt.suptitle(f"Shape with time {fileType}")
 

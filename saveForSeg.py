@@ -69,4 +69,3 @@ for filename in filenames:
             tifffile.imwrite(
                 f"dat/{filename}/imagesForSeg/ecadProb{filename}_{T}.tif", img
             )
-

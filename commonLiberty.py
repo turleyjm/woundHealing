@@ -125,6 +125,27 @@ def sortGrid(dfVelocity, x, y):
     return df
 
 
+def sortVolume(dfShape, x, y, t):
+
+    xMin = x[0]
+    xMax = x[1]
+    yMin = y[0]
+    yMax = y[1]
+    tMin = t[0]
+    tMax = t[1]
+
+    dfxmin = dfShape[dfShape["X"] >= xMin]
+    dfx = dfxmin[dfxmin["X"] < xMax]
+
+    dfymin = dfx[dfx["Y"] >= yMin]
+    dfy = dfymin[dfymin["Y"] < yMax]
+
+    dftmin = dfy[dfy["T"] >= tMin]
+    df = dftmin[dftmin["T"] < tMax]
+
+    return df
+
+
 def sortSection(dfVelocity, r, theta):
 
     rMin = r[0]

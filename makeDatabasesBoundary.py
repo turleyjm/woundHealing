@@ -96,9 +96,7 @@ for filename in filenames:
                         "Shape Factor": cell.shapeFactor(polygon),
                         "q": cell.qTensor(polygon),
                         "Trace(S)": cell.traceS(polygon),
-                        "Polar": np.array(
-                            [cell.mayorPolar(polygon), cell.minorPolar(polygon)]
-                        ),
+                        "Polar": cell.polar(polygon),
                     }
                 )
 

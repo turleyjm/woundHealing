@@ -118,11 +118,9 @@ def orientation(polygon):
         v = v1
     else:
         v = v2
-    theta = np.arctan(v[1] / v[0])
-    if theta < 0:
-        theta = theta + np.pi
-    if theta > np.pi:
-        theta = theta - np.pi
+
+    theta = np.arctan2(v[1], v[0])
+
     return theta
 
 
@@ -272,6 +270,22 @@ def polarMag(polygon):
     return r
 
 
+def polar(polygon):
+
+    y = minorPolar(polygon)
+    x = mayorPolar(polygon)
+    P = np.array([x, y])
+
+    theta = orientation(polygon)
+
+    xr = P[0] * np.cos(theta) - P[1] * np.sin(theta)
+    yr = P[0] * np.sin(theta) + P[1] * np.cos(theta)
+
+    P = np.array([xr, yr])
+
+    return P
+
+
 def inertia_tcj(tcj):
     """takes the tcj and finds its inertia tensor matrix"""
 
@@ -321,11 +335,8 @@ def orientation_tcj(tcj):
         v = v1
     else:
         v = v2
-    theta = np.arctan(v[1] / v[0])
-    if theta < 0:
-        theta = theta + np.pi
-    if theta > np.pi:
-        theta = theta - np.pi
+    theta = np.arctan2(v[1], v[0])
+
     return theta
 
 
