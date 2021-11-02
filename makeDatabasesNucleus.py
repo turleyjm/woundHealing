@@ -33,7 +33,7 @@ plt.rcParams.update({"font.size": 20})
 
 def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):
     """Import detected tracks with TrackMate Fiji plugin.
-    
+
     ref: https://github.com/hadim/pytrackmate
 
     Parameters
@@ -53,21 +53,20 @@ def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):
         "POSITION_X": "x",
         "POSITION_Y": "y",
         "POSITION_Z": "z",
-        "ESTIMATED_DIAMETER": "w",
         "QUALITY": "q",
         "ID": "spot_id",
-        "MEAN_INTENSITY": "mean_intensity",
-        "MEDIAN_INTENSITY": "median_intensity",
-        "MIN_INTENSITY": "min_intensity",
-        "MAX_INTENSITY": "max_intensity",
-        "TOTAL_INTENSITY": "total_intensity",
-        "STANDARD_DEVIATION": "std_intensity",
-        "CONTRAST": "contrast",
-        "SNR": "snr",
     }
 
-    features = root.find("Model").find("FeatureDeclarations").find("SpotFeatures")
-    features = [c.get("feature") for c in features.getchildren()] + ["ID"]
+    # features = root.find("Model").find("FeatureDeclarations").find("SpotFeatures")
+    features = [
+        "FRAME",
+        "POSITION_T",
+        "POSITION_X",
+        "POSITION_Y",
+        "POSITION_Z",
+        "QUALITY",
+        "ID",
+    ]
 
     spots = root.find("Model").find("AllSpots")
     trajs = pd.DataFrame([])
@@ -80,7 +79,7 @@ def trackmate_vertices_import(trackmate_xml_path, get_tracks=False):
             objects.append(single_object)
 
     trajs = pd.DataFrame(objects, columns=features)
-    trajs = trajs.astype(np.float)
+    trajs = trajs.astype(float)
 
     # Apply initial filtering
     initial_filter = root.find("Settings").find("InitialSpotFilter")
@@ -217,9 +216,63 @@ for filename in filenames:
 
         _dfTracks.append({"Label": label, "x": X, "y": Y, "z": Z, "t": T})
 
-    dfTracks = pd.DataFrame(_dfTracks)
+    df = pd.DataFrame(_dfTracks)
 
-    dfTracks.to_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+    _df2 = []
+    for i in range(len(df)):
+        t = df["t"][i]
+        x = df["x"][i]
+        y = df["y"][i]
+        label = df["Label"][i]
+
+        m = len(t)
+        tMax = t[-1]
+
+        if m > 1:
+            for j in range(m - 1):
+                t0 = t[j]
+                x0 = x[j]
+                y0 = y[j]
+
+                tdelta = tMax - t0
+                if tdelta > 5:
+                    t5 = t[j + 5]
+                    x5 = x[j + 5]
+                    y5 = y[j + 5]
+
+                    v = np.array([(x5 - x0) / 5, (y5 - y0) / 5])
+
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "Time": t0,
+                            "X": x0,
+                            "Y": y0,
+                            "Velocity": v,
+                        }
+                    )
+                else:
+                    tEnd = t[-1]
+                    xEnd = x[-1]
+                    yEnd = y[-1]
+
+                    v = np.array([(xEnd - x0) / (tEnd - t0), (yEnd - y0) / (tEnd - t0)])
+
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "Label": label,
+                            "Time": int(t0),
+                            "X": x0,
+                            "Y": y0,
+                            "Velocity": v,
+                        }
+                    )
+
+    dfVelocity = pd.DataFrame(_df2)
+
+    dfVelocity.to_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
 
     # save a image contaning the height of each nuclei
 
@@ -230,12 +283,12 @@ for filename in filenames:
 
     height = np.zeros([T, 512, 512])
 
-    for i in range(len(dfTracks)):
-        for j in range(len(dfTracks["x"][i])):
-            t = int(dfTracks["t"][i][j])
-            c = int(dfTracks["x"][i][j])  # changes coord to row column
-            r = int(511 - dfTracks["y"][i][j])
-            z = dfTracks["z"][i][j]
+    for i in range(len(df)):
+        for j in range(len(df["x"][i])):
+            t = int(df["t"][i][j])
+            c = int(df["x"][i][j])  # changes coord to row column
+            r = int(511 - df["y"][i][j])
+            z = df["z"][i][j]
 
             height[t, r, c] = z
 

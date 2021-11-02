@@ -286,6 +286,27 @@ def polar(polygon):
     return P
 
 
+def polarUnit(polygon):
+
+    y = minorPolar(polygon)
+    x = mayorPolar(polygon)
+    P = np.array([x, y])
+
+    theta = orientation(polygon)
+
+    xr = P[0] * np.cos(theta) - P[1] * np.sin(theta)
+    yr = P[0] * np.sin(theta) + P[1] * np.cos(theta)
+
+    P = np.array([xr, yr])
+
+    c = (P[0] ** 2 + P[1] ** 2) ** 0.5
+
+    if c != 0:
+        P = P / c
+
+    return P
+
+
 def inertia_tcj(tcj):
     """takes the tcj and finds its inertia tensor matrix"""
 

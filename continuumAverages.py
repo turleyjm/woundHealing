@@ -78,11 +78,11 @@ else:
     dfShape = pd.read_pickle(f"databases/dfContinuum{fileType}.pkl")
 
 # density
-if True:
+if False:
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
         heatmapP0 = np.zeros([grid, grid])
-        dft = df[df["Time"] == 0]
+        dft = df[df["T"] == 0]
         for i in range(grid):
             for j in range(grid):
                 x = [
@@ -103,12 +103,25 @@ if True:
         dx, dy = 110 / grid, 110 / grid
         x, y = np.mgrid[0:110:dx, 0:110:dy]
 
-        fig, ax = plt.subplots()
-        c = ax.pcolor(x, y, heatmapP0, cmap="Reds", vmax=0.15, shading="auto")
-        fig.colorbar(c, ax=ax)
-        plt.xlabel(r"x $(\mu m)$")
-        plt.ylabel(r"y $(\mu m)$")
-        plt.title(r"$\rho_0$ " + f"{filename}")
+        fig, ax = plt.subplots(1, 2, figsize=(20, 8))
+        c = ax[0].pcolor(x, y, heatmapP0, cmap="Reds", vmax=0.15, shading="auto")
+        fig.colorbar(c, ax=ax[0])
+        ax[0].set_xlabel(r"x $(\mu m)$")
+        ax[0].set_ylabel(r"y $(\mu m)$")
+        ax[0].title.set_text(r"$\rho$ " + f"{filename}")
+
+        mu = np.mean(heatmapP0)
+        simga = np.std(heatmapP0)
+        heatmapP0Norm = (heatmapP0 - mu) / simga
+
+        c = ax[1].pcolor(
+            x, y, heatmapP0Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[1])
+        ax[1].set_xlabel(r"x $(\mu m)$")
+        ax[1].set_ylabel(r"y $(\mu m)$")
+        ax[1].title.set_text(r"$\sigma$ of $\rho$ from $\mu_\rho$ " + f"{filename}")
+
         fig.savefig(
             f"results/P0 heatmap {filename}",
             dpi=300,
@@ -117,13 +130,30 @@ if True:
         plt.close("all")
 
 
+# typical cell length
+if True:
+    A = []
+    for t in range(T):
+        A.append(np.mean(dfShape["Area"][dfShape["T"] == t] ** 0.5))
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    ax.plot(2 * np.array(range(T)), A)
+    ax.set(xlabel=r"Time", ylabel=r"Typical cell length $(\mu m)$")
+    ax.title.set_text("Typical Cell Length")
+    fig.savefig(
+        f"results/Typical cell length {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
 # delta Q
 if True:
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
         heatmapdQ1 = np.zeros([grid, grid])
         heatmapdQ2 = np.zeros([grid, grid])
-        dft = df[df["Time"] == 0]
+        dft = df[df["T"] == 0]
         for i in range(grid):
             for j in range(grid):
                 x = [
@@ -145,20 +175,53 @@ if True:
         dx, dy = 110 / grid, 110 / grid
         x, y = np.mgrid[0:110:dx, 0:110:dy]
 
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        fig, ax = plt.subplots(2, 2, figsize=(12, 12))
         plt.subplots_adjust(wspace=0.3)
         plt.gcf().subplots_adjust(bottom=0.15)
-        c = ax[0].pcolor(x, y, heatmapdQ1, vmin=-0.07, vmax=0.07, shading="auto")
-        fig.colorbar(c, ax=ax[0])
-        ax[0].set_xlabel(r"x $(\mu m)$")
-        ax[0].set_ylabel(r"y $(\mu m)$")
-        ax[0].title.set_text(r"$\delta Q^1$ " + f"{filename}")
+        c = ax[0, 0].pcolor(
+            x, y, heatmapdQ1, cmap="RdBu_r", vmin=-0.07, vmax=0.07, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[0, 0])
+        ax[0, 0].set_xlabel(r"x $(\mu m)$")
+        ax[0, 0].set_ylabel(r"y $(\mu m)$")
+        ax[0, 0].title.set_text(r"$\delta Q^1$ " + f"{filename}")
 
-        c = ax[1].pcolor(x, y, heatmapdQ2, vmin=-0.07, vmax=0.07, shading="auto")
-        fig.colorbar(c, ax=ax[1])
-        ax[1].set_xlabel(r"x $(\mu m)$")
-        ax[1].set_ylabel(r"y $(\mu m)$")
-        ax[1].title.set_text(r"$\delta Q^2$ " + f"{filename}")
+        c = ax[0, 1].pcolor(
+            x, y, heatmapdQ2, cmap="RdBu_r", vmin=-0.07, vmax=0.07, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[0, 1])
+        ax[0, 1].set_xlabel(r"x $(\mu m)$")
+        ax[0, 1].set_ylabel(r"y $(\mu m)$")
+        ax[0, 1].title.set_text(r"$\delta Q^2$ " + f"{filename}")
+
+        mu = np.mean(heatmapdQ1)
+        simga = np.std(heatmapdQ1)
+        heatmapdQ1Norm = (heatmapdQ1 - mu) / simga
+
+        c = ax[1, 0].pcolor(
+            x, y, heatmapdQ1Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[1, 0])
+        ax[1, 0].set_xlabel(r"x $(\mu m)$")
+        ax[1, 0].set_ylabel(r"y $(\mu m)$")
+        ax[1, 0].title.set_text(
+            r"$\sigma$ of $\delta Q^1 from \mu_{\delta Q^1}$ " + f"{filename}"
+        )
+
+        mu = np.mean(heatmapdQ2)
+        simga = np.std(heatmapdQ2)
+        heatmapdQ2Norm = (heatmapdQ2 - mu) / simga
+
+        c = ax[1, 1].pcolor(
+            x, y, heatmapdQ2Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[1, 1])
+        ax[1, 1].set_xlabel(r"x $(\mu m)$")
+        ax[1, 1].set_ylabel(r"y $(\mu m)$")
+        ax[1, 1].title.set_text(
+            r"$\sigma$ of $\delta Q^2 from \mu_{\delta Q^2}$ " + f"{filename}"
+        )
+
         fig.savefig(
             f"results/deltaQ heatmap {filename}",
             dpi=300,
@@ -172,7 +235,7 @@ if True:
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
         heatmapTr = np.zeros([grid, grid])
-        dft = df[df["Time"] == 0]
+        dft = df[df["T"] == 0]
         for i in range(grid):
             for j in range(grid):
                 x = [
@@ -193,14 +256,30 @@ if True:
         dx, dy = 110 / grid, 110 / grid
         x, y = np.mgrid[0:110:dx, 0:110:dy]
 
-        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        plt.subplots_adjust(wspace=0.3)
-        plt.gcf().subplots_adjust(bottom=0.15)
-        c = ax.pcolor(x, y, heatmapTr, shading="auto", vmin=-0.001, vmax=0.001)
-        fig.colorbar(c, ax=ax)
-        ax.set_xlabel(r"x $(\mu m)$")
-        ax.set_ylabel(r"y $(\mu m)$")
-        ax.title.set_text(r"Tr$(\langle Q \rangle \delta Q (r))$ " + f"{filename}")
+        fig, ax = plt.subplots(1, 2, figsize=(20, 8))
+        c = ax[0].pcolor(
+            x, y, heatmapTr, cmap="RdBu_r", vmin=-0.001, vmax=0.001, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[0])
+        ax[0].set_xlabel(r"x $(\mu m)$")
+        ax[0].set_ylabel(r"y $(\mu m)$")
+        ax[0].title.set_text(r"Tr$(\langle Q \rangle \delta Q (r))$ " + f"{filename}")
+
+        mu = np.mean(heatmapTr)
+        simga = np.std(heatmapTr)
+        heatmapTrNorm = (heatmapTr - mu) / simga
+
+        c = ax[1].pcolor(
+            x, y, heatmapTrNorm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
+        )
+        fig.colorbar(c, ax=ax[1])
+        ax[1].set_xlabel(r"x $(\mu m)$")
+        ax[1].set_ylabel(r"y $(\mu m)$")
+        ax[1].title.set_text(
+            r"$\sigma$ of Tr$(\langle Q \rangle \delta Q (r))$ from $\mu$ "
+            + f"{filename}"
+        )
+
         fig.savefig(
             f"results/trdQ heatmap {filename}",
             dpi=300,
@@ -215,7 +294,7 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
         heatmapW0 = np.zeros([grid, grid])
         heatmapW1 = np.zeros([grid, grid])
-        dft = df[df["Time"] == 0]
+        dft = df[df["T"] == 0]
         for i in range(grid):
             for j in range(grid):
                 x = [
@@ -241,20 +320,49 @@ if True:
         dx, dy = 110 / grid, 110 / grid
         x, y = np.mgrid[0:110:dx, 0:110:dy]
 
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        fig, ax = plt.subplots(2, 2, figsize=(12, 12))
         plt.subplots_adjust(wspace=0.3)
         plt.gcf().subplots_adjust(bottom=0.15)
-        c = ax[0].pcolor(x, y, heatmapW0, shading="auto", vmin=-1, vmax=1)
-        fig.colorbar(c, ax=ax[0])
-        ax[0].set_xlabel(r"x $(\mu m)$")
-        ax[0].set_ylabel(r"y $(\mu m)$")
-        ax[0].title.set_text(r"$W_1$ " + f"{filename}")
+        c = ax[0, 0].pcolor(
+            x, y, heatmapW0, cmap="RdBu_r", shading="auto", vmin=-1, vmax=1
+        )
+        fig.colorbar(c, ax=ax[0, 0])
+        ax[0, 0].set_xlabel(r"x $(\mu m)$")
+        ax[0, 0].set_ylabel(r"y $(\mu m)$")
+        ax[0, 0].title.set_text(r"$W_1$ " + f"{filename}")
 
-        c = ax[1].pcolor(x, y, heatmapW1, shading="auto", vmin=-1, vmax=1)
-        fig.colorbar(c, ax=ax[1])
-        ax[1].set_xlabel(r"x $(\mu m)$")
-        ax[1].set_ylabel(r"y $(\mu m)$")
-        ax[1].title.set_text(r"$W_2$ " + f"{filename}")
+        c = ax[0, 1].pcolor(
+            x, y, heatmapW1, cmap="RdBu_r", shading="auto", vmin=-1, vmax=1
+        )
+        fig.colorbar(c, ax=ax[0, 1])
+        ax[0, 1].set_xlabel(r"x $(\mu m)$")
+        ax[0, 1].set_ylabel(r"y $(\mu m)$")
+        ax[0, 1].title.set_text(r"$W_2$ " + f"{filename}")
+
+        mu = np.mean(heatmapW0)
+        simga = np.std(heatmapW0)
+        heatmapW0Norm = (heatmapW0 - mu) / simga
+
+        c = ax[1, 0].pcolor(
+            x, y, heatmapW0Norm, cmap="RdBu_r", shading="auto", vmin=-3, vmax=3
+        )
+        fig.colorbar(c, ax=ax[1, 0])
+        ax[1, 0].set_xlabel(r"x $(\mu m)$")
+        ax[1, 0].set_ylabel(r"y $(\mu m)$")
+        ax[1, 0].title.set_text(r"$\sigma$ of $W_1$ from $\mu$ " + f"{filename}")
+
+        mu = np.mean(heatmapW1)
+        simga = np.std(heatmapW1)
+        heatmapW1Norm = (heatmapW1 - mu) / simga
+
+        c = ax[1, 1].pcolor(
+            x, y, heatmapW1Norm, cmap="RdBu_r", shading="auto", vmin=-3, vmax=3
+        )
+        fig.colorbar(c, ax=ax[1, 1])
+        ax[1, 1].set_xlabel(r"x $(\mu m)$")
+        ax[1, 1].set_ylabel(r"y $(\mu m)$")
+        ax[1, 1].title.set_text(r"$\sigma$ of $W_2$ from $\mu$ " + f"{filename}")
+
         fig.savefig(
             f"results/W heatmap {filename}",
             dpi=300,

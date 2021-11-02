@@ -97,6 +97,7 @@ for filename in filenames:
                         "q": cell.qTensor(polygon),
                         "Trace(S)": cell.traceS(polygon),
                         "Polar": cell.polar(polygon),
+                        "uhat": cell.polarUnit(polygon),
                     }
                 )
 

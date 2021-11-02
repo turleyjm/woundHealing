@@ -132,7 +132,7 @@ filenames = [
 frameRates = ["1f", "2f", "3f"]
 
 # first stage Confusion Matrix
-if False:
+if True:
     print("")
     print("frameRates", "True Pos", "False Pos", "False Neg")
     for frameRate in frameRates:
@@ -140,7 +140,7 @@ if False:
         _dfConfusion = []
         for filename in filenames:
             dfDL = pd.read_pickle(
-                f"databases/firstStageDatabases/dfDivisionDL{frameRate}{filename}.pkl"
+                f"databases010921/firstStageDatabases/dfDivisionDL{frameRate}{filename}.pkl"
             )
             dfDivisions = pd.read_pickle(
                 f"dat010921/{filename}/mitosisTracks{filename}.pkl"
@@ -232,7 +232,7 @@ if False:
                     )
 
         dfConfusion = pd.DataFrame(_dfConfusion)
-        dfConfusion.to_pickle(f"databases/dfConfusionFS{frameRate}{fileType}.pkl")
+        dfConfusion.to_pickle(f"databases010921/dfConfusionFS{frameRate}{fileType}.pkl")
         falseNeg = len(dfConfusion[dfConfusion["Label DL"].isnull()])
         falsePos = len(dfConfusion[dfConfusion["Label"].isnull()])
         print(
@@ -243,10 +243,10 @@ if False:
         )
 
 # first stage
-if False:
+if True:
     for frameRate in frameRates:
         dfConfusion = pd.read_pickle(
-            f"databases/dfConfusionFS{frameRate}{fileType}.pkl"
+            f"databases010921/dfConfusionFS{frameRate}{fileType}.pkl"
         )
 
         for filename in filenames:
@@ -395,7 +395,7 @@ if False:
 # orientation training set
 if False:
     for frameRate in frameRates:
-        dfConfusion = pd.read_pickle(f"databases/dfConfusionFS1f{fileType}.pkl")
+        dfConfusion = pd.read_pickle(f"databases010921/dfConfusionFS1f{fileType}.pkl")
         label = 0
 
         for filename in filenames:
@@ -519,7 +519,7 @@ if False:
 
 
 # Confusion Matrix
-if False:
+if True:
     print("")
     print("frameRates", "True Pos", "False Pos", "False Neg")
     for frameRate in frameRates:
@@ -527,7 +527,7 @@ if False:
         _dfConfusion = []
         for filename in filenames:
             dfDL = pd.read_pickle(
-                f"databases/outputDL/divisions{frameRate}{filename}.pkl"
+                f"databases010921/outputDL/divisions{frameRate}{filename}.pkl"
             )
             dfDivisions = pd.read_pickle(
                 f"dat010921/{filename}/mitosisTracks{filename}.pkl"
@@ -610,17 +610,17 @@ if False:
                     )
 
         dfConfusion = pd.DataFrame(_dfConfusion)
-        dfConfusion.to_pickle(f"databases/dfConfusion{frameRate}{fileType}.pkl")
+        dfConfusion.to_pickle(f"databases010921/dfConfusion{frameRate}{fileType}.pkl")
         falseNeg = len(dfConfusion[dfConfusion["Label DL"].isnull()])
         falsePos = len(dfConfusion[dfConfusion["Label"].isnull()])
         print(frameRate, len(dfConfusion) - falsePos - falseNeg, falsePos, falseNeg)
 
 
 # second stage
-if False:
+if True:
     for frameRate in frameRates:
         dfConfusion = pd.read_pickle(
-            f"databases/dfConfusionFS{frameRate}{fileType}.pkl"
+            f"databases010921/dfConfusionFS{frameRate}{fileType}.pkl"
         )
 
         for filename in filenames:
@@ -765,9 +765,9 @@ if False:
                 )
 
 # show false positives and negatives
-if False:
+if True:
     for frameRate in frameRates:
-        dfConfusion = pd.read_pickle(f"databases/dfConfusion{frameRate}{fileType}.pkl")
+        dfConfusion = pd.read_pickle(f"databases010921/dfConfusion{frameRate}{fileType}.pkl")
 
         for filename in filenames:
 
@@ -894,7 +894,7 @@ if True:
         dfDiv = pd.DataFrame(_dfDiv)
 
         dfOldDiv = pd.read_pickle(
-            f"databases/old division datasets/mitosisTracks{filename}.pkl"
+            f"databases010921/old division datasets/mitosisTracks{filename}.pkl"
         )
         dfOldDiv = dfOldDiv[dfOldDiv["Chain"] == "parent"]
         _dfOldDiv = []
@@ -971,7 +971,7 @@ if True:
                 )
 
     dfConfusion = pd.DataFrame(_dfConfusion)
-    dfConfusion.to_pickle(f"databases/dfConfusionOldData{fileType}.pkl")
+    dfConfusion.to_pickle(f"databases010921/dfConfusionOldData{fileType}.pkl")
     falseNeg = len(dfConfusion[dfConfusion["Label Old"].isnull()])
     falsePos = len(dfConfusion[dfConfusion["Label"].isnull()])
     print("Old Data", len(dfConfusion) - falsePos - falseNeg, falsePos, falseNeg)
@@ -981,13 +981,13 @@ if True:
 
 
 # orientation error
-if False:
+if True:
     for frameRate in frameRates:
         _dfConfusion = []
         T, frameNum = findT(frameRate)
         for filename in filenames:
             dfDL = pd.read_pickle(
-                f"databases/outputDL/divisions{frameRate}{filename}.pkl"
+                f"databases010921/outputDL/divisions{frameRate}{filename}.pkl"
             )
 
             dfDivisions = pd.read_pickle(
@@ -1048,7 +1048,7 @@ if False:
 
         dfConfusion = pd.DataFrame(_dfConfusion)
         dfConfusion.to_pickle(
-            f"databases/dfConfusionOrientation{frameRate}{fileType}.pkl"
+            f"databases010921/dfConfusionOrientation{frameRate}{fileType}.pkl"
         )
 
         # err = np.array(dfConfusion["Orientation Error"])
