@@ -240,3 +240,15 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name="shiftedcmap"):
     plt.register_cmap(cmap=newcmap)
 
     return newcmap
+
+
+def rotation_matrix(theta):
+
+    R = np.array(
+        [
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)],
+        ]
+    )
+
+    return R

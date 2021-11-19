@@ -36,13 +36,51 @@ plt.rcParams.update({"font.size": 16})
 
 filenames, fileType = cl.getFilesType()
 
-T = 93
+T = 90
 scale = 123.26 / 512
-L = 123.26
 grid = 11
 timeGrid = 9
 
 # -------------------
+
+
+def fillGaps(Correlation):
+
+    for t in range(9):
+        Correlation[t, :, 0] = Correlation[t, 0, 0]
+
+    Correlation[:, 1, 1] = (Correlation[:, 0, 1] + Correlation[:, 2, 1]) / 2
+    Correlation[:, 6, 1] = (Correlation[:, 5, 1] + Correlation[:, 7, 1]) / 2
+    Correlation[:, 11, 1] = (Correlation[:, 10, 1] + Correlation[:, 12, 1]) / 2
+    Correlation[:, 16, 1] = (Correlation[:, 15, 1] + Correlation[:, 17, 1]) / 2
+
+    Correlation[:, 3, 1] = (2 * Correlation[:, 2, 1] + Correlation[:, 5, 1]) / 3
+    Correlation[:, 4, 1] = (Correlation[:, 2, 1] + 2 * Correlation[:, 5, 1]) / 3
+
+    Correlation[:, 8, 1] = (2 * Correlation[:, 7, 1] + Correlation[:, 10, 1]) / 3
+    Correlation[:, 9, 1] = (Correlation[:, 7, 1] + 2 * Correlation[:, 10, 1]) / 3
+
+    Correlation[:, 13, 1] = (2 * Correlation[:, 12, 1] + Correlation[:, 15, 1]) / 3
+    Correlation[:, 14, 1] = (Correlation[:, 12, 1] + 2 * Correlation[:, 15, 1]) / 3
+
+    Correlation[:, 18, 1] = (2 * Correlation[:, 17, 1] + Correlation[:, 20, 1]) / 3
+    Correlation[:, 19, 1] = (Correlation[:, 17, 1] + 2 * Correlation[:, 0, 1]) / 3
+
+    Correlation[:, 4, 2] = (Correlation[:, 3, 2] + Correlation[:, 5, 2]) / 2
+    Correlation[:, 9, 2] = (Correlation[:, 8, 2] + Correlation[:, 10, 2]) / 2
+    Correlation[:, 14, 2] = (Correlation[:, 13, 2] + Correlation[:, 15, 2]) / 2
+    Correlation[:, 19, 2] = (Correlation[:, 18, 2] + Correlation[:, 0, 2]) / 2
+
+    Correlation[:, 2, 3] = (Correlation[:, 1, 3] + Correlation[:, 3, 3]) / 2
+    Correlation[:, 4, 3] = (Correlation[:, 3, 3] + Correlation[:, 5, 3]) / 2
+    Correlation[:, 7, 3] = (Correlation[:, 6, 3] + Correlation[:, 8, 3]) / 2
+    Correlation[:, 9, 3] = (Correlation[:, 8, 3] + Correlation[:, 10, 3]) / 2
+    Correlation[:, 12, 3] = (Correlation[:, 11, 3] + Correlation[:, 13, 3]) / 2
+    Correlation[:, 14, 3] = (Correlation[:, 13, 3] + Correlation[:, 15, 3]) / 2
+    Correlation[:, 17, 3] = (Correlation[:, 16, 3] + Correlation[:, 18, 3]) / 2
+    Correlation[:, 19, 3] = (Correlation[:, 18, 3] + Correlation[:, 0, 3]) / 2
+
+    return Correlation
 
 
 def exponential(x, coeffs):
@@ -57,42 +95,99 @@ def residualsExponential(coeffs, y, x):
 
 # -------------------
 
-_df2 = []
 if False:
+    _df2 = []
+    _df = []
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        Q = np.mean(df["q"])
+        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
+        R = cl.rotation_matrix(-theta0)
+
+        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        mig = np.zeros(2)
 
         for t in range(T):
             dft = df[df["Time"] == t]
-            Q = np.mean(dft["q"])
-            W = np.mean(dft["uhat"])
+            v = np.mean(dft["Velocity"]) * scale
+            v = np.matmul(R, v)
+            _df.append(
+                {
+                    "Filename": filename,
+                    "T": t,
+                    "v": v,
+                }
+            )
+
+            for i in range(len(dft)):
+                x = dft["X"].iloc[i] * scale
+                y = dft["Y"].iloc[i] * scale
+                dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - v
+                [x, y] = np.matmul(R, np.array([x, y]))
+
+                _df2.append(
+                    {
+                        "Filename": filename,
+                        "T": t,
+                        "X": x - mig[0],
+                        "Y": y - mig[1],
+                        "dv": dv,
+                    }
+                )
+            mig += v
+
+    dfVelocityMean = pd.DataFrame(_df)
+    dfVelocityMean.to_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+    dfVelocity = pd.DataFrame(_df2)
+    dfVelocity.to_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
+
+else:
+    dfVelocity = pd.read_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
+    dfVelocityMean = pd.read_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+
+if False:
+    _df2 = []
+    for filename in filenames:
+
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
+        mig = np.zeros(2)
+        Q = np.mean(df["q"])
+        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
+        R = cl.rotation_matrix(-theta0)
+
+        for t in range(T):
+            dft = df[df["Time"] == t]
+            Q = np.matmul(R, np.mean(dft["q"]))
+            P = np.matmul(R, np.mean(dft["Polar"]))
 
             for i in range(len(dft)):
                 [x, y] = [
                     dft["Centroid"].iloc[i][0] * scale,
                     dft["Centroid"].iloc[i][1] * scale,
                 ]
-                dQ = dft["q"].iloc[i] - Q
+                dQ = np.matmul(R, dft["q"].iloc[i]) - Q
                 A = dft["Area"].iloc[i] * scale ** 2
                 TrdQ = np.trace(np.matmul(Q, dQ))
-                Pol = dft["Polar"].iloc[i]
-                deltauhat = dft["uhat"].iloc[i] - W
+                dp = np.matmul(R, dft["Polar"].iloc[i]) - P
+                [x, y] = np.matmul(R, np.array([x, y]))
 
                 _df2.append(
                     {
                         "Filename": filename,
                         "T": t,
-                        "X": x,
-                        "Y": y,
+                        "X": x - mig[0],
+                        "Y": y - mig[1],
                         "dQ": dQ,
                         "Q": Q,
                         "TrdQ": TrdQ,
                         "Area": A,
-                        "Polar": Pol,
-                        "deltauhat": deltauhat,
+                        "Polar": dp,
                     }
                 )
+
+            mig += np.array(dfFilename["v"][dfFilename["T"] == t])[0]
 
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfContinuum{fileType}.pkl")
@@ -100,146 +195,354 @@ if False:
 else:
     dfShape = pd.read_pickle(f"databases/dfContinuum{fileType}.pkl")
 
-_df = []
+xMax = np.max(dfShape["X"])
+xMin = np.min(dfShape["X"])
+yMax = np.max(dfShape["Y"])
+yMin = np.min(dfShape["Y"])
+xGrid = int(1 + (xMax - xMin) // 10)
+yGrid = int(1 + (yMax - yMin) // 10)
+
+# delta velocity space time correlation
 if True:
-    for filename in filenames:
-
-        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
-
-        for t in range(T):
-            dft = df[df["Time"] == t]
-            v = np.mean(dft["Velocity"]) * scale
-
-            for i in range(len(dft)):
-                x = dft["X"].iloc[i] * scale
-                y = dft["Y"].iloc[i] * scale
-                dv = dft["Velocity"].iloc[i] * scale - v
-
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": t,
-                        "X": x,
-                        "Y": y,
-                        "dv": dv,
-                    }
-                )
-
-    dfVelocity = pd.DataFrame(_df2)
-    dfVelocity.to_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
-
-else:
-    dfVelocity = pd.read_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
-
-# delta rho Q and uhat space time correlation
-if True:
-    T = np.array(range(timeGrid)) * 10
-    R = np.array(range(grid)) * 10
+    T = np.linspace(0, 10 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 10 * (grid - 1), grid)
+    deltaQ = [[[] for col in range(len(R))] for col in range(len(T))]
+    deltaQ1 = [[[] for col in range(len(R))] for col in range(len(T))]
+    deltaQ2 = [[[] for col in range(len(R))] for col in range(len(T))]
+    rho = [[[] for col in range(len(R))] for col in range(len(T))]
     v = [[[] for col in range(len(R))] for col in range(len(T))]
+    deltaP = [[[] for col in range(len(R))] for col in range(len(T))]
     for filename in filenames:
 
-        df = dfVelocity[dfVelocity["Filename"] == filename]
-        heatmapdv1 = np.zeros([90, grid, grid])
-        heatmapdv2 = np.zeros([90, grid, grid])
-
-        # outPlanePixel = sm.io.imread(
-        #         f"dat/{filename}/outPlane{filename}.tif"
-        #     ).astype(float)
-        # outPlane = []
-        # for t in range(90):
-        #     img = Image.fromarray(outPlanePixel[t])
-        #     outPlane.append(np.array(img.resize((124, 124)))[7:117, 7:117])
-        # outPlane = np.array(outPlane)
-        # outPlane[outPlane > 50] = 255
-        # outPlane[outPlane < 0] = 0
-        # outPlane[outPlane == 255] = 1
-
-        outPlane = np.ones([90, 124, 124])
+        dfVel = dfVelocity[dfVelocity["Filename"] == filename]
+        df = dfShape[dfShape["Filename"] == filename]
+        heatmapdv1 = np.zeros([90, xGrid, yGrid])
+        heatmapdv2 = np.zeros([90, xGrid, yGrid])
+        heatmapdrho = np.zeros([90, xGrid, yGrid])
+        heatmapdQ1 = np.zeros([90, xGrid, yGrid])
+        heatmapdQ2 = np.zeros([90, xGrid, yGrid])
+        heatmapP1 = np.zeros([90, xGrid, yGrid])
+        heatmapP2 = np.zeros([90, xGrid, yGrid])
+        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+        inPlaneH2 = np.zeros([90, xGrid, yGrid])
 
         for t in range(90):
+            dftVel = dfVel[dfVel["T"] == t]
             dft = df[df["T"] == t]
-            for i in range(grid):
-                for j in range(grid):
+            for i in range(xGrid):
+                for j in range(yGrid):
                     x = [
-                        (L - 110) / 2 + i * 110 / grid,
-                        (L - 110) / 2 + (i + 1) * 110 / grid,
+                        xMin + i * 10,
+                        xMin + (i + 1) * 10,
                     ]
                     y = [
-                        (L - 110) / 2 + j * 110 / grid,
-                        (L - 110) / 2 + (j + 1) * 110 / grid,
+                        yMin + j * 10,
+                        yMin + (j + 1) * 10,
                     ]
+                    dfgVel = cl.sortGrid(dftVel, x, y)
+                    if list(dfgVel["dv"]) != []:
+                        heatmapdv1[t, i, j] = np.mean(dfgVel["dv"], axis=0)[0]
+                        heatmapdv2[t, i, j] = np.mean(dfgVel["dv"], axis=0)[1]
+                        inPlaneH2[t, i, j] = 1
+
                     dfg = cl.sortGrid(dft, x, y)
-                    if list(dfg["dv"]) != []:
-                        heatmapdv1[t, i, j] = np.mean(dfg["dv"], axis=0)[0]
-                        heatmapdv2[t, i, j] = np.mean(dfg["dv"], axis=0)[1]
+                    if list(dfg["Area"]) != []:
+                        heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
+                        heatmapdQ1[t, i, j] = np.mean(dfg["dQ"], axis=0)[0, 0]
+                        heatmapdQ2[t, i, j] = np.mean(dfg["dQ"], axis=0)[1, 0]
+                        heatmapP1[t, i, j] = np.mean(dfg["Polar"], axis=0)[0]
+                        heatmapP2[t, i, j] = np.mean(dfg["Polar"], axis=0)[1]
+                        inPlaneEcad[t, i, j] = 1
 
-            heatmapdv1[t] = heatmapdv1[t] - np.mean(heatmapdv1[t])
-            heatmapdv2[t] = heatmapdv2[t] - np.mean(heatmapdv2[t])
+            heatmapdrho[t] = heatmapdrho[t] - np.mean(
+                heatmapdrho[t][inPlaneEcad[t] == 1]
+            )
 
-        for i in range(grid):
-            for j in range(grid):
+        for i in range(xGrid):
+            for j in range(yGrid):
                 for t in T:
+                    t = int(t)
+                    deltarho = np.mean(heatmapdrho[t : t + 10, i, j])
+                    dQ1 = np.mean(heatmapdQ1[t : t + 10, i, j])
+                    dQ2 = np.mean(heatmapdQ2[t : t + 10, i, j])
+                    dP1 = np.mean(heatmapP1[t : t + 10, i, j])
+                    dP2 = np.mean(heatmapP2[t : t + 10, i, j])
+                    if np.sum(inPlaneEcad[t : t + 10, i, j]) > 0:
+                        for idash in range(xGrid):
+                            for jdash in range(yGrid):
+                                for tdash in T:
+                                    tdash = int(tdash)
+                                    deltaT = int((tdash - t) / 10)
+                                    deltaR = int(
+                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
+                                    )
+                                    if deltaR < grid:
+                                        if deltaT >= 0 and deltaT < timeGrid:
+                                            if (
+                                                np.sum(
+                                                    inPlaneEcad[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                > 0
+                                            ):
+
+                                                dQ1dash = np.mean(
+                                                    heatmapdQ1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dQ2dash = np.mean(
+                                                    heatmapdQ2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                deltaQ[deltaT][deltaR].append(
+                                                    2 * (dQ1 * dQ1dash)
+                                                    + 2 * (dQ2 * dQ2dash)
+                                                )
+                                                deltaQ1[deltaT][deltaR].append(
+                                                    dQ1 * dQ1dash
+                                                )
+                                                deltaQ2[deltaT][deltaR].append(
+                                                    dQ2 * dQ2dash
+                                                )
+
+                                                rho[deltaT][deltaR].append(
+                                                    deltarho
+                                                    * np.mean(
+                                                        heatmapdrho[
+                                                            tdash : tdash + 10,
+                                                            idash,
+                                                            jdash,
+                                                        ]
+                                                    )
+                                                )
+
+                                                dP1dash = np.mean(
+                                                    heatmapP1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dP2dash = np.mean(
+                                                    heatmapP2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                deltaP[deltaT][deltaR].append(
+                                                    (dP1 * dP1dash) + (dP2 * dP2dash)
+                                                )
+
+        for i in range(xGrid):
+            for j in range(yGrid):
+                for t in T:
+                    t = int(t)
                     dv1 = np.mean(heatmapdv1[t : t + 10, i, j])
                     dv2 = np.mean(heatmapdv2[t : t + 10, i, j])
-                    for idash in range(grid):
-                        for jdash in range(grid):
-                            for tdash in T:
-                                deltaT = int((tdash - t) / 10)
-                                deltaR = int(
-                                    ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
-                                )
-                                if deltaR < grid:
-                                    if deltaT >= 0 and deltaT < timeGrid:
-                                        dv1dash = np.mean(
-                                            heatmapdv1[tdash : tdash + 10, idash, jdash]
-                                        )
-                                        dv2dash = np.mean(
-                                            heatmapdv2[tdash : tdash + 10, idash, jdash]
-                                        )
-                                        v[deltaT][deltaR].append(
-                                            (dv1 * dv1dash) + (dv2 * dv2dash)
-                                        )
+                    if np.sum(inPlaneH2[t : t + 10, i, j]) > 0:
+                        for idash in range(xGrid):
+                            for jdash in range(yGrid):
+                                for tdash in T:
+                                    tdash = int(tdash)
+                                    deltaT = int((tdash - t) / 10)
+                                    deltaR = int(
+                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
+                                    )
+                                    if deltaR < grid:
+                                        if deltaT >= 0 and deltaT < timeGrid:
+                                            if (
+                                                np.sum(
+                                                    inPlaneH2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                > 0
+                                            ):
 
+                                                dv1dash = np.mean(
+                                                    heatmapdv1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dv2dash = np.mean(
+                                                    heatmapdv2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                v[deltaT][deltaR].append(
+                                                    (dv1 * dv1dash) + (dv2 * dv2dash)
+                                                )
+
+    deltaQCorrelation = [[] for col in range(len(T))]
+    deltaQ1Correlation = [[] for col in range(len(T))]
+    deltaQ2Correlation = [[] for col in range(len(T))]
+    rhoCorrelation = [[] for col in range(len(T))]
     vCorrelation = [[] for col in range(len(T))]
+    deltaPCorrelation = [[] for col in range(len(T))]
+
     for i in range(len(T)):
         for j in range(len(R)):
+            deltaQCorrelation[i].append(np.mean(deltaQ[i][j]))
+            deltaQ1Correlation[i].append(np.mean(deltaQ1[i][j]))
+            deltaQ2Correlation[i].append(np.mean(deltaQ2[i][j]))
+            rhoCorrelation[i].append(np.mean(rho[i][j]))
             vCorrelation[i].append(np.mean(v[i][j]))
+            deltaPCorrelation[i].append(np.mean(deltaP[i][j]))
 
+    deltaQCorrelation = np.array(deltaQCorrelation)
+    deltaQCorrelation = np.nan_to_num(deltaQCorrelation)
+    deltaQ1Correlation = np.array(deltaQ1Correlation)
+    deltaQ1Correlation = np.nan_to_num(deltaQ1Correlation)
+    deltaQ2Correlation = np.array(deltaQ2Correlation)
+    deltaQ2Correlation = np.nan_to_num(deltaQ2Correlation)
+    rhoCorrelation = np.array(rhoCorrelation)
+    rhoCorrelation = np.nan_to_num(rhoCorrelation)
     vCorrelation = np.array(vCorrelation)
     vCorrelation = np.nan_to_num(vCorrelation)
+    deltaPCorrelation = np.array(deltaPCorrelation)
+    deltaPCorrelation = np.nan_to_num(deltaPCorrelation)
 
-    deltavStd = np.mean(heatmapdv1 ** 2 + heatmapdv2 ** 2)
+    deltaQVar = np.mean(
+        2 * heatmapdQ1[inPlaneEcad == 1] ** 2 + 2 * heatmapdQ2[inPlaneEcad == 1] ** 2
+    )
+    deltaQ1Var = np.mean(heatmapdQ1[inPlaneEcad == 1] ** 2)
+    deltaQ2Var = np.mean(heatmapdQ2[inPlaneEcad == 1] ** 2)
+    deltarhoVar = np.mean(heatmapdrho[inPlaneEcad == 1] ** 2)
+    deltavVar = np.mean(
+        heatmapdv1[inPlaneH2 == 1] ** 2 + heatmapdv2[inPlaneH2 == 1] ** 2
+    )
+    deltaPVar = np.mean(
+        heatmapP1[inPlaneEcad == 1] ** 2 + heatmapP2[inPlaneEcad == 1] ** 2
+    )
 
     _df = []
 
     _df.append(
         {
+            "deltaQ": deltaQ,
+            "deltaQCorrelation": deltaQCorrelation,
+            "deltaQVar": deltaQVar,
+            "deltaQ1": deltaQ1,
+            "deltaQ1Correlation": deltaQ1Correlation,
+            "deltaQ1Var": deltaQ1Var,
+            "deltaQ2": deltaQ2,
+            "deltaQ2Correlation": deltaQ2Correlation,
+            "deltaQ2Var": deltaQ2Var,
+            "rho": rho,
+            "rhoCorrelation": rhoCorrelation,
+            "deltarhoVar": deltarhoVar,
             "v": v,
             "vCorrelation": vCorrelation,
-            "deltavStd": deltavStd,
+            "deltavVar": deltavVar,
+            "deltaP": deltaP,
+            "deltaPCorrelation": deltaPCorrelation,
+            "deltaPVar": deltaPVar,
         }
     )
 
     df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/continuumCorrelationVelocity{fileType}.pkl")
+    df.to_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+
+if True:
+    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    deltaQCorrelation = df["deltaQCorrelation"].iloc[0]
+    deltaQ1Correlation = df["deltaQ1Correlation"].iloc[0]
+    deltaQ2Correlation = df["deltaQ2Correlation"].iloc[0]
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+    vCorrelation = df["vCorrelation"].iloc[0]
+    deltaPCorrelation = df["deltaPCorrelation"].iloc[0]
 
     t, r = np.mgrid[0:180:20, 0:110:10]
-    fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+    fig, ax = plt.subplots(2, 3, figsize=(30, 16))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
+    maxCorr = np.max([deltaQCorrelation, -deltaQCorrelation])
+
+    c = ax[0, 0].pcolor(
+        t,
+        r,
+        deltaQCorrelation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(r"Correlation of $\delta Q$" + f" {fileType}")
+
+    maxCorr = np.max([deltaQ1Correlation, -deltaQ1Correlation])
+
+    c = ax[0, 1].pcolor(
+        t,
+        r,
+        deltaQ1Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q_1$" + f" {fileType}")
+
+    maxCorr = np.max([deltaQ2Correlation, -deltaQ2Correlation])
+
+    c = ax[0, 2].pcolor(
+        t,
+        r,
+        deltaQ2Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 2])
+    ax[0, 2].set_xlabel("Time (min)")
+    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].title.set_text(r"Correlation of $\delta Q_2$" + f" {fileType}")
+
+    maxCorr = np.max([rhoCorrelation, -rhoCorrelation])
+
+    c = ax[1, 0].pcolor(
+        t, r, rhoCorrelation, cmap="RdBu_r", vmin=-maxCorr, vmax=maxCorr, shading="auto"
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+
     maxCorr = np.max([vCorrelation, -vCorrelation])
 
-    c = ax.pcolor(
+    c = ax[1, 1].pcolor(
         t, r, vCorrelation, cmap="RdBu_r", vmin=-maxCorr, vmax=maxCorr, shading="auto"
     )
-    fig.colorbar(c, ax=ax)
-    ax.set_xlabel("Time (min)")
-    ax.set_ylabel(r"$R (\mu m)$ ")
-    ax.title.set_text(r"Correlation of $\delta v$" + f" {fileType}")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (min)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Correlation of $\delta v$" + f" {fileType}")
+
+    maxCorr = np.max([deltaPCorrelation, -deltaPCorrelation])
+
+    c = ax[1, 2].pcolor(
+        t,
+        r,
+        deltaPCorrelation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 2])
+    ax[1, 2].set_xlabel("Time (min)")
+    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].title.set_text(r"Correlation of $\delta P$" + f" {fileType}")
 
     fig.savefig(
-        f"results/Correlation velocity {fileType}",
+        f"results/Correlation {fileType}",
         dpi=300,
         transparent=True,
     )
@@ -247,21 +550,107 @@ if True:
 
     # -------------------
 
+if True:
+    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    deltaQCorrelation = df["deltaQCorrelation"].iloc[0]
+    deltaQ1Correlation = df["deltaQ1Correlation"].iloc[0]
+    deltaQ2Correlation = df["deltaQ2Correlation"].iloc[0]
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+    vCorrelation = df["vCorrelation"].iloc[0]
+    deltaPCorrelation = df["deltaPCorrelation"].iloc[0]
+
+    deltaQVar = df["deltaQVar"].iloc[0]
+    deltaQ1Var = df["deltaQ1Var"].iloc[0]
+    deltaQ2Var = df["deltaQ2Var"].iloc[0]
+    deltarhoVar = df["deltarhoVar"].iloc[0]
+    deltavVar = df["deltavVar"].iloc[0]
+    deltaPVar = df["deltaPVar"].iloc[0]
+
     t, r = np.mgrid[0:180:20, 0:110:10]
-    fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+    fig, ax = plt.subplots(2, 3, figsize=(30, 16))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    c = ax.pcolor(
-        t, r, vCorrelation / deltavStd, cmap="RdBu_r", vmin=-1, vmax=1, shading="auto"
+    c = ax[0, 0].pcolor(
+        t,
+        r,
+        deltaQCorrelation / deltaQVar,
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        shading="auto",
     )
-    fig.colorbar(c, ax=ax)
-    ax.set_xlabel("Time (min)")
-    ax.set_ylabel(r"$R (\mu m)$ ")
-    ax.title.set_text(r"Correlation of $\delta v$" + f" {fileType}")
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(r"Correlation of $\delta Q$ Norm" + f" {fileType}")
+
+    c = ax[0, 1].pcolor(
+        t,
+        r,
+        deltaQ1Correlation / deltaQ1Var,
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q_1$ Norm" + f" {fileType}")
+
+    c = ax[0, 2].pcolor(
+        t,
+        r,
+        deltaQ2Correlation / deltaQ2Var,
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 2])
+    ax[0, 2].set_xlabel("Time (min)")
+    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].title.set_text(r"Correlation of $\delta Q_2$ Norm" + f" {fileType}")
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        rhoCorrelation / deltarhoVar,
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Correlation of $\delta \rho$ Norm" + f" {fileType}")
+
+    c = ax[1, 1].pcolor(
+        t, r, vCorrelation / deltavVar, cmap="RdBu_r", vmin=-1, vmax=1, shading="auto"
+    )
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (min)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Correlation of $\delta v$ Norm" + f" {fileType}")
+
+    c = ax[1, 2].pcolor(
+        t,
+        r,
+        deltaPCorrelation / deltaPVar,
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 2])
+    ax[1, 2].set_xlabel("Time (min)")
+    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].title.set_text(r"Correlation of $\delta P$ Norm" + f" {fileType}")
 
     fig.savefig(
-        f"results/Correlation velocity {fileType} Norm",
+        f"results/Correlation {fileType} Norm",
         dpi=300,
         transparent=True,
     )
@@ -339,187 +728,258 @@ if False:
     plt.close("all")
 
 
-# delta rho Q and uhat direction space time correlation
+# delta rho Q and P direction space time correlation
 if False:
     T = np.array(range(timeGrid)) * 10
     R = np.linspace(0, 10 * (grid - 1), grid)
     theta = np.linspace(0, 2 * np.pi, 21)
-    rho = [
-        [[[] for col in range(len(theta))] for col in range(len(R))]
-        for col in range(len(T))
-    ]
     deltaQ = [
         [[[] for col in range(len(theta))] for col in range(len(R))]
         for col in range(len(T))
     ]
-    deltauhat = [
+    deltaQ1 = [
+        [[[] for col in range(len(theta))] for col in range(len(R))]
+        for col in range(len(T))
+    ]
+    deltaQ2 = [
+        [[[] for col in range(len(theta))] for col in range(len(R))]
+        for col in range(len(T))
+    ]
+    rho = [
+        [[[] for col in range(len(theta))] for col in range(len(R))]
+        for col in range(len(T))
+    ]
+    v = [
+        [[[] for col in range(len(theta))] for col in range(len(R))]
+        for col in range(len(T))
+    ]
+    deltaP = [
         [[[] for col in range(len(theta))] for col in range(len(R))]
         for col in range(len(T))
     ]
     for filename in filenames:
 
         df = dfShape[dfShape["Filename"] == filename]
-        Q = np.mean(df["Q"])
-        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
-        heatmapdrho = np.zeros([90, grid, grid])
-        heatmapdQ1 = np.zeros([90, grid, grid])
-        heatmapdQ2 = np.zeros([90, grid, grid])
-        heatmapuhat1 = np.zeros([90, grid, grid])
-        heatmapuhat2 = np.zeros([90, grid, grid])
-
-        # outPlanePixel = sm.io.imread(
-        #         f"dat/{filename}/outPlane{filename}.tif"
-        #     ).astype(float)
-        # outPlane = []
-        # for t in range(90):
-        #     img = Image.fromarray(outPlanePixel[t])
-        #     outPlane.append(np.array(img.resize((124, 124)))[7:117, 7:117])
-        # outPlane = np.array(outPlane)
-        # outPlane[outPlane > 50] = 255
-        # outPlane[outPlane < 0] = 0
-        # outPlane[outPlane == 255] = 1
-
-        outPlane = np.ones([90, 124, 124])
+        dfVel = dfVelocity[dfVelocity["Filename"] == filename]
+        heatmapdrho = np.zeros([90, xGrid, yGrid])
+        heatmapdQ1 = np.zeros([90, xGrid, yGrid])
+        heatmapdv2 = np.zeros([90, xGrid, yGrid])
+        heatmapdv1 = np.zeros([90, xGrid, yGrid])
+        heatmapdQ2 = np.zeros([90, xGrid, yGrid])
+        heatmapP1 = np.zeros([90, xGrid, yGrid])
+        heatmapP2 = np.zeros([90, xGrid, yGrid])
+        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+        inPlaneH2 = np.zeros([90, xGrid, yGrid])
 
         for t in range(90):
             dft = df[df["T"] == t]
-            for i in range(grid):
-                for j in range(grid):
+            dftVel = dfVel[dfVel["T"] == t]
+            for i in range(xGrid):
+                for j in range(yGrid):
                     x = [
-                        (L - 110) / 2 + i * 110 / grid,
-                        (L - 110) / 2 + (i + 1) * 110 / grid,
+                        xMin + i * 10,
+                        xMin + (i + 1) * 10,
                     ]
                     y = [
-                        (L - 110) / 2 + j * 110 / grid,
-                        (L - 110) / 2 + (j + 1) * 110 / grid,
+                        yMin + j * 10,
+                        yMin + (j + 1) * 10,
                     ]
-                    area = np.sum(
-                        outPlane[
-                            t, round(x[0]) : round(x[1]), round(y[0]) : round(y[1])
-                        ]
-                    )
+                    dfgVel = cl.sortGrid(dftVel, x, y)
+                    if list(dfgVel["dv"]) != []:
+                        heatmapdv1[t, i, j] = np.mean(dfgVel["dv"], axis=0)[0]
+                        heatmapdv2[t, i, j] = np.mean(dfgVel["dv"], axis=0)[1]
+                        inPlaneH2[t, i, j] = 1
+
                     dfg = cl.sortGrid(dft, x, y)
                     if list(dfg["Area"]) != []:
-                        heatmapdrho[t, i, j] = len(dfg["Area"]) / area
+                        heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
                         heatmapdQ1[t, i, j] = np.mean(dfg["dQ"], axis=0)[0, 0]
                         heatmapdQ2[t, i, j] = np.mean(dfg["dQ"], axis=0)[1, 0]
-                        heatmapuhat1[t, i, j] = np.mean(dfg["deltauhat"], axis=0)[0]
-                        heatmapuhat2[t, i, j] = np.mean(dfg["deltauhat"], axis=0)[1]
+                        heatmapP1[t, i, j] = np.mean(dfg["Polar"], axis=0)[0]
+                        heatmapP2[t, i, j] = np.mean(dfg["Polar"], axis=0)[1]
+                        inPlaneEcad[t, i, j] = 1
 
-            heatmapdrho[t] = heatmapdrho[t] - np.mean(heatmapdrho[t])
+            heatmapdrho[t] = heatmapdrho[t] - np.mean(
+                heatmapdrho[t][inPlaneEcad[t] == 1]
+            )
 
-            if False:
-                dx, dy = 110 / grid, 110 / grid
-                xdash, ydash = np.mgrid[0:110:dx, 0:110:dy]
-
-                fig, ax = plt.subplots()
-                c = ax.pcolor(
-                    xdash,
-                    ydash,
-                    heatmapdrho[t],
-                    cmap="RdBu_r",
-                    vmax=0.1,
-                    vmin=-0.1,
-                    shading="auto",
-                )
-                fig.colorbar(c, ax=ax)
-                plt.xlabel(r"x $(\mu m)$")
-                plt.ylabel(r"y $(\mu m)$")
-                plt.title(r"$\delta \rho_0$ " + f"{filename}")
-                fig.savefig(
-                    f"results/P0 heatmap {t*2} {filename}",
-                    dpi=300,
-                    transparent=True,
-                )
-                plt.close("all")
-
-        for i in range(grid):
-            for j in range(grid):
+        for i in range(xGrid):
+            for j in range(yGrid):
                 for t in T:
                     deltarho = np.mean(heatmapdrho[t : t + 10, i, j])
                     dQ1 = np.mean(heatmapdQ1[t : t + 10, i, j])
                     dQ2 = np.mean(heatmapdQ2[t : t + 10, i, j])
-                    duhat1 = np.mean(heatmapuhat1[t : t + 10, i, j])
-                    duhat2 = np.mean(heatmapuhat2[t : t + 10, i, j])
-                    for idash in range(grid):
-                        for jdash in range(grid):
-                            for tdash in T:
-                                deltaT = int((tdash - t) / 10)
-                                deltaR = int(
-                                    ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
-                                )
-                                deltatheta = int(
-                                    (
-                                        20
-                                        * (np.arctan2(jdash - j, idash - i) - theta0)
-                                        / (2 * np.pi)
+                    dP1 = np.mean(heatmapP1[t : t + 10, i, j])
+                    dP2 = np.mean(heatmapP2[t : t + 10, i, j])
+                    if np.sum(inPlaneEcad[t : t + 10, i, j]) > 0:
+                        for idash in range(xGrid):
+                            for jdash in range(yGrid):
+                                for tdash in T:
+                                    deltaT = int((tdash - t) / 10)
+                                    deltaR = int(
+                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
                                     )
-                                    % 20
-                                )
-                                if deltaR < grid:
-                                    if deltaT >= 0 and deltaT < timeGrid:
-                                        rho[deltaT][deltaR][deltatheta].append(
-                                            deltarho
-                                            * np.mean(
-                                                heatmapdrho[
-                                                    tdash : tdash + 10, idash, jdash
-                                                ]
-                                            )
+                                    deltatheta = int(
+                                        (
+                                            20
+                                            * np.arctan2(jdash - j, idash - i)
+                                            / (2 * np.pi)
                                         )
+                                        % 20
+                                    )
+                                    if deltaR < grid:
+                                        if deltaT >= 0 and deltaT < timeGrid:
+                                            if (
+                                                np.sum(
+                                                    inPlaneEcad[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                > 0
+                                            ):
 
-                                        dQ1dash = np.mean(
-                                            heatmapdQ1[tdash : tdash + 10, idash, jdash]
-                                        )
-                                        dQ2dash = np.mean(
-                                            heatmapdQ2[tdash : tdash + 10, idash, jdash]
-                                        )
-                                        deltaQ[deltaT][deltaR][deltatheta].append(
-                                            2 * (dQ1 * dQ1dash) + 2 * (dQ2 * dQ2dash)
-                                        )
+                                                dQ1dash = np.mean(
+                                                    heatmapdQ1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dQ2dash = np.mean(
+                                                    heatmapdQ2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                deltaQ[deltaT][deltaR][
+                                                    deltatheta
+                                                ].append(
+                                                    2 * (dQ1 * dQ1dash)
+                                                    + 2 * (dQ2 * dQ2dash)
+                                                )
+                                                deltaQ1[deltaT][deltaR][
+                                                    deltatheta
+                                                ].append(dQ1 * dQ1dash)
+                                                deltaQ2[deltaT][deltaR][
+                                                    deltatheta
+                                                ].append(dQ2 * dQ2dash)
 
-                                        duhat1dash = np.mean(
-                                            heatmapuhat1[
-                                                tdash : tdash + 10, idash, jdash
-                                            ]
-                                        )
-                                        duhat2dash = np.mean(
-                                            heatmapuhat2[
-                                                tdash : tdash + 10, idash, jdash
-                                            ]
-                                        )
-                                        deltauhat[deltaT][deltaR][deltatheta].append(
-                                            (duhat1 * duhat1dash)
-                                            + (duhat2 * duhat2dash)
-                                        )
+                                                rho[deltaT][deltaR][deltatheta].append(
+                                                    deltarho
+                                                    * np.mean(
+                                                        heatmapdrho[
+                                                            tdash : tdash + 10,
+                                                            idash,
+                                                            jdash,
+                                                        ]
+                                                    )
+                                                )
 
-    rhoCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
+                                                dP1dash = np.mean(
+                                                    heatmapP1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dP2dash = np.mean(
+                                                    heatmapP2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                deltaP[deltaT][deltaR][
+                                                    deltatheta
+                                                ].append(
+                                                    (dP1 * dP1dash) + (dP2 * dP2dash)
+                                                )
+
+        for i in range(xGrid):
+            for j in range(yGrid):
+                for t in T:
+                    dv1 = np.mean(heatmapdv1[t : t + 10, i, j])
+                    dv2 = np.mean(heatmapdv2[t : t + 10, i, j])
+                    if np.sum(inPlaneH2[t : t + 10, i, j]) > 0:
+                        for idash in range(xGrid):
+                            for jdash in range(yGrid):
+                                for tdash in T:
+                                    deltaT = int((tdash - t) / 10)
+                                    deltaR = int(
+                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
+                                    )
+                                    deltatheta = int(
+                                        (
+                                            20
+                                            * np.arctan2(jdash - j, idash - i)
+                                            / (2 * np.pi)
+                                        )
+                                        % 20
+                                    )
+                                    if deltaR < grid:
+                                        if deltaT >= 0 and deltaT < timeGrid:
+                                            if (
+                                                np.sum(
+                                                    inPlaneH2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                > 0
+                                            ):
+
+                                                dv1dash = np.mean(
+                                                    heatmapdv1[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                dv2dash = np.mean(
+                                                    heatmapdv2[
+                                                        tdash : tdash + 10, idash, jdash
+                                                    ]
+                                                )
+                                                v[deltaT][deltaR][deltatheta].append(
+                                                    (dv1 * dv1dash) + (dv2 * dv2dash)
+                                                )
+
     deltaQCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
-    deltauhatCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
+    deltaQ1Correlation = [[[] for col in range(len(theta))] for col in range(len(T))]
+    deltaQ2Correlation = [[[] for col in range(len(theta))] for col in range(len(T))]
+    rhoCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
+    vCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
+    deltaPCorrelation = [[[] for col in range(len(theta))] for col in range(len(T))]
     for i in range(len(T)):
         for j in range(len(R)):
             for th in range(len(theta)):
-
-                rhoCorrelation[i][th].append(np.mean(rho[i][j][th]))
                 deltaQCorrelation[i][th].append(np.mean(deltaQ[i][j][th]))
-                deltauhatCorrelation[i][th].append(np.mean(deltauhat[i][j][th]))
+                deltaQ1Correlation[i][th].append(np.mean(deltaQ1[i][j][th]))
+                deltaQ2Correlation[i][th].append(np.mean(deltaQ2[i][j][th]))
+                rhoCorrelation[i][th].append(np.mean(rho[i][j][th]))
+                vCorrelation[i][th].append(np.mean(v[i][j][th]))
+                deltaPCorrelation[i][th].append(np.mean(deltaP[i][j][th]))
 
+    deltaQCorrelation = np.array(deltaQCorrelation)
+    deltaQ1Correlation = np.array(deltaQ1Correlation)
+    deltaQ2Correlation = np.array(deltaQ2Correlation)
     rhoCorrelation = np.array(rhoCorrelation)
     deltaQCorrelation = np.array(deltaQCorrelation)
-    deltauhatCorrelation = np.array(deltauhatCorrelation)
-    rhoCorrelation = np.nan_to_num(rhoCorrelation)
+    deltaPCorrelation = np.array(deltaPCorrelation)
+
     deltaQCorrelation = np.nan_to_num(deltaQCorrelation)
-    deltauhatCorrelation = np.nan_to_num(deltauhatCorrelation)
+    deltaQ1Correlation = np.nan_to_num(deltaQ1Correlation)
+    deltaQ2Correlation = np.nan_to_num(deltaQ2Correlation)
+    rhoCorrelation = np.nan_to_num(rhoCorrelation)
+    vCorrelation = np.nan_to_num(vCorrelation)
+    deltaPCorrelation = np.nan_to_num(deltaPCorrelation)
 
     _df = []
 
     _df.append(
         {
-            "rho": rho,
             "deltaQ": deltaQ,
-            "deltauhat": deltauhat,
-            "rhoCorrelation": rhoCorrelation,
+            "deltaQ1": deltaQ1,
+            "deltaQ2": deltaQ2,
+            "rho": rho,
+            "v": v,
+            "deltaP": deltaP,
             "deltaQCorrelation": deltaQCorrelation,
-            "deltauhatCorrelation": deltauhatCorrelation,
+            "deltaQ1Correlation": deltaQ1Correlation,
+            "deltaQ2Correlation": deltaQ2Correlation,
+            "rhoCorrelation": rhoCorrelation,
+            "vCorrelation": vCorrelation,
+            "deltaPCorrelation": deltaPCorrelation,
         }
     )
 
@@ -527,9 +987,12 @@ if False:
     df.to_pickle(f"databases/continuumDirectionCorrelation{fileType}.pkl")
 else:
     df = pd.read_pickle(f"databases/continuumDirectionCorrelation{fileType}.pkl")
-    rhoCorrelation = df["rhoCorrelation"].iloc[0]
     deltaQCorrelation = df["deltaQCorrelation"].iloc[0]
-    deltauhatCorrelation = df["deltauhatCorrelation"].iloc[0]
+    deltaQ1Correlation = df["deltaQ1Correlation"].iloc[0]
+    deltaQ2Correlation = df["deltaQ2Correlation"].iloc[0]
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+    vCorrelation = df["vCorrelation"].iloc[0]
+    deltaPCorrelation = df["deltaPCorrelation"].iloc[0]
 
 
 if False:
@@ -539,118 +1002,31 @@ if False:
     rad = np.linspace(0, 10 * (grid - 1), grid)
     azm = np.linspace(0, 2 * np.pi, 21)
 
-    cl.createFolder("results/video/")
-    maxCorr = np.max([rhoCorrelation, -rhoCorrelation])
-    for t in range(len(T)):
-
-        ra2, th2 = np.meshgrid(rad, azm)
-
-        fig = plt.figure()
-        ax = Axes3D(fig)
-
-        plt.subplot(projection="polar")
-
-        pc = plt.pcolormesh(th2, ra2, rhoCorrelation[t], vmin=-maxCorr, vmax=maxCorr)
-
-        plt.colorbar(pc)
-        plt.grid()
-        fig.savefig(
-            "results/video/"
-            + f"Directional correlation delta rho {fileType} at T={t}.png",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
-
-    # make video
-    img_array = []
-
-    for t in range(len(T)):
-        img = cv2.imread(
-            f"results/video/Directional correlation delta rho {fileType} at T={t}.png"
-        )
-        height, width, layers = img.shape
-        size = (width, height)
-        img_array.append(img)
-
-    out = cv2.VideoWriter(
-        f"results/Directional correlation delta rho {fileType}.mp4",
-        cv2.VideoWriter_fourcc(*"DIVX"),
-        3,
-        size,
-    )
-    for i in range(len(img_array)):
-        out.write(img_array[i])
-
-    out.release()
-    cv2.destroyAllWindows()
-
-    shutil.rmtree("results/video")
-
-    # -------------------
-
-    cl.createFolder("results/video/")
-    maxCorr = np.max([deltauhatCorrelation, -deltauhatCorrelation])
-    for t in range(len(T)):
-        ra2, th2 = np.meshgrid(R, theta)
-
-        fig = plt.figure()
-        ax = Axes3D(fig)
-
-        plt.subplot(projection="polar")
-
-        pc = plt.pcolormesh(
-            th2, ra2, deltauhatCorrelation[t], vmin=-maxCorr, vmax=maxCorr
-        )
-
-        plt.colorbar(pc)
-        plt.grid()
-        fig.savefig(
-            "results/video/"
-            + f"Directional correlation deltauhat {fileType} at T={t}.png",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
-
-    # make video
-    img_array = []
-
-    for t in range(len(T)):
-        img = cv2.imread(
-            f"results/video/Directional correlation deltauhat {fileType} at T={t}.png"
-        )
-        height, width, layers = img.shape
-        size = (width, height)
-        img_array.append(img)
-
-    out = cv2.VideoWriter(
-        f"results/Directional correlation deltauhat {fileType}.mp4",
-        cv2.VideoWriter_fourcc(*"DIVX"),
-        3,
-        size,
-    )
-    for i in range(len(img_array)):
-        out.write(img_array[i])
-
-    out.release()
-    cv2.destroyAllWindows()
-
-    shutil.rmtree("results/video")
-
-    # -------------------
+    # -----------------------------------------------------
 
     cl.createFolder("results/video/")
     maxCorr = np.max([deltaQCorrelation, -deltaQCorrelation])
+
+    deltaQCorrelation = fillGaps(deltaQCorrelation)
+
     for t in range(len(T)):
         ra2, th2 = np.meshgrid(R, theta)
 
         fig = plt.figure()
         ax = Axes3D(fig)
+        fig.add_axes(ax)
 
         plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
 
-        pc = plt.pcolormesh(th2, ra2, deltaQCorrelation[t], vmin=-maxCorr, vmax=maxCorr)
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            deltaQCorrelation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
 
         plt.colorbar(pc)
         plt.grid()
@@ -675,7 +1051,310 @@ if False:
 
     out = cv2.VideoWriter(
         f"results/Directional correlation deltaQ {fileType}.mp4",
-        cv2.VideoWriter_fourcc(*"DIVX"),
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        3,
+        size,
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+    # -----------------------------------------------------
+
+    cl.createFolder("results/video/")
+    maxCorr = np.max([deltaQ1Correlation, -deltaQ1Correlation])
+
+    deltaQ1Correlation = fillGaps(deltaQ1Correlation)
+
+    for t in range(len(T)):
+        ra2, th2 = np.meshgrid(R, theta)
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        fig.add_axes(ax)
+
+        plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
+
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            deltaQ1Correlation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+
+        plt.colorbar(pc)
+        plt.grid()
+        fig.savefig(
+            "results/video/"
+            + f"Directional correlation deltaQ1 {fileType} at T={t}.png",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    # make video
+    img_array = []
+
+    for t in range(len(T)):
+        img = cv2.imread(
+            f"results/video/Directional correlation deltaQ1 {fileType} at T={t}.png"
+        )
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/Directional correlation deltaQ1 {fileType}.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        3,
+        size,
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+    # -----------------------------------------------------
+
+    cl.createFolder("results/video/")
+    maxCorr = np.max([deltaQ2Correlation, -deltaQ2Correlation])
+
+    deltaQ2Correlation = fillGaps(deltaQ2Correlation)
+
+    for t in range(len(T)):
+        ra2, th2 = np.meshgrid(R, theta)
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        fig.add_axes(ax)
+
+        plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
+
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            deltaQ2Correlation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+
+        plt.colorbar(pc)
+        plt.grid()
+        fig.savefig(
+            "results/video/"
+            + f"Directional correlation deltaQ2 {fileType} at T={t}.png",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    # make video
+    img_array = []
+
+    for t in range(len(T)):
+        img = cv2.imread(
+            f"results/video/Directional correlation deltaQ2 {fileType} at T={t}.png"
+        )
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/Directional correlation deltaQ2 {fileType}.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        3,
+        size,
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+    # -----------------------------------------------------
+
+    cl.createFolder("results/video/")
+    maxCorr = np.max([rhoCorrelation, -rhoCorrelation])
+
+    rhoCorrelation = fillGaps(rhoCorrelation)
+
+    for t in range(len(T)):
+        ra2, th2 = np.meshgrid(R, theta)
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        fig.add_axes(ax)
+
+        plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
+
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            rhoCorrelation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+
+        plt.colorbar(pc)
+        plt.grid()
+        fig.savefig(
+            "results/video/" + f"Directional correlation rho {fileType} at T={t}.png",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    # make video
+    img_array = []
+
+    for t in range(len(T)):
+        img = cv2.imread(
+            f"results/video/Directional correlation rho {fileType} at T={t}.png"
+        )
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/Directional correlation rho {fileType}.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        3,
+        size,
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+    # -----------------------------------------------------
+
+    cl.createFolder("results/video/")
+    maxCorr = np.max([vCorrelation, -vCorrelation])
+
+    vCorrelation = fillGaps(vCorrelation)
+
+    for t in range(len(T)):
+        ra2, th2 = np.meshgrid(R, theta)
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        fig.add_axes(ax)
+
+        plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
+
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            vCorrelation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+
+        plt.colorbar(pc)
+        plt.grid()
+        fig.savefig(
+            "results/video/" + f"Directional correlation v {fileType} at T={t}.png",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    # make video
+    img_array = []
+
+    for t in range(len(T)):
+        img = cv2.imread(
+            f"results/video/Directional correlation v {fileType} at T={t}.png"
+        )
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/Directional correlation v {fileType}.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        3,
+        size,
+    )
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+
+    out.release()
+    cv2.destroyAllWindows()
+
+    shutil.rmtree("results/video")
+
+    # -----------------------------------------------------
+
+    cl.createFolder("results/video/")
+    maxCorr = np.max([deltaPCorrelation, -deltaPCorrelation])
+
+    deltaPCorrelation = fillGaps(deltaPCorrelation)
+
+    for t in range(len(T)):
+        ra2, th2 = np.meshgrid(R, theta)
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        fig.add_axes(ax)
+
+        plt.subplot(projection="polar")
+        plt.title(f"Time= {t*20}")
+
+        pc = plt.pcolormesh(
+            th2,
+            ra2,
+            deltaPCorrelation[t],
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+
+        plt.colorbar(pc)
+        plt.grid()
+        fig.savefig(
+            "results/video/"
+            + f"Directional correlation deltaP {fileType} at T={t}.png",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+    # make video
+    img_array = []
+
+    for t in range(len(T)):
+        img = cv2.imread(
+            f"results/video/Directional correlation deltaP {fileType} at T={t}.png"
+        )
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(
+        f"results/Directional correlation deltaP {fileType}.mp4",
+        cv2.VideoWriter_fourcc(*"mp4v"),
         3,
         size,
     )
