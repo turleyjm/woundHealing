@@ -27,49 +27,111 @@ import cellProperties as cell
 import findGoodCells as fi
 import commonLiberty as cl
 
-plt.rcParams.update({"font.size": 16})
+plt.rcParams.update({"font.size": 12})
 
 # -------------------
 
 filenames, fileType = cl.getFilesType()
 
-T = 93
+T = 90
 scale = 123.26 / 512
-L = 123.26
-grid = 11
 
-_df2 = []
 if False:
+    _df2 = []
+    _df = []
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        Q = np.mean(df["q"])
+        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
+        R = cl.rotation_matrix(-theta0)
+
+        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        mig = np.zeros(2)
 
         for t in range(T):
             dft = df[df["Time"] == t]
-            Q = np.mean(dft["q"])
+            v = np.mean(dft["Velocity"]) * scale
+            v = np.matmul(R, v)
+            _df.append(
+                {
+                    "Filename": filename,
+                    "T": t,
+                    "v": v,
+                }
+            )
+
             for i in range(len(dft)):
-                [x, y] = [
-                    dft["Centroid"].iloc[i][0] * scale,
-                    dft["Centroid"].iloc[i][1] * scale,
-                ]
-                dQ = dft["q"].iloc[i] - Q
-                A = dft["Area"].iloc[i] * scale ** 2
-                TrdQ = np.trace(np.matmul(Q, dQ))
-                Pol = dft["Polar"].iloc[i]
+                x = dft["X"].iloc[i] * scale
+                y = dft["Y"].iloc[i] * scale
+                dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - v
+                [x, y] = np.matmul(R, np.array([x, y]))
 
                 _df2.append(
                     {
                         "Filename": filename,
                         "T": t,
-                        "X": x,
-                        "Y": y,
-                        "dQ": dQ,
-                        "Q": Q,
-                        "TrdQ": TrdQ,
-                        "Area": A,
-                        "Polar": Pol,
+                        "X": x - mig[0],
+                        "Y": y - mig[1],
+                        "dv": dv,
                     }
                 )
+            mig += v
+
+    dfVelocityMean = pd.DataFrame(_df)
+    dfVelocityMean.to_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+    dfVelocity = pd.DataFrame(_df2)
+    dfVelocity.to_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
+
+else:
+    dfVelocity = pd.read_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
+    dfVelocityMean = pd.read_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+
+if False:
+    _df2 = []
+    for filename in filenames:
+
+        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
+        mig = np.zeros(2)
+        Q = np.mean(df["q"])
+        theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
+        R = cl.rotation_matrix(-theta0)
+
+        for t in range(T):
+            dft = df[df["Time"] == t]
+            Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+            P = np.matmul(R, np.mean(dft["Polar"]))
+
+            for i in range(len(dft)):
+                [x, y] = [
+                    dft["Centroid"].iloc[i][0] * scale,
+                    dft["Centroid"].iloc[i][1] * scale,
+                ]
+                q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
+                dq = q - Q
+                A = dft["Area"].iloc[i] * scale ** 2
+                TrQdq = np.trace(np.matmul(Q, dq))
+                dp = np.matmul(R, dft["Polar"].iloc[i]) - P
+                [x, y] = np.matmul(R, np.array([x, y]))
+                p = np.matmul(R, dft["Polar"].iloc[i])
+
+                _df2.append(
+                    {
+                        "Filename": filename,
+                        "T": t,
+                        "X": x - mig[0],
+                        "Y": y - mig[1],
+                        "dq": dq,
+                        "q": q,
+                        "TrQdq": TrQdq,
+                        "Area": A,
+                        "dp": dp,
+                        "Polar": p,
+                    }
+                )
+
+            mig += np.array(dfFilename["v"][dfFilename["T"] == t])[0]
 
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfContinuum{fileType}.pkl")
@@ -77,61 +139,9 @@ if False:
 else:
     dfShape = pd.read_pickle(f"databases/dfContinuum{fileType}.pkl")
 
-# density
-if False:
-    for filename in filenames:
-        df = dfShape[dfShape["Filename"] == filename]
-        heatmapP0 = np.zeros([grid, grid])
-        dft = df[df["T"] == 0]
-        for i in range(grid):
-            for j in range(grid):
-                x = [
-                    (L - 110) / 2 + i * 110 / grid,
-                    (L - 110) / 2 + (i + 1) * 110 / grid,
-                ]
-                y = [
-                    (L - 110) / 2 + j * 110 / grid,
-                    (L - 110) / 2 + (j + 1) * 110 / grid,
-                ]
-                dfg = cl.sortGrid(dft, x, y)
-                if list(dfg["Area"]) == []:
-                    A = np.nan
-                else:
-                    A = dfg["Area"]
-                    heatmapP0[i, j] = 1 / np.mean(A)
-
-        dx, dy = 110 / grid, 110 / grid
-        x, y = np.mgrid[0:110:dx, 0:110:dy]
-
-        fig, ax = plt.subplots(1, 2, figsize=(20, 8))
-        c = ax[0].pcolor(x, y, heatmapP0, cmap="Reds", vmax=0.15, shading="auto")
-        fig.colorbar(c, ax=ax[0])
-        ax[0].set_xlabel(r"x $(\mu m)$")
-        ax[0].set_ylabel(r"y $(\mu m)$")
-        ax[0].title.set_text(r"$\rho$ " + f"{filename}")
-
-        mu = np.mean(heatmapP0)
-        simga = np.std(heatmapP0)
-        heatmapP0Norm = (heatmapP0 - mu) / simga
-
-        c = ax[1].pcolor(
-            x, y, heatmapP0Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[1])
-        ax[1].set_xlabel(r"x $(\mu m)$")
-        ax[1].set_ylabel(r"y $(\mu m)$")
-        ax[1].title.set_text(r"$\sigma$ of $\rho$ from $\mu_\rho$ " + f"{filename}")
-
-        fig.savefig(
-            f"results/P0 heatmap {filename}",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
-
 
 # typical cell length
-if True:
+if False:
     A = []
     for t in range(T):
         A.append(np.mean(dfShape["Area"][dfShape["T"] == t] ** 0.5))
@@ -147,225 +157,214 @@ if True:
     )
     plt.close("all")
 
-# delta Q
 if True:
+    Q1 = []
+    Q1std = []
+    for t in range(T):
+        Q1.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 0])
+        Q1std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 0]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].errorbar(2 * np.array(range(T)), Q1, yerr=Q1std)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
+    ax[0].title.set_text(r"Mean of $Q^{(1)}$")
+    ax[0].set_ylim([-0.03, 0.05])
+
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
-        heatmapdQ1 = np.zeros([grid, grid])
-        heatmapdQ2 = np.zeros([grid, grid])
-        dft = df[df["T"] == 0]
-        for i in range(grid):
-            for j in range(grid):
-                x = [
-                    (L - 110) / 2 + i * 110 / grid,
-                    (L - 110) / 2 + (i + 1) * 110 / grid,
-                ]
-                y = [
-                    (L - 110) / 2 + j * 110 / grid,
-                    (L - 110) / 2 + (j + 1) * 110 / grid,
-                ]
-                dfg = cl.sortGrid(dft, x, y)
-                if list(dfg["dQ"]) == []:
-                    A = np.nan
-                else:
-                    dQ = dfg["dQ"]
-                    heatmapdQ1[i, j] = np.mean(dQ)[0, 0]
-                    heatmapdQ2[i, j] = np.mean(dQ)[1, 0]
+        Q1 = []
+        for t in range(T):
+            Q1.append(np.mean(df["q"][df["T"] == t])[0, 0])
 
-        dx, dy = 110 / grid, 110 / grid
-        x, y = np.mgrid[0:110:dx, 0:110:dy]
+        ax[1].plot(2 * np.array(range(T)), Q1)
 
-        fig, ax = plt.subplots(2, 2, figsize=(12, 12))
-        plt.subplots_adjust(wspace=0.3)
-        plt.gcf().subplots_adjust(bottom=0.15)
-        c = ax[0, 0].pcolor(
-            x, y, heatmapdQ1, cmap="RdBu_r", vmin=-0.07, vmax=0.07, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[0, 0])
-        ax[0, 0].set_xlabel(r"x $(\mu m)$")
-        ax[0, 0].set_ylabel(r"y $(\mu m)$")
-        ax[0, 0].title.set_text(r"$\delta Q^1$ " + f"{filename}")
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
+    ax[1].title.set_text(r"Mean of $Q^{(1)}$ indivial videos")
+    ax[1].set_ylim([-0.03, 0.05])
 
-        c = ax[0, 1].pcolor(
-            x, y, heatmapdQ2, cmap="RdBu_r", vmin=-0.07, vmax=0.07, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[0, 1])
-        ax[0, 1].set_xlabel(r"x $(\mu m)$")
-        ax[0, 1].set_ylabel(r"y $(\mu m)$")
-        ax[0, 1].title.set_text(r"$\delta Q^2$ " + f"{filename}")
+    fig.savefig(
+        f"results/mean Q1 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-        mu = np.mean(heatmapdQ1)
-        simga = np.std(heatmapdQ1)
-        heatmapdQ1Norm = (heatmapdQ1 - mu) / simga
-
-        c = ax[1, 0].pcolor(
-            x, y, heatmapdQ1Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[1, 0])
-        ax[1, 0].set_xlabel(r"x $(\mu m)$")
-        ax[1, 0].set_ylabel(r"y $(\mu m)$")
-        ax[1, 0].title.set_text(
-            r"$\sigma$ of $\delta Q^1 from \mu_{\delta Q^1}$ " + f"{filename}"
-        )
-
-        mu = np.mean(heatmapdQ2)
-        simga = np.std(heatmapdQ2)
-        heatmapdQ2Norm = (heatmapdQ2 - mu) / simga
-
-        c = ax[1, 1].pcolor(
-            x, y, heatmapdQ2Norm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[1, 1])
-        ax[1, 1].set_xlabel(r"x $(\mu m)$")
-        ax[1, 1].set_ylabel(r"y $(\mu m)$")
-        ax[1, 1].title.set_text(
-            r"$\sigma$ of $\delta Q^2 from \mu_{\delta Q^2}$ " + f"{filename}"
-        )
-
-        fig.savefig(
-            f"results/deltaQ heatmap {filename}",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
-
-
-# Trace of mean Q dot delta Q
 if True:
+    Q2 = []
+    Q2std = []
+    for t in range(T):
+        Q2.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 1])
+        Q2std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 1]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}$")
+    ax[0].title.set_text(r"Mean of $Q^{(2)}$")
+    ax[0].set_ylim([-0.03, 0.05])
+
+    ax[1].set_ylim([-0.025, 0.05])
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
-        heatmapTr = np.zeros([grid, grid])
-        dft = df[df["T"] == 0]
-        for i in range(grid):
-            for j in range(grid):
-                x = [
-                    (L - 110) / 2 + i * 110 / grid,
-                    (L - 110) / 2 + (i + 1) * 110 / grid,
-                ]
-                y = [
-                    (L - 110) / 2 + j * 110 / grid,
-                    (L - 110) / 2 + (j + 1) * 110 / grid,
-                ]
-                dfg = cl.sortGrid(dft, x, y)
-                if list(dfg["dQ"]) == []:
-                    A = np.nan
-                else:
-                    TrdQ = dfg["TrdQ"]
-                    heatmapTr[i, j] = np.mean(TrdQ)
+        Q2 = []
+        for t in range(T):
+            Q2.append(np.mean(df["q"][df["T"] == t])[0, 1])
 
-        dx, dy = 110 / grid, 110 / grid
-        x, y = np.mgrid[0:110:dx, 0:110:dy]
+        ax[1].plot(2 * np.array(range(T)), Q2)
 
-        fig, ax = plt.subplots(1, 2, figsize=(20, 8))
-        c = ax[0].pcolor(
-            x, y, heatmapTr, cmap="RdBu_r", vmin=-0.001, vmax=0.001, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[0])
-        ax[0].set_xlabel(r"x $(\mu m)$")
-        ax[0].set_ylabel(r"y $(\mu m)$")
-        ax[0].title.set_text(r"Tr$(\langle Q \rangle \delta Q (r))$ " + f"{filename}")
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}$")
+    ax[1].title.set_text(r"Mean of $Q^{(2)}$ indivial videos")
+    ax[1].set_ylim([-0.03, 0.05])
 
-        mu = np.mean(heatmapTr)
-        simga = np.std(heatmapTr)
-        heatmapTrNorm = (heatmapTr - mu) / simga
-
-        c = ax[1].pcolor(
-            x, y, heatmapTrNorm, cmap="RdBu_r", vmin=-3, vmax=3, shading="auto"
-        )
-        fig.colorbar(c, ax=ax[1])
-        ax[1].set_xlabel(r"x $(\mu m)$")
-        ax[1].set_ylabel(r"y $(\mu m)$")
-        ax[1].title.set_text(
-            r"$\sigma$ of Tr$(\langle Q \rangle \delta Q (r))$ from $\mu$ "
-            + f"{filename}"
-        )
-
-        fig.savefig(
-            f"results/trdQ heatmap {filename}",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
+    fig.savefig(
+        f"results/mean Q2 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
 
-# polarisation
 if True:
+    Q1 = []
+    Q2 = []
+    Q2std = []
+    for t in range(T):
+        Q1.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 0])
+        Q2.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 1])
+        Q2std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 1]))
+
+    Q1max = np.max(Q1)
+    Q2 = np.array(Q2) / Q1max
+    Q2std = np.array(Q2std) / Q1max
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}/\bar{Q}^{(1)}$")
+    ax[0].title.set_text(r"Mean of $Q^{(2)}$")
+    ax[0].set_ylim([-0.5, 1])
+
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
-        heatmapW0 = np.zeros([grid, grid])
-        heatmapW1 = np.zeros([grid, grid])
-        dft = df[df["T"] == 0]
-        for i in range(grid):
-            for j in range(grid):
-                x = [
-                    (L - 110) / 2 + i * 110 / grid,
-                    (L - 110) / 2 + (i + 1) * 110 / grid,
-                ]
-                y = [
-                    (L - 110) / 2 + j * 110 / grid,
-                    (L - 110) / 2 + (j + 1) * 110 / grid,
-                ]
-                dfg = cl.sortGrid(dft, x, y)
-                if list(dfg["Polar"]) == []:
-                    A = np.nan
-                else:
-                    Pol = list(dfg["Polar"])
-                    W = []
-                    for pol in Pol:
-                        W.append(pol / np.linalg.norm(pol))
+        Q2 = []
+        for t in range(T):
+            Q2.append(np.mean(df["q"][df["T"] == t])[0, 1])
 
-                    heatmapW0[i, j] = np.mean(W, axis=0)[0]
-                    heatmapW1[i, j] = np.mean(W, axis=0)[1]
+        Q2 = np.array(Q2) / Q1max
+        ax[1].plot(2 * np.array(range(T)), Q2)
 
-        dx, dy = 110 / grid, 110 / grid
-        x, y = np.mgrid[0:110:dx, 0:110:dy]
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}/\bar{Q}^{(1)}$")
+    ax[1].title.set_text(r"Mean of $Q^{(2)}$ indivial videos")
+    ax[1].set_ylim([-0.5, 1])
 
-        fig, ax = plt.subplots(2, 2, figsize=(12, 12))
-        plt.subplots_adjust(wspace=0.3)
-        plt.gcf().subplots_adjust(bottom=0.15)
-        c = ax[0, 0].pcolor(
-            x, y, heatmapW0, cmap="RdBu_r", shading="auto", vmin=-1, vmax=1
+    fig.savefig(
+        f"results/mean Q2 over Q1 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if True:
+    P1 = []
+    P1std = []
+    for t in range(T):
+        P1.append(np.mean(dfShape["Polar"][dfShape["T"] == t])[0])
+        P1std.append(
+            np.std(np.stack(dfShape["Polar"][dfShape["T"] == t], axis=0)[:, 0])
         )
-        fig.colorbar(c, ax=ax[0, 0])
-        ax[0, 0].set_xlabel(r"x $(\mu m)$")
-        ax[0, 0].set_ylabel(r"y $(\mu m)$")
-        ax[0, 0].title.set_text(r"$W_1$ " + f"{filename}")
 
-        c = ax[0, 1].pcolor(
-            x, y, heatmapW1, cmap="RdBu_r", shading="auto", vmin=-1, vmax=1
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].errorbar(2 * np.array(range(T)), P1, yerr=P1std)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_1$")
+    ax[0].title.set_text(r"Mean of $P_1$")
+    ax[0].set_ylim([-0.01, 0.01])
+
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        P1 = []
+        for t in range(T):
+            P1.append(np.mean(df["Polar"][df["T"] == t])[0])
+
+        ax[1].plot(2 * np.array(range(T)), P1)
+
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{P}_1$")
+    ax[1].title.set_text(r"Mean of $P_1$ indivial videos")
+    ax[1].set_ylim([-0.01, 0.01])
+
+    fig.savefig(
+        f"results/mean P1 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if True:
+    P2 = []
+    P2std = []
+    for t in range(T):
+        P2.append(np.mean(dfShape["Polar"][dfShape["T"] == t])[1])
+        P2std.append(
+            np.std(np.stack(dfShape["Polar"][dfShape["T"] == t], axis=0)[:, 1])
         )
-        fig.colorbar(c, ax=ax[0, 1])
-        ax[0, 1].set_xlabel(r"x $(\mu m)$")
-        ax[0, 1].set_ylabel(r"y $(\mu m)$")
-        ax[0, 1].title.set_text(r"$W_2$ " + f"{filename}")
 
-        mu = np.mean(heatmapW0)
-        simga = np.std(heatmapW0)
-        heatmapW0Norm = (heatmapW0 - mu) / simga
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].errorbar(2 * np.array(range(T)), P2, yerr=P2std)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_2$")
+    ax[0].title.set_text(r"Mean of $P_2$")
+    ax[0].set_ylim([-0.01, 0.01])
 
-        c = ax[1, 0].pcolor(
-            x, y, heatmapW0Norm, cmap="RdBu_r", shading="auto", vmin=-3, vmax=3
-        )
-        fig.colorbar(c, ax=ax[1, 0])
-        ax[1, 0].set_xlabel(r"x $(\mu m)$")
-        ax[1, 0].set_ylabel(r"y $(\mu m)$")
-        ax[1, 0].title.set_text(r"$\sigma$ of $W_1$ from $\mu$ " + f"{filename}")
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        P2 = []
+        for t in range(T):
+            P2.append(np.mean(df["Polar"][df["T"] == t])[1])
 
-        mu = np.mean(heatmapW1)
-        simga = np.std(heatmapW1)
-        heatmapW1Norm = (heatmapW1 - mu) / simga
+        ax[1].plot(2 * np.array(range(T)), P2)
 
-        c = ax[1, 1].pcolor(
-            x, y, heatmapW1Norm, cmap="RdBu_r", shading="auto", vmin=-3, vmax=3
-        )
-        fig.colorbar(c, ax=ax[1, 1])
-        ax[1, 1].set_xlabel(r"x $(\mu m)$")
-        ax[1, 1].set_ylabel(r"y $(\mu m)$")
-        ax[1, 1].title.set_text(r"$\sigma$ of $W_2$ from $\mu$ " + f"{filename}")
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{P}_2$")
+    ax[1].title.set_text(r"Mean of $P_2$ indivial videos")
+    ax[1].set_ylim([-0.01, 0.01])
 
-        fig.savefig(
-            f"results/W heatmap {filename}",
-            dpi=300,
-            transparent=True,
-        )
-        plt.close("all")
+    fig.savefig(
+        f"results/mean P2 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if True:
+    rho = []
+    for t in range(T):
+        rho.append(1 / np.mean(dfShape["Area"][dfShape["T"] == t]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    plt.subplots_adjust(wspace=0.3)
+    ax[0].plot(2 * np.array(range(T)), rho)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\rho$")
+    ax[0].title.set_text(r"$\rho$")
+    ax[0].set_ylim([0.048, 0.086])
+
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        rho = []
+        for t in range(T):
+            rho.append(1 / np.mean(df["Area"][df["T"] == t]))
+
+        ax[1].plot(2 * np.array(range(T)), rho)
+
+    ax[1].set(xlabel=r"Time", ylabel=r"$\rho$")
+    ax[1].title.set_text(r"$\rho$ of indivial videos")
+    ax[1].set_ylim([0.048, 0.086])
+
+    fig.savefig(
+        f"results/mean rho {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")

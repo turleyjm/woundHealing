@@ -25,6 +25,7 @@ from skimage.draw import circle_perimeter
 from scipy import optimize
 import xml.etree.ElementTree as et
 from scipy.optimize import leastsq
+from datetime import datetime
 
 import cellProperties as cell
 import findGoodCells as fi
@@ -38,8 +39,6 @@ filenames, fileType = cl.getFilesType()
 
 T = 90
 scale = 123.26 / 512
-grid = 11
-timeGrid = 9
 
 # -------------------
 
@@ -154,12 +153,12 @@ if False:
         dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
         mig = np.zeros(2)
         Q = np.mean(df["q"])
-        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
+        theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
         R = cl.rotation_matrix(-theta0)
 
         for t in range(T):
             dft = df[df["Time"] == t]
-            Q = np.matmul(R, np.mean(dft["q"]))
+            Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
             P = np.matmul(R, np.mean(dft["Polar"]))
 
             for i in range(len(dft)):
@@ -167,11 +166,13 @@ if False:
                     dft["Centroid"].iloc[i][0] * scale,
                     dft["Centroid"].iloc[i][1] * scale,
                 ]
-                dQ = np.matmul(R, dft["q"].iloc[i]) - Q
+                q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
+                dq = q - Q
                 A = dft["Area"].iloc[i] * scale ** 2
-                TrdQ = np.trace(np.matmul(Q, dQ))
+                TrQdq = np.trace(np.matmul(Q, dq))
                 dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                 [x, y] = np.matmul(R, np.array([x, y]))
+                p = np.matmul(R, dft["Polar"].iloc[i])
 
                 _df2.append(
                     {
@@ -179,11 +180,12 @@ if False:
                         "T": t,
                         "X": x - mig[0],
                         "Y": y - mig[1],
-                        "dQ": dQ,
-                        "Q": Q,
-                        "TrdQ": TrdQ,
+                        "dq": dq,
+                        "q": q,
+                        "TrQdq": TrQdq,
                         "Area": A,
-                        "Polar": dp,
+                        "dp": dp,
+                        "Polar": p,
                     }
                 )
 
@@ -195,15 +197,19 @@ if False:
 else:
     dfShape = pd.read_pickle(f"databases/dfContinuum{fileType}.pkl")
 
-xMax = np.max(dfShape["X"])
-xMin = np.min(dfShape["X"])
-yMax = np.max(dfShape["Y"])
-yMin = np.min(dfShape["Y"])
-xGrid = int(1 + (xMax - xMin) // 10)
-yGrid = int(1 + (yMax - yMin) // 10)
 
-# delta velocity space time correlation
-if True:
+# space time correlation
+if False:
+
+    grid = 11
+    timeGrid = 9
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+    xGrid = int(1 + (xMax - xMin) // 10)
+    yGrid = int(1 + (yMax - yMin) // 10)
+
     T = np.linspace(0, 10 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 10 * (grid - 1), grid)
     deltaQ = [[[] for col in range(len(R))] for col in range(len(T))]
@@ -250,8 +256,8 @@ if True:
                         heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
                         heatmapdQ1[t, i, j] = np.mean(dfg["dQ"], axis=0)[0, 0]
                         heatmapdQ2[t, i, j] = np.mean(dfg["dQ"], axis=0)[1, 0]
-                        heatmapP1[t, i, j] = np.mean(dfg["Polar"], axis=0)[0]
-                        heatmapP2[t, i, j] = np.mean(dfg["Polar"], axis=0)[1]
+                        heatmapP1[t, i, j] = np.mean(dfg["dP"], axis=0)[0]
+                        heatmapP2[t, i, j] = np.mean(dfg["dP"], axis=0)[1]
                         inPlaneEcad[t, i, j] = 1
 
             heatmapdrho[t] = heatmapdrho[t] - np.mean(
@@ -443,7 +449,118 @@ if True:
     df = pd.DataFrame(_df)
     df.to_pickle(f"databases/continuumCorrelation{fileType}.pkl")
 
+
+# short range space time correlation
 if True:
+    grid = 21
+    timeGrid = 11
+    n = 6000
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+
+    v1 = [[[] for col in range(grid)] for col in range(timeGrid)]
+    v2 = [[[] for col in range(grid)] for col in range(timeGrid)]
+    deltaP1 = [[[] for col in range(grid)] for col in range(timeGrid)]
+    deltaP2 = [[[] for col in range(grid)] for col in range(timeGrid)]
+
+    for filename in filenames:
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        print(current_time)
+
+        dfVel = dfVelocity[dfVelocity["Filename"] == filename]
+        df = dfShape[dfShape["Filename"] == filename]
+
+        Ns = len(df)
+        sample = Ns * np.random.random_sample(n)
+
+        for i in range(n):
+
+            x = df["X"].iloc[int(sample[i])]
+            y = df["Y"].iloc[int(sample[i])]
+            t = df["T"].iloc[int(sample[i])]
+            dP1 = df["dp"].iloc[int(sample[i])][0]
+            dP2 = df["dp"].iloc[int(sample[i])][1]
+
+            dfi = cl.sortVolume(df, [x, x + grid], [y, y + grid], [t, t + timeGrid])
+
+            R = np.array(((dfi["X"] - x) ** 2 + (dfi["Y"] - y) ** 2) ** 0.5)
+            T = np.array(dfi["T"] - t)
+
+            for j in range(len(dfi)):
+                if R[j] < grid:
+                    deltaP1[T[j]][int(R[j])].append(dP1 * dfi["dp"].iloc[j][0])
+                    deltaP2[T[j]][int(R[j])].append(dP2 * dfi["dp"].iloc[j][1])
+
+        Nv = len(dfVel)
+        sample = Nv * np.random.random_sample(n)
+
+        for i in range(n):
+
+            x = dfVel["X"].iloc[int(sample[i])]
+            y = dfVel["Y"].iloc[int(sample[i])]
+            t = dfVel["T"].iloc[int(sample[i])]
+            dv1 = dfVel["dv"].iloc[int(sample[i])][0]
+            dv2 = dfVel["dv"].iloc[int(sample[i])][1]
+
+            dfVeli = cl.sortVolume(
+                dfVel, [x, x + grid], [y, y + grid], [t, t + timeGrid]
+            )
+
+            R = np.array(((dfVeli["X"] - x) ** 2 + (dfVeli["Y"] - y) ** 2) ** 0.5)
+            T = np.array(dfVeli["T"] - t)
+
+            for j in range(len(dfVeli)):
+                if R[j] < grid:
+                    v1[T[j]][int(R[j])].append(dv1 * dfVeli["dv"].iloc[j][0])
+                    v2[T[j]][int(R[j])].append(dv2 * dfVeli["dv"].iloc[j][1])
+
+    T = np.linspace(0, (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    v1Correlation = [[] for col in range(len(T))]
+    v2Correlation = [[] for col in range(len(T))]
+    deltaP1Correlation = [[] for col in range(len(T))]
+    deltaP2Correlation = [[] for col in range(len(T))]
+
+    for i in range(len(T)):
+        for j in range(len(R)):
+            v1Correlation[i].append(np.mean(v1[i][j]))
+            v2Correlation[i].append(np.mean(v2[i][j]))
+            deltaP1Correlation[i].append(np.mean(deltaP1[i][j]))
+            deltaP2Correlation[i].append(np.mean(deltaP2[i][j]))
+
+    v1Correlation = np.array(v1Correlation)
+    v1Correlation = np.nan_to_num(v1Correlation)
+    v2Correlation = np.array(v2Correlation)
+    v2Correlation = np.nan_to_num(v2Correlation)
+    deltaP1Correlation = np.array(deltaP1Correlation)
+    deltaP1Correlation = np.nan_to_num(deltaP1Correlation)
+    deltaP2Correlation = np.array(deltaP2Correlation)
+    deltaP2Correlation = np.nan_to_num(deltaP2Correlation)
+
+    _dfShort = []
+
+    _dfShort.append(
+        {
+            "v1": v1,
+            "v1Correlation": v1Correlation,
+            "v2": v2,
+            "v2Correlation": v2Correlation,
+            "deltaP1": deltaP1,
+            "deltaP1Correlation": deltaP1Correlation,
+            "deltaP2": deltaP2,
+            "deltaP2Correlation": deltaP2Correlation,
+        }
+    )
+
+    dfShort = pd.DataFrame(_dfShort)
+    dfShort.to_pickle(f"databases/continuumCorrelationShort{fileType}.pkl")
+
+# display correlation
+if False:
     df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
     deltaQCorrelation = df["deltaQCorrelation"].iloc[0]
     deltaQ1Correlation = df["deltaQ1Correlation"].iloc[0]
@@ -548,9 +665,93 @@ if True:
     )
     plt.close("all")
 
+# display short range correlation
+if True:
+    df = pd.read_pickle(f"databases/continuumCorrelationShort{fileType}.pkl")
+    v1Correlation = df["v1Correlation"].iloc[0]
+    v2Correlation = df["v2Correlation"].iloc[0]
+    deltaP1Correlation = df["deltaP1Correlation"].iloc[0]
+    deltaP2Correlation = df["deltaP2Correlation"].iloc[0]
+
+    t, r = np.mgrid[0:22:2, 0:21:1]
+    fig, ax = plt.subplots(2, 2, figsize=(16, 14))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    maxCorr = np.max([deltaP1Correlation, -deltaP1Correlation])
+
+    c = ax[0, 0].pcolor(
+        t,
+        r,
+        deltaP1Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
+
+    maxCorr = np.max([deltaP2Correlation, -deltaP2Correlation])
+
+    c = ax[0, 1].pcolor(
+        t,
+        r,
+        deltaP2Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+
+    maxCorr = np.max([v1Correlation, -v1Correlation])
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        v1Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Correlation of $v_1$" + f" {fileType}")
+
+    maxCorr = np.max([v2Correlation, -v2Correlation])
+
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        v2Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (min)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Correlation of $v_1$" + f" {fileType}")
+
+    fig.savefig(
+        f"results/Correlation Short Range {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
     # -------------------
 
-if True:
+if False:
     df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
     deltaQCorrelation = df["deltaQCorrelation"].iloc[0]
     deltaQ1Correlation = df["deltaQ1Correlation"].iloc[0]
@@ -730,6 +931,16 @@ if False:
 
 # delta rho Q and P direction space time correlation
 if False:
+
+    grid = 11
+    timeGrid = 9
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+    xGrid = int(1 + (xMax - xMin) // 10)
+    yGrid = int(1 + (yMax - yMin) // 10)
+
     T = np.array(range(timeGrid)) * 10
     R = np.linspace(0, 10 * (grid - 1), grid)
     theta = np.linspace(0, 2 * np.pi, 21)
@@ -795,8 +1006,8 @@ if False:
                         heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
                         heatmapdQ1[t, i, j] = np.mean(dfg["dQ"], axis=0)[0, 0]
                         heatmapdQ2[t, i, j] = np.mean(dfg["dQ"], axis=0)[1, 0]
-                        heatmapP1[t, i, j] = np.mean(dfg["Polar"], axis=0)[0]
-                        heatmapP2[t, i, j] = np.mean(dfg["Polar"], axis=0)[1]
+                        heatmapP1[t, i, j] = np.mean(dfg["dP"], axis=0)[0]
+                        heatmapP2[t, i, j] = np.mean(dfg["dP"], axis=0)[1]
                         inPlaneEcad[t, i, j] = 1
 
             heatmapdrho[t] = heatmapdrho[t] - np.mean(
