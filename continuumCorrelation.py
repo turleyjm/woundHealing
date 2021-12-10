@@ -454,7 +454,6 @@ if False:
 if True:
     grid = 21
     timeGrid = 11
-    n = 6000
     xMax = np.max(dfShape["X"])
     xMin = np.min(dfShape["X"])
     yMax = np.max(dfShape["Y"])
@@ -462,6 +461,7 @@ if True:
 
     v1 = [[[] for col in range(grid)] for col in range(timeGrid)]
     v2 = [[[] for col in range(grid)] for col in range(timeGrid)]
+    v = [[[] for col in range(grid)] for col in range(timeGrid)]
     deltaP1 = [[[] for col in range(grid)] for col in range(timeGrid)]
     deltaP2 = [[[] for col in range(grid)] for col in range(timeGrid)]
 
@@ -474,15 +474,14 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
 
         Ns = len(df)
-        sample = Ns * np.random.random_sample(n)
 
-        for i in range(n):
+        for i in range(Ns):
 
-            x = df["X"].iloc[int(sample[i])]
-            y = df["Y"].iloc[int(sample[i])]
-            t = df["T"].iloc[int(sample[i])]
-            dP1 = df["dp"].iloc[int(sample[i])][0]
-            dP2 = df["dp"].iloc[int(sample[i])][1]
+            x = df["X"].iloc[i]
+            y = df["Y"].iloc[i]
+            t = df["T"].iloc[i]
+            dP1 = df["dp"].iloc[i][0]
+            dP2 = df["dp"].iloc[i][1]
 
             dfi = cl.sortVolume(df, [x, x + grid], [y, y + grid], [t, t + timeGrid])
 
@@ -495,15 +494,14 @@ if True:
                     deltaP2[T[j]][int(R[j])].append(dP2 * dfi["dp"].iloc[j][1])
 
         Nv = len(dfVel)
-        sample = Nv * np.random.random_sample(n)
 
-        for i in range(n):
+        for i in range(Nv):
 
-            x = dfVel["X"].iloc[int(sample[i])]
-            y = dfVel["Y"].iloc[int(sample[i])]
-            t = dfVel["T"].iloc[int(sample[i])]
-            dv1 = dfVel["dv"].iloc[int(sample[i])][0]
-            dv2 = dfVel["dv"].iloc[int(sample[i])][1]
+            x = dfVel["X"].iloc[i]
+            y = dfVel["Y"].iloc[i]
+            t = dfVel["T"].iloc[i]
+            dv1 = dfVel["dv"].iloc[i][0]
+            dv2 = dfVel["dv"].iloc[i][1]
 
             dfVeli = cl.sortVolume(
                 dfVel, [x, x + grid], [y, y + grid], [t, t + timeGrid]
@@ -516,12 +514,16 @@ if True:
                 if R[j] < grid:
                     v1[T[j]][int(R[j])].append(dv1 * dfVeli["dv"].iloc[j][0])
                     v2[T[j]][int(R[j])].append(dv2 * dfVeli["dv"].iloc[j][1])
+                    v[T[j]][int(R[j])].append(
+                        dv1 * dfVeli["dv"].iloc[j][0] + dv2 * dfVeli["dv"].iloc[j][1]
+                    )
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
     v1Correlation = [[] for col in range(len(T))]
     v2Correlation = [[] for col in range(len(T))]
+    vCorrelation = [[] for col in range(len(T))]
     deltaP1Correlation = [[] for col in range(len(T))]
     deltaP2Correlation = [[] for col in range(len(T))]
 
@@ -529,6 +531,7 @@ if True:
         for j in range(len(R)):
             v1Correlation[i].append(np.mean(v1[i][j]))
             v2Correlation[i].append(np.mean(v2[i][j]))
+            vCorrelation[i].append(np.mean(v[i][j]))
             deltaP1Correlation[i].append(np.mean(deltaP1[i][j]))
             deltaP2Correlation[i].append(np.mean(deltaP2[i][j]))
 
@@ -536,6 +539,8 @@ if True:
     v1Correlation = np.nan_to_num(v1Correlation)
     v2Correlation = np.array(v2Correlation)
     v2Correlation = np.nan_to_num(v2Correlation)
+    vCorrelation = np.array(vCorrelation)
+    vCorrelation = np.nan_to_num(vCorrelation)
     deltaP1Correlation = np.array(deltaP1Correlation)
     deltaP1Correlation = np.nan_to_num(deltaP1Correlation)
     deltaP2Correlation = np.array(deltaP2Correlation)
@@ -549,6 +554,8 @@ if True:
             "v1Correlation": v1Correlation,
             "v2": v2,
             "v2Correlation": v2Correlation,
+            "v": v,
+            "vCorrelation": vCorrelation,
             "deltaP1": deltaP1,
             "deltaP1Correlation": deltaP1Correlation,
             "deltaP2": deltaP2,
@@ -744,6 +751,36 @@ if True:
 
     fig.savefig(
         f"results/Correlation Short Range {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    vCorrelation = df["vCorrelation"].iloc[0]
+
+    t, r = np.mgrid[0:22:2, 0:21:1]
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    maxCorr = np.max([vCorrelation, -vCorrelation])
+
+    c = ax.pcolor(
+        t,
+        r,
+        vCorrelation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time (min)")
+    ax.set_ylabel(r"$R (\mu m)$ ")
+    ax.title.set_text(r"Correlation of $v$" + f" {fileType}")
+
+    fig.savefig(
+        f"results/Correlation Short Range v {fileType}",
         dpi=300,
         transparent=True,
     )
