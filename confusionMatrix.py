@@ -78,7 +78,13 @@ if False:
         dfDivisions["Y"] = 512 - dfDivisions["Y"]
         dfDivisions.to_excel(f"dat/{filename}/dfDivisions{filename}.xlsx")
 
-filenames = ["Unwound18h17"]
+filenames = ["Unwound18h14"]
+if True:
+    for filename in filenames:
+        dfDivisions = pd.read_excel(f"dat/{filename}/dfDivisionsEdit{filename}.xlsx")
+        dfDivisions = dfDivisions.sort_values(["T", "X"], ascending=[True, True])
+        dfDivisions.to_excel(f"dat/{filename}/dfDivisionsEdit{filename}.xlsx")
+
 if True:
     for filename in filenames:
         dfDivisions = pd.read_excel(f"dat/{filename}/dfDivisionsEdit{filename}.xlsx")

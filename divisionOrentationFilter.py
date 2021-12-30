@@ -37,7 +37,6 @@ from skimage import data
 from skimage.feature import blob, blob_dog, blob_log, blob_doh
 from skimage.color import rgb2gray
 
-import matplotlib.pyplot as plt
 
 
 def sortConfusion(df, t, x, y, frameNum):
