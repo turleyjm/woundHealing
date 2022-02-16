@@ -25,32 +25,35 @@ import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
-import commonLiberty as cl
+import utils as util
 
 plt.rcParams.update({"font.size": 12})
 
 # -------------------
 
-filenames, fileType = cl.getFilesType()
+filenames, fileType = util.getFilesType()
 
 T = 90
 scale = 123.26 / 512
+
+
+# -------------------
 
 if False:
     _df2 = []
     _df = []
     for filename in filenames:
 
-        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         Q = np.mean(df["q"])
         theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
-        R = cl.rotation_matrix(-theta0)
+        R = util.rotation_matrix(-theta0)
 
-        df = pd.read_pickle(f"dat/{filename}/nucleusTracks{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
         mig = np.zeros(2)
 
         for t in range(T):
-            dft = df[df["Time"] == t]
+            dft = df[df["T"] == t]
             v = np.mean(dft["Velocity"]) * scale
             v = np.matmul(R, v)
             _df.append(
@@ -79,24 +82,24 @@ if False:
             mig += v
 
     dfVelocityMean = pd.DataFrame(_df)
-    dfVelocityMean.to_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+    dfVelocityMean.to_pickle(f"databases/dfVelocityMean{fileType}.pkl")
     dfVelocity = pd.DataFrame(_df2)
-    dfVelocity.to_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
+    dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 else:
-    dfVelocity = pd.read_pickle(f"databases/dfContinuumVelocity{fileType}.pkl")
-    dfVelocityMean = pd.read_pickle(f"databases/dfContinuumVelocityMean{fileType}.pkl")
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
+    dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
 
 if False:
     _df2 = []
     for filename in filenames:
 
-        df = pd.read_pickle(f"dat/{filename}/boundaryShape{filename}.pkl")
+        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
         mig = np.zeros(2)
         Q = np.mean(df["q"])
         theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
-        R = cl.rotation_matrix(-theta0)
+        R = util.rotation_matrix(-theta0)
 
         for t in range(T):
             dft = df[df["Time"] == t]
@@ -134,10 +137,10 @@ if False:
             mig += np.array(dfFilename["v"][dfFilename["T"] == t])[0]
 
     dfShape = pd.DataFrame(_df2)
-    dfShape.to_pickle(f"databases/dfContinuum{fileType}.pkl")
+    dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 else:
-    dfShape = pd.read_pickle(f"databases/dfContinuum{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
 
 # typical cell length
@@ -157,7 +160,7 @@ if False:
     )
     plt.close("all")
 
-if True:
+if False:
     Q1 = []
     Q1std = []
     for t in range(T):
@@ -190,7 +193,7 @@ if True:
     )
     plt.close("all")
 
-if True:
+if False:
     Q2 = []
     Q2std = []
     for t in range(T):
@@ -225,7 +228,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
     Q1 = []
     Q2 = []
     Q2std = []
@@ -266,7 +269,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
     P1 = []
     P1std = []
     for t in range(T):
@@ -302,7 +305,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
     P2 = []
     P2std = []
     for t in range(T):
@@ -348,7 +351,7 @@ if True:
     ax[0].plot(2 * np.array(range(T)), rho)
     ax[0].set(xlabel=r"Time", ylabel=r"$\rho$")
     ax[0].title.set_text(r"$\rho$")
-    ax[0].set_ylim([0.048, 0.086])
+    ax[0].set_ylim([0.048, 0.1])
 
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
@@ -360,7 +363,7 @@ if True:
 
     ax[1].set(xlabel=r"Time", ylabel=r"$\rho$")
     ax[1].title.set_text(r"$\rho$ of indivial videos")
-    ax[1].set_ylim([0.048, 0.086])
+    ax[1].set_ylim([0.048, 0.1])
 
     fig.savefig(
         f"results/mean rho {fileType}",

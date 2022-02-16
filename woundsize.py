@@ -26,18 +26,18 @@ import xml.etree.ElementTree as et
 
 import cellProperties as cell
 import findGoodCells as fi
-import commonLiberty as cl
+import utils as util
 
 plt.rcParams.update({"font.size": 10})
 
 # -------------------
 
-filenames, fileType = cl.getFilesType()
-scale = 147.91 / 512
+filenames, fileType = util.getFilesType()
+scale = 123 / 512
 
 fig = plt.figure(1, figsize=(9, 8))
 
-T = 181
+T = 93
 
 sf = []
 endTime = []
@@ -46,7 +46,7 @@ R = [[] for col in range(T)]
 for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-    dfMitosis = pd.read_pickle(f"dat/{filename}/mitosisTracks{filename}.pkl")
+    # dfMitosis = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
 
     # divisions.append(int(len(dfMitosis) / 3))
     sf.append(dfWound["Shape Factor"].iloc[0])
@@ -59,12 +59,12 @@ for filename in filenames:
         if pd.isnull(area[t]):
             area[t] = 0
 
-    df = dfMitosis[dfMitosis["Chain"] == "parent"]
-    count = 0
-    for i in range(len(df)):
-        if df["Time"].iloc[i][-1] < tf:
-            count += 1
-    divisions.append(count)
+    # df = dfMitosis[dfMitosis["Chain"] == "parent"]
+    # count = 0
+    # for i in range(len(df)):
+    #     if df["Time"].iloc[i][-1] < tf:
+    #         count += 1
+    # divisions.append(count)
 
     for t in range(T):
         R[t].append(area[t])
@@ -134,8 +134,7 @@ if False:
 
 #  ------------------- Radius around wound thats fully in frame
 
-run = False
-if run:
+if False:
     rList = [[] for col in range(T)]
     for filename in filenames:
         dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
@@ -167,8 +166,7 @@ if run:
     plt.close("all")
 
 
-run = False
-if run:
+if False:
     fig = plt.figure(1, figsize=(9, 8))
     plt.scatter(sf, endTime)
     plt.xlabel(r"sf")
@@ -182,8 +180,7 @@ if run:
     plt.close("all")
 
 
-run = False
-if run:
+if False:
     cor, a = pearsonr(endTime, divisions)
     fig = plt.figure(1, figsize=(9, 8))
     plt.scatter(endTime, divisions)
@@ -198,8 +195,8 @@ if run:
     )
     plt.close("all")
 
-run = False
-if run:
+
+if False:
     x = np.array(range(len(endTime))) + 1
     fig = plt.figure(1, figsize=(9, 8))
     plt.scatter(x, endTime)
@@ -214,7 +211,7 @@ if run:
     plt.close("all")
 
 
-if True:
+if False:
     for filename in filenames:
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         vid = sm.io.imread(f"dat/{filename}/ecadFocus{filename}.tif").astype(int)
