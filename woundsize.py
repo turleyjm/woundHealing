@@ -67,9 +67,12 @@ for filename in filenames:
     # divisions.append(count)
 
     for t in range(T):
-        R[t].append(area[t])
+        if area[t] > area[0] * 0.2:
+            R[t].append(area[t])
 
-    plt.plot(time, area)
+    A = area[area > area[0] * 0.2]
+
+    plt.plot(np.arange(0, len(A) * 2, 2), A)
 
 plt.gcf().subplots_adjust(left=0.2)
 plt.xlabel("Time")
