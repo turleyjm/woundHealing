@@ -111,7 +111,7 @@ def angle(u1, u2, v1, v2):
 def inArea(polys, muArea, sdArea):
     polygon = Polygon(polys)
     area = polygon.area
-    if area > muArea + 5 * sdArea:
+    if area > muArea + 7 * sdArea:
         return False
     else:
         return True
@@ -299,4 +299,3 @@ def vectorBoundary(pts):
         else:
             continue
     return test
-

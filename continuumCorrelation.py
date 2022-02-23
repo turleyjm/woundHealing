@@ -1,6 +1,6 @@
 import os
 import shutil
-from math import floor, log10
+from math import floor, log10, factorial
 
 from collections import Counter
 import cv2
@@ -27,7 +27,6 @@ from scipy import optimize
 import xml.etree.ElementTree as et
 from scipy.optimize import leastsq
 from datetime import datetime
-
 import cellProperties as cell
 import findGoodCells as fi
 import utils as util
@@ -40,22 +39,6 @@ plt.rcParams.update({"font.size": 16})
 filenames, fileType = util.getFilesType()
 T = 90
 scale = 123.26 / 512
-
-
-def CorR0(t, coeffs):
-    A = coeffs[0]
-    b = coeffs[1]
-    return -A * sc.expi(-b * t)
-
-
-def CorT2(r, coeffs):
-    A = coeffs[0]
-    c = coeffs[1]
-    return A * (-sc.expi(-0.01 * 2) - 1 + np.exp(-((r) ** 2) / (c)))
-
-
-def residualsGamma(coeffs, y, x):
-    return y - CorR0(x, coeffs)
 
 
 # -------------------
@@ -166,8 +149,8 @@ else:
 
 # short range space time correlation
 if False:
-    grid = 21
-    timeGrid = 11
+    grid = 9
+    timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -216,23 +199,23 @@ if False:
             df["dT"] = df.loc[:, "T"] - t
             df = df[df["dT"] < timeGrid]
             df = df[df["dT"] >= 0]
+            if len(df) != 0:
+                theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
+                df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
+                df["dp1dp1i"] = list(
+                    np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dp1
+                )
+                df["dp2dp2i"] = list(
+                    np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dp2
+                )
 
-            theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-            df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-            df["dp1dp1i"] = list(
-                np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dp1
-            )
-            df["dp2dp2i"] = list(
-                np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dp2
-            )
-
-            for j in range(len(df)):
-                deltaP1[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
-                    int(8 * df["dtheta"].iloc[j] / np.pi)
-                ].append(df["dp1dp1i"].iloc[j])
-                deltaP2[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
-                    int(8 * df["dtheta"].iloc[j] / np.pi)
-                ].append(df["dp2dp2i"].iloc[j])
+                for j in range(len(df)):
+                    deltaP1[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
+                        int(8 * df["dtheta"].iloc[j] / np.pi)
+                    ].append(df["dp1dp1i"].iloc[j])
+                    deltaP2[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
+                        int(8 * df["dtheta"].iloc[j] / np.pi)
+                    ].append(df["dp2dp2i"].iloc[j])
 
         T = np.linspace(0, (timeGrid - 1), timeGrid)
         R = np.linspace(0, 2 * (grid - 1), grid)
@@ -274,7 +257,7 @@ if False:
     deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
     deltaP2Correlation = np.mean(deltaP2Correlation[:, :, :-1], axis=2)
 
-    t, r = np.mgrid[0:44:2, 0:21:1]
+    t, r = np.mgrid[0:102:2, 0:9:1]
     fig, ax = plt.subplots(2, 1, figsize=(16, 14))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
@@ -319,10 +302,40 @@ if False:
     plt.close("all")
 
 
+def CorR0(t, C, a):
+    return C * upperGamma(0, a * t)
+
+
+def upperGamma(a, x):
+    if a == 0:
+        return -sc.expi(-x)
+    else:
+        return sc.gamma(a) * sc.gammaincc(a, x)
+
+
+def binomialGamma(j, a, t):
+    s = 0
+    for l in range(j):
+        s += (-a) ** (j - l) * (t) ** (-l) * upperGamma(l, a * t)
+    s += (t) ** (-j) * upperGamma(j, a * t)
+    return s
+
+
+def CorT2(R, b):
+    t = 2
+    C = 8.06377853853556e-06
+    a = 0.014231800277153952
+    N = 2
+    s = C * upperGamma(0, a * t)
+    for j in range(1, N):
+        s = s + binomialGamma(j, a, t) * (-b * R ** 2) ** j / factorial(j) ** 2
+    return s
+
+
 # deltaP1
 if True:
-    grid = 21
-    timeGrid = 11
+    grid = 9
+    timeGrid = 51
 
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
@@ -335,10 +348,10 @@ if True:
     R = np.linspace(0, 2 * (grid - 1), grid)
 
     m = sp.optimize.curve_fit(
-        residualsGamma,
-        T[1:],
-        deltaP1Correlation[:, 0][1:],
-        p0=(0.000007, 0.01),
+        f=CorR0,
+        xdata=T[1:],
+        ydata=deltaP1Correlation[:, 0][1:],
+        p0=(0.000006, 0.01),
     )[0]
 
     fig, ax = plt.subplots(1, 2, figsize=(14, 8))
@@ -346,20 +359,23 @@ if True:
     plt.gcf().subplots_adjust(bottom=0.15)
 
     ax[0].plot(T[1:], deltaP1Correlation[:, 0][1:])
-    ax[0].plot(T[1:], CorR0(T[1:], [0.0000069, 0.01]))
+    ax[0].plot(T[1:], CorR0(T[1:], m[0], m[1]))
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$P_1$ Correlation")
-    ax[0].set_ylim([-0.000005, np.max(deltaP1Correlation) + 0.000001])
-    ax[0].set_xlim([0, 21])
+    ax[0].set_ylim([-0.000005, 0.000025])
+    ax[0].set_xlim([0, 2 * timeGrid])
     ax[0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
 
+    m = sp.optimize.curve_fit(
+        f=CorT2, xdata=R[:3], ydata=deltaP1Correlation[1][:3], p0=1, bounds=(0, np.inf)
+    )[0]
+
     ax[1].plot(R, deltaP1Correlation[1])
-    ax[1].plot(R, CorT2(R, [0.0000069, 2]))
+    ax[1].plot(R, CorT2(R, m))
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$P_1$ Correlation")
-    ax[1].set_ylim([-0.000005, np.max(deltaP1Correlation) + 0.000001])
+    ax[1].set_ylim([-0.000005, 0.000025])
     ax[1].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
-
     fig.savefig(
         f"results/Correlation P1 in T and R {fileType}",
         dpi=300,
