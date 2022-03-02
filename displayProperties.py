@@ -15,48 +15,49 @@ from shapely.geometry import Polygon
 plt.rcParams.update({"font.size": 20})
 
 # -------------------
-
-filename = "prettyWound"
+filenames, fileType = util.getFilesType()
+# filename = "prettyWound"
 scale = 123.26 / 512
 T = 8
 
-if False:
-    focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
-    dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
+if True:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
 
-    (T, X, Y, rgb) = focus.shape
+        (T, X, Y, rgb) = focus.shape
 
-    divisions = np.zeros([T, 552, 552, 3])
+        divisions = np.zeros([T, 552, 552, 3])
 
-    for x in range(X):
-        for y in range(Y):
-            divisions[:, 20 + x, 20 + y, :] = focus[:, x, y, :]
+        for x in range(X):
+            for y in range(Y):
+                divisions[:, 20 + x, 20 + y, :] = focus[:, x, y, :]
 
-    for i in range(len(dfDivisions)):
+        for i in range(len(dfDivisions)):
 
-        t0 = dfDivisions["T"].iloc[i]
-        (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])
-        x = int(x)
-        y = int(y)
+            t0 = dfDivisions["T"].iloc[i]
+            (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])
+            x = int(x)
+            y = int(y)
 
-        rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 16)
-        rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 11)
+            rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 16)
+            rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 11)
 
-        times = [t0, int(t0 + 1)]
+            times = [t0, int(t0 + 1)]
 
-        timeVid = []
-        for t in times:
-            if t >= 0 and t <= T - 1:
-                timeVid.append(t)
+            timeVid = []
+            for t in times:
+                if t >= 0 and t <= T - 1:
+                    timeVid.append(t)
 
-        for t in timeVid:
-            divisions[t][rr0, cc0, 2] = 200
-            divisions[t][rr1, cc1, 2] = 0
+            for t in timeVid:
+                divisions[t][rr0, cc0, 2] = 200
+                divisions[t][rr1, cc1, 2] = 0
 
-    divisions = divisions[:, 20:532, 20:532]
+        divisions = divisions[:, 20:532, 20:532]
 
-    divisions = np.asarray(divisions, "uint8")
-    tifffile.imwrite(f"results/divisionsWound{filename}.tif", divisions)
+        divisions = np.asarray(divisions, "uint8")
+        tifffile.imwrite(f"results/divisionsDisplay{filename}.tif", divisions)
 
 
 if False:
@@ -208,7 +209,7 @@ if False:
     plt.close()
 
 
-if True:
+if False:
 
     focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
     h2Focus = focus[:, :, :, 0]

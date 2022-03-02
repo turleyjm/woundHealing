@@ -33,7 +33,7 @@ plt.rcParams.update({"font.size": 10})
 # -------------------
 
 filenames, fileType = util.getFilesType()
-scale = 123 / 512
+scale = 123.26 / 512
 
 fig = plt.figure(1, figsize=(9, 8))
 
@@ -46,9 +46,6 @@ R = [[] for col in range(T)]
 for filename in filenames:
 
     dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-    # dfMitosis = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
-
-    # divisions.append(int(len(dfMitosis) / 3))
     sf.append(dfWound["Shape Factor"].iloc[0])
     time = np.array(dfWound["Time"])
     area = np.array(dfWound["Area"]) * (scale) ** 2
@@ -71,6 +68,7 @@ for filename in filenames:
             R[t].append(area[t])
 
     A = area[area > area[0] * 0.2]
+    print(f"{filename} {area[0]}")
 
     plt.plot(np.arange(0, len(A) * 2, 2), A)
 

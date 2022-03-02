@@ -90,12 +90,10 @@ if False:
     dfVelocity = pd.DataFrame(_df2)
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
-else:
-    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
-    dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
-
 if False:
     _df2 = []
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
+    dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
     for filename in filenames:
 
         df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
@@ -143,12 +141,10 @@ if False:
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
-else:
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-
 
 # short range space time correlation
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 9
     timeGrid = 51
 
@@ -333,7 +329,7 @@ def CorT2(R, b):
 
 
 # deltaP1
-if True:
+if False:
     grid = 9
     timeGrid = 51
 
@@ -382,3 +378,25 @@ if True:
         transparent=True,
     )
     plt.close("all")
+
+
+def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
+    return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
+
+
+if True:
+    a = 0.014231800277153952
+    y = np.linspace(a, a * 25, 1000)
+
+    for i in range(6):
+        b = 0.1 ** (i - 2)
+        fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+        ax.plot(y, forIntegral(y, b, 20, a=0.014231800277153952, T=2, C=8.06377854e-06))
+        ax.title.set_text(f"b={round(b,4)}")
+        ax.set_xlabel("y")
+        fig.savefig(
+            f"results/Integral {fileType} {i}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
