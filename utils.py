@@ -252,3 +252,15 @@ def rotation_matrix(theta):
     )
 
     return R
+
+
+def findStartTime(filename):
+    if "Wound" in filename:
+        dfwoundDetails = pd.read_excel(f"dat/woundDetails.xlsx")
+        t0 = dfwoundDetails["Start Time"][dfwoundDetails["Filename"] == filename].iloc[
+            0
+        ]
+    else:
+        t0 = 0
+
+    return t0
