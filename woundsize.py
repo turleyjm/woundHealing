@@ -28,78 +28,133 @@ import cellProperties as cell
 import findGoodCells as fi
 import utils as util
 
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 15})
 
 # -------------------
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-
-fig = plt.figure(1, figsize=(9, 8))
-
 T = 93
 
-sf = []
-endTime = []
-divisions = []
-R = [[] for col in range(T)]
-for filename in filenames:
+if False:
+    fig = plt.figure(1, figsize=(9, 8))
+    sf = []
+    endTime = []
+    divisions = []
+    R = [[] for col in range(T)]
+    _df = []
+    for filename in filenames:
+        t0 = util.findStartTime(filename)
 
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-    sf.append(dfWound["Shape Factor"].iloc[0])
-    time = np.array(dfWound["Time"])
-    area = np.array(dfWound["Area"]) * (scale) ** 2
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        sf.append(dfWound["Shape Factor"].iloc[0])
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
 
-    tf = sum(area > 0)
-    endTime.append(tf)
-    for t in range(T):
-        if pd.isnull(area[t]):
-            area[t] = 0
+        tf = sum(area > 0)
+        endTime.append(tf)
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
 
-    # df = dfMitosis[dfMitosis["Chain"] == "parent"]
-    # count = 0
-    # for i in range(len(df)):
-    #     if df["Time"].iloc[i][-1] < tf:
-    #         count += 1
-    # divisions.append(count)
+        # df = dfMitosis[dfMitosis["Chain"] == "parent"]
+        # count = 0
+        # for i in range(len(df)):
+        #     if df["Time"].iloc[i][-1] < tf:
+        #         count += 1
+        # divisions.append(count)
 
-    for t in range(T):
-        if area[t] > area[0] * 0.2:
-            R[t].append(area[t])
+        for t in range(T):
+            if area[t] > area[0] * 0.2:
+                R[t].append(area[t])
+                _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
 
-    A = area[area > area[0] * 0.2]
-    print(f"{filename} {area[0]}")
+        A = area[area > area[0] * 0.2]
+        # print(f"{filename} {area[0]}")
 
-    plt.plot(np.arange(0, len(A) * 2, 2), A)
+        plt.plot(t0 + np.arange(0, len(A) * 2, 2), A)
 
-plt.gcf().subplots_adjust(left=0.2)
-plt.xlabel("Time")
-plt.ylabel(r"Area ($\mu m ^2$)")
-fig.savefig(
-    f"results/Wound Area {fileType}",
-    dpi=300,
-    transparent=True,
-)
-plt.close("all")
+    plt.xlabel("Time")
+    plt.ylabel(r"Area ($\mu m ^2$)")
+    plt.title(f"Area {fileType}")
+    fig.savefig(
+        f"results/Wound Area {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-err = []
-for t in range(T):
-    err.append(np.std(R[t]) / (len(R[t]) ** 0.5))
-    R[t] = np.mean(R[t])
+    df = pd.DataFrame(_df)
+    A = []
+    Time = []
+    std = []
+    T = set(df["Time"])
+    N = len(filenames)
+    for t in T:
+        if len(df[df["Time"] == t]) > N / 3:
+            Time.append(t)
+            A.append(np.mean(df["Area"][df["Time"] == t]))
+            std.append(np.std(df["Area"][df["Time"] == t]))
 
-meanFinish = []
-for filename in filenames:
+    fig = plt.figure(1, figsize=(9, 8))
+    plt.errorbar(Time, A, yerr=std)
+    plt.xlabel("Time")
+    plt.ylabel(r" Mean Area ($\mu m ^2$)")
+    plt.title(f"Mean Area {fileType}")
+    fig.savefig(
+        f"results/Mean Wound Area {fileType}",
+        bbox_inches="tight",
+    )
+    plt.close("all")
 
-    dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    labels = ["WoundS", "WoundL"]
 
-    area = np.array(dfWound["Area"]) * (scale) ** 2
-    t = 0
-    while pd.notnull(area[t]):
-        t += 1
+    for fileType in labels:
+        filenames = util.getFilesOfType(fileType)
+        _df = []
+        Area0 = []
 
-    meanFinish.append(t - 1)
+        for filename in filenames:
+            t0 = util.findStartTime(filename)
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            T = len(dfWound)
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+            Area0.append(area[0])
 
-meanFinish = np.mean(meanFinish)
+            for t in range(T):
+                if area[t] > area[0] * 0.2:
+                    _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+                else:
+                    _df.append({"Area": 0, "Time": int(t0 / 2) * 2 + 2 * t})
+
+        df = pd.DataFrame(_df)
+        A = []
+        Time = []
+        std = []
+        T = set(df["Time"])
+        N = len(filenames)
+        Area0 = np.mean(Area0)
+        for t in T:
+            if len(df[df["Time"] == t]) > N / 3:
+                if np.mean(df["Area"][df["Time"] == t]) > 0.2 * Area0:
+                    Time.append(t)
+                    A.append(np.mean(df["Area"][df["Time"] == t]))
+                    std.append(np.std(df["Area"][df["Time"] == t]))
+
+        plt.errorbar(Time, A, yerr=std, marker="o", label=f"{fileType}")
+
+    plt.xlabel("Time (mins)")
+    plt.ylabel(r" Mean Area ($\mu m ^2$)")
+    plt.title(f"Mean area of wound")
+    plt.legend()
+    fig.savefig(
+        f"results/Mean Wound Area",
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
 
 if False:
     fig = plt.figure(1, figsize=(9, 8))
