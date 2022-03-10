@@ -384,19 +384,43 @@ def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
     return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
 
 
-if True:
+if False:
     a = 0.014231800277153952
     y = np.linspace(a, a * 25, 1000)
+    R = np.linspace(0, 100, 10)
 
-    for i in range(6):
-        b = 0.1 ** (i - 2)
+    for r in R:
+        b = 0.1
         fig, ax = plt.subplots(1, 1, figsize=(20, 10))
-        ax.plot(y, forIntegral(y, b, 20, a=0.014231800277153952, T=2, C=8.06377854e-06))
-        ax.title.set_text(f"b={round(b,4)}")
+        ax.plot(y, forIntegral(y, b, r, a=0.014231800277153952, T=2, C=8.06377854e-06))
+        ax.title.set_text(f"R={int(r)}")
         ax.set_xlabel("y")
         fig.savefig(
-            f"results/Integral {fileType} {i}",
+            f"results/Integral {fileType} R={int(r)}",
             dpi=300,
             transparent=True,
         )
         plt.close("all")
+
+if True:
+    a = 0.014231800277153952
+    b = 0.005
+    y = np.linspace(a, a * 25, 100000)
+    R = np.linspace(0, 10, 50)
+
+    h = y[1] - y[0]
+    fun = []
+    for r in R:
+        fun.append(
+            sum(forIntegral(y, b, r, a=0.014231800277153952, T=2, C=8.06377854e-06) * h)
+        )
+
+    fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+    ax.plot(R, fun)
+    ax.set_xlabel("y")
+    fig.savefig(
+        f"results/P r correlation {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")

@@ -28,7 +28,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import utils as util
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -153,7 +153,7 @@ if False:
 # Compare divison density with time
 
 if False:
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
@@ -184,7 +184,7 @@ if False:
                 std.append(_std)
                 time.append(t * 10 + timeStep / 2)
 
-        ax.plot(time, dd, label=f"{fileType}")
+        ax.plot(time, dd, label=f"{fileType}", marker="o")
 
     if "Wound" in filename:
         ax.set(xlabel="Time", ylabel="Divison orientation towards wound")
@@ -251,8 +251,8 @@ if False:
 
 # Compare divison density with distance from wound edge
 
-if False:
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
@@ -283,7 +283,7 @@ if False:
                 std.append(_std)
                 radius.append(r * 10 + rStep / 2)
 
-        ax.plot(radius, dd, label=f"{fileType}")
+        ax.plot(radius, dd, label=f"{fileType}", marker="o")
 
     if "Wound" in filename:
         ax.set(xlabel="Time", ylabel="Divison orientation towards wound")
@@ -304,7 +304,7 @@ if False:
 # Divison density with distance from wound edge and time
 
 
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     orientation = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")

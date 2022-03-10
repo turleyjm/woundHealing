@@ -28,7 +28,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import utils as util
 
-plt.rcParams.update({"font.size": 15})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
