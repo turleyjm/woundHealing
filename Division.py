@@ -5,6 +5,7 @@ from math import dist, floor, log10
 from collections import Counter
 import cv2
 import matplotlib
+from matplotlib import markers
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +29,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import utils as util
 
-plt.rcParams.update({"font.size": 20})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -148,14 +149,16 @@ if False:
 # Compare divison density with time
 
 if True:
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL", "Unwound"]
     dat_dd = []
+    total = 0
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep)])
         area = np.zeros([len(filenames), int(T / timeStep)])
         dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        total += len(dfDivisions)
         for k in range(len(filenames)):
             filename = filenames[k]
             t0 = util.findStartTime(filename)
@@ -192,11 +195,11 @@ if True:
                 std.append(_std)
                 time.append(t * 10 + timeStep / 2)
 
-        ax.plot(time, dd, label=f"{fileType}")
+        ax.plot(time, dd, label=f"{fileType}", marker="o")
 
     ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with time")
-    ax.set_ylim([0, 0.0005])
+    ax.set_ylim([0, 0.00053])
     ax.legend()
 
     fig.savefig(
@@ -205,6 +208,7 @@ if True:
         bbox_inches="tight",
     )
     plt.close("all")
+    print(total)
 
 
 # Divison density with distance from wound edge
@@ -267,7 +271,7 @@ if False:
 # Compare divison density with distance from wound edge
 
 if False:
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
@@ -313,11 +317,11 @@ if False:
                 std.append(_std)
                 radius.append(r * 10 + rStep / 2)
 
-        ax.plot(radius, dd, label=f"{fileType}")
+        ax.plot(radius, dd, label=f"{fileType}", marker="o")
 
     ax.set(xlabel="Distance", ylabel=r"Divison density ($\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with distance from wound")
-    ax.set_ylim([0, 0.0005])
+    ax.set_ylim([0, 0.00051])
     ax.legend()
 
     fig.savefig(
@@ -331,7 +335,7 @@ if False:
 # Divison density with distance from wound edge and time
 
 
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
