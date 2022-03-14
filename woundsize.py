@@ -107,7 +107,7 @@ if False:
     )
     plt.close("all")
 
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
 
@@ -151,6 +151,158 @@ if True:
     plt.legend()
     fig.savefig(
         f"results/Mean Wound Area",
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+# Normalise by start size
+if True:
+    T = 93
+    fig = plt.figure(1, figsize=(5, 5))
+    sf = []
+    endTime = []
+    divisions = []
+    R = [[] for col in range(T)]
+    _df = []
+    for filename in filenames:
+        t0 = util.findStartTime(filename)
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        sf.append(dfWound["Shape Factor"].iloc[0])
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+
+        tf = sum(area > 0)
+        endTime.append(tf)
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
+
+        # df = dfMitosis[dfMitosis["Chain"] == "parent"]
+        # count = 0
+        # for i in range(len(df)):
+        #     if df["Time"].iloc[i][-1] < tf:
+        #         count += 1
+        # divisions.append(count)
+
+        for t in range(T):
+            if area[t] > area[0] * 0.2:
+                R[t].append(area[t] / area[0])
+                _df.append({"Area": area[t] / area[0], "Time": int(t0 / 2) * 2 + 2 * t})
+
+        A = area[area > area[0] * 0.2] / area[0]
+        # print(f"{filename} {area[0]}")
+
+        plt.plot(t0 + np.arange(0, len(A) * 2, 2), A, marker="o")
+
+    plt.xlabel("Time")
+    plt.ylabel(r"Area/$A_0$")
+    plt.title(f"Normalise Area {fileType}")
+    fig.savefig(
+        f"results/Wound Area norm 1 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    df = pd.DataFrame(_df)
+    A = []
+    Time = []
+    std = []
+    T = set(df["Time"])
+    N = len(filenames)
+    for t in T:
+        if len(df[df["Time"] == t]) > N / 3:
+            Time.append(t)
+            A.append(np.mean(df["Area"][df["Time"] == t]))
+            std.append(np.std(df["Area"][df["Time"] == t]))
+
+    fig = plt.figure(1, figsize=(5, 5))
+    plt.errorbar(Time, A, yerr=std, marker="o")
+    plt.xlabel("Time")
+    plt.ylabel(r"Area/$A_0$")
+    plt.title(f"Normalise Mean Area {fileType}")
+    fig.savefig(
+        f"results/Mean Wound Area norm 1 {fileType}",
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+# Normalise by start size
+if True:
+    T = 93
+    fig = plt.figure(1, figsize=(5, 5))
+    sf = []
+    endTime = []
+    divisions = []
+    R = [[] for col in range(T)]
+    _df = []
+    for filename in filenames:
+        t0 = util.findStartTime(filename)
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        sf.append(dfWound["Shape Factor"].iloc[0])
+        time = np.array(dfWound["Time"])
+        area = np.array(dfWound["Area"]) * (scale) ** 2
+
+        tf = len(area[area > area[0] * 0.2]) * 2 + t0
+        endTime.append(tf)
+        for t in range(T):
+            if pd.isnull(area[t]):
+                area[t] = 0
+
+        # df = dfMitosis[dfMitosis["Chain"] == "parent"]
+        # count = 0
+        # for i in range(len(df)):
+        #     if df["Time"].iloc[i][-1] < tf:
+        #         count += 1
+        # divisions.append(count)
+        time = []
+        for t in range(T):
+            if area[t] > area[0] * 0.2:
+                _df.append(
+                    {"Area": area[t] / area[0], "Time": (int(t0 / 2) * 2 + 2 * t) / tf}
+                )
+                time.append((int(t0 / 2) * 2 + 2 * t) / tf)
+
+        A = area[area > area[0] * 0.2] / area[0]
+        # print(f"{filename} {area[0]}")
+
+        plt.plot(time, A, marker="o")
+
+    plt.xlabel("Time")
+    plt.ylabel(r"Area ($\mu m ^2$)")
+    plt.title(f"Normalise Area {fileType}")
+    fig.savefig(
+        f"results/Wound Area norm 2 {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+    df = pd.DataFrame(_df)
+    A = []
+    Time = []
+    std = []
+    T = np.linspace(0, 1, 20)
+    N = len(filenames)
+    for t in T:
+        df1 = df[df["Time"] > t]
+        df2 = df1[df1["Time"] < t + 0.05]
+        if len(df2) > N / 3:
+            Time.append(t)
+            A.append(np.mean(df2["Area"]))
+            std.append(np.std(df2["Area"]))
+
+    fig = plt.figure(1, figsize=(5, 5))
+    plt.errorbar(Time, A, yerr=std, marker="o")
+    plt.xlabel("Time")
+    plt.ylabel(r" Mean Area ($\mu m ^2$)")
+    plt.title(f"Normalise Mean Area {fileType}")
+    fig.savefig(
+        f"results/Mean Wound Area norm 2 {fileType}",
         bbox_inches="tight",
         dpi=300,
     )

@@ -39,7 +39,7 @@ scale = 123.26 / 512
 
 # -------------------
 
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -90,7 +90,7 @@ else:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 

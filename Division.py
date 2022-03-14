@@ -47,6 +47,82 @@ def weighted_avg_and_std(values, weight, axis=0):
     return average, np.sqrt(variance)
 
 
+def OLSfit(x, y, dy=None):
+    """Find the best fitting parameters of a linear fit to the data through the
+    method of ordinary least squares estimation. (i.e. find m and b for
+    y = m*x + b)
+
+    Args:
+        x: Numpy array of independent variable data
+        y: Numpy array of dependent variable data. Must have same size as x.
+        dy: Numpy array of dependent variable standard deviations. Must be same
+            size as y.
+
+    Returns: A list with four floating point values. [m, dm, b, db]
+    """
+    if dy is None:
+        # if no error bars, weight every point the same
+        dy = np.ones(x.size)
+    denom = np.sum(1 / dy ** 2) * np.sum((x / dy) ** 2) - (np.sum(x / dy ** 2)) ** 2
+    m = (
+        np.sum(1 / dy ** 2) * np.sum(x * y / dy ** 2)
+        - np.sum(x / dy ** 2) * np.sum(y / dy ** 2)
+    ) / denom
+    b = (
+        np.sum(x ** 2 / dy ** 2) * np.sum(y / dy ** 2)
+        - np.sum(x / dy ** 2) * np.sum(x * y / dy ** 2)
+    ) / denom
+    dm = np.sqrt(np.sum(1 / dy ** 2) / denom)
+    db = np.sqrt(np.sum(x / dy ** 2) / denom)
+    return [m, dm, b, db]
+
+
+def bestFitUnwound():
+    fileType = "Unwound"
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    filenames = util.getFilesOfType(fileType)
+    count = np.zeros([len(filenames), int(T / timeStep)])
+    area = np.zeros([len(filenames), int(T / timeStep)])
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        t0 = util.findStartTime(filename)
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        for t in range(count.shape[1]):
+            df1 = dfFile[dfFile["T"] > timeStep * t]
+            df = df1[df1["T"] <= timeStep * (t + 1)]
+            count[k, t] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+        )
+        for t in range(area.shape[1]):
+            t1 = int(timeStep / 2 * t - t0 / 2)
+            t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+            if t1 < 0:
+                t1 = 0
+            if t2 < 0:
+                t2 = 0
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+    time = []
+    dd = []
+    std = []
+    for t in range(area.shape[1]):
+        _area = area[:, t][area[:, t] > 0]
+        _count = count[:, t][area[:, t] > 0]
+        if len(_area) > 0:
+            _dd, _std = weighted_avg_and_std(_count / _area, _area)
+            dd.append(_dd)
+            std.append(_std)
+            time.append(t * 10 + timeStep / 2)
+    time = np.array(time)
+    dd = np.array(dd)
+    std = np.array(std)
+    bestfit = OLSfit(time, dd, dy=std)
+    (m, c) = (bestfit[0], bestfit[2])
+
+    return m, c
+
+
 # -------------------
 
 if False:
@@ -134,7 +210,7 @@ if False:
             time.append(t * 10 + timeStep / 2)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.errorbar(time, dd, yerr=std)
+    ax.errorbar(time, dd, yerr=std, marker="o")
     ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with time {fileType}")
     ax.set_ylim([0, 0.0007])
@@ -143,12 +219,74 @@ if False:
         f"results/Divison density with time {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+if False:
+    fileType = "Unwound"
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    filenames = util.getFilesOfType(fileType)
+    count = np.zeros([len(filenames), int(T / timeStep)])
+    area = np.zeros([len(filenames), int(T / timeStep)])
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        t0 = util.findStartTime(filename)
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
+        for t in range(count.shape[1]):
+            df1 = dfFile[dfFile["T"] > timeStep * t]
+            df = df1[df1["T"] <= timeStep * (t + 1)]
+            count[k, t] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+        )
+        for t in range(area.shape[1]):
+            t1 = int(timeStep / 2 * t - t0 / 2)
+            t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+            if t1 < 0:
+                t1 = 0
+            if t2 < 0:
+                t2 = 0
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+
+    time = []
+    dd = []
+    std = []
+    for t in range(area.shape[1]):
+        _area = area[:, t][area[:, t] > 0]
+        _count = count[:, t][area[:, t] > 0]
+        if len(_area) > 0:
+            _dd, _std = weighted_avg_and_std(_count / _area, _area)
+            dd.append(_dd)
+            std.append(_std)
+            time.append(t * 10 + timeStep / 2)
+
+    time = np.array(time)
+    dd = np.array(dd)
+    std = np.array(std)
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    bestfit = OLSfit(time, dd, dy=std)
+    (m, c) = (bestfit[0], bestfit[2])
+    ax.errorbar(time, dd, yerr=std, marker="o")
+    ax.plot(time, m * time + c)
+    ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
+    ax.title.set_text(f"Divison density with time {fileType}")
+    ax.set_ylim([0, 0.0007])
+
+    fig.savefig(
+        f"results/Divison density with time best fit {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
 # Compare divison density with time
 
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL", "Unwound"]
     dat_dd = []
@@ -206,6 +344,7 @@ if True:
         f"results/Compared divison density with time",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
     print(total)
@@ -255,7 +394,7 @@ if False:
             radius.append(r * 10 + rStep / 2)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.errorbar(radius, dd, yerr=std)
+    ax.errorbar(radius, dd, yerr=std, marker="o")
     ax.set(xlabel="Distance", ylabel=r"Divison density ($\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with distance from wound {fileType}")
     ax.set_ylim([0, 0.0007])
@@ -264,6 +403,7 @@ if False:
         f"results/Divison density with distance {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
@@ -328,6 +468,7 @@ if False:
         f"results/Compared divison density with distance",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
@@ -335,7 +476,7 @@ if False:
 # Divison density with distance from wound edge and time
 
 
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -393,23 +534,29 @@ if False:
                 dd[t, r] = np.nan
                 std[t, r] = np.nan
 
+    (m, c) = bestFitUnwound()
+    time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
+    for r in range(dd.shape[1]):
+        dd[:, r] = dd[:, r] - (m * time + c)
+
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
     c = ax.pcolor(
         t,
         r,
         dd,
-        vmin=0,
-        vmax=0.0006,
-        shading="auto",
+        vmin=-0.0004,
+        vmax=0.0004,
+        cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Divison density distance and time {fileType}")
+    ax.title.set_text(f"Change in divison density distance and time {fileType}")
 
     fig.savefig(
         f"results/Divison density heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")

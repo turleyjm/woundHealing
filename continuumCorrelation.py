@@ -317,15 +317,18 @@ def binomialGamma(j, a, t):
     return s
 
 
-def CorT2(R, b):
-    t = 2
-    C = 8.06377853853556e-06
+def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
+    y, R, T = np.meshgrid(y, R, T, indexing="ij")
+    return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
+
+
+def Integral(R, b):
     a = 0.014231800277153952
-    N = 2
-    s = C * upperGamma(0, a * t)
-    for j in range(1, N):
-        s = s + binomialGamma(j, a, t) * (-b * R ** 2) ** j / factorial(j) ** 2
-    return s
+    T = 2
+    C = 8.06377854e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=1)
 
 
 # deltaP1
@@ -363,11 +366,15 @@ if False:
     ax[0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
 
     m = sp.optimize.curve_fit(
-        f=CorT2, xdata=R[:3], ydata=deltaP1Correlation[1][:3], p0=1, bounds=(0, np.inf)
+        f=Integral,
+        xdata=R,
+        ydata=deltaP1Correlation[1],
+        p0=0.025,
+        method="lm",
     )[0]
 
     ax[1].plot(R, deltaP1Correlation[1])
-    ax[1].plot(R, CorT2(R, m))
+    ax[1].plot(R, Integral(R, m))
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$P_1$ Correlation")
     ax[1].set_ylim([-0.000005, 0.000025])
@@ -380,32 +387,29 @@ if False:
     plt.close("all")
 
 
-def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
-    return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
-
-
 if False:
     a = 0.014231800277153952
-    y = np.linspace(a, a * 25, 1000)
-    R = np.linspace(0, 100, 10)
+    y = np.linspace(a, a * 100, 100000)
+    R = np.linspace(0, 10, 50)
 
     for r in R:
         b = 0.1
-        fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+        fig, ax = plt.subplots(1, 1, figsize=(4, 8))
         ax.plot(y, forIntegral(y, b, r, a=0.014231800277153952, T=2, C=8.06377854e-06))
         ax.title.set_text(f"R={int(r)}")
         ax.set_xlabel("y")
         fig.savefig(
-            f"results/Integral {fileType} R={int(r)}",
+            f"results/Integral {fileType} R={r}",
             dpi=300,
             transparent=True,
+            bbox_inches="tight",
         )
         plt.close("all")
 
-if True:
+if False:
     a = 0.014231800277153952
     b = 0.005
-    y = np.linspace(a, a * 25, 100000)
+    y = np.linspace(a, a * 100, 100000)
     R = np.linspace(0, 10, 50)
 
     h = y[1] - y[0]
@@ -415,12 +419,87 @@ if True:
             sum(forIntegral(y, b, r, a=0.014231800277153952, T=2, C=8.06377854e-06) * h)
         )
 
-    fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
     ax.plot(R, fun)
     ax.set_xlabel("y")
     fig.savefig(
         f"results/P r correlation {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+def CorrdP1(R, T):
+    a = 0.014231800277153952
+    b = 0.02502418
+    C = 8.06377854e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=1)
+
+
+# fit cavre for dP1
+if True:
+    dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
+    deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
+
+    deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
+
+    t, r = np.mgrid[0:102:2, 0:18:2]
+    fig, ax = plt.subplots(3, 1, figsize=(8, 16))
+
+    maxCorr = np.max([deltaP1Correlation, -deltaP1Correlation])
+
+    c = ax[0].pcolor(
+        t,
+        r,
+        deltaP1Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0])
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
+
+    fit_dP1 = CorrdP1(r, t)
+
+    c = ax[1].pcolor(
+        t,
+        r,
+        fit_dP1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1])
+    ax[1].set_xlabel("Time (min)")
+    ax[1].set_ylabel(r"$R (\mu m)$")
+    ax[1].title.set_text(r"Model Correlation of $\delta P_1$")
+
+    c = ax[2].pcolor(
+        t,
+        r,
+        deltaP1Correlation - fit_dP1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (min)")
+    ax[2].set_ylabel(r"$R (\mu m)$")
+    ax[2].title.set_text(r"Differnce between curves")
+
+    fig.savefig(
+        f"results/Correlation P {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
