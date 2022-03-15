@@ -144,20 +144,22 @@ if False:
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 # space time correlation
-if True:
+grid = 8
+timeGrid = 18
+gridSize = 10
+gridSizeT = 5
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
-    grid = 21
-    timeGrid = 18
     xMax = np.max(dfShape["X"])
     xMin = np.min(dfShape["X"])
     yMax = np.max(dfShape["Y"])
     yMin = np.min(dfShape["Y"])
-    xGrid = int(1 + (xMax - xMin) // 5)
-    yGrid = int(1 + (yMax - yMin) // 5)
+    xGrid = int(1 + (xMax - xMin) // gridSize)
+    yGrid = int(1 + (yMax - yMin) // gridSize)
 
-    T = np.linspace(0, 5 * (timeGrid - 1), timeGrid)
-    R = np.linspace(0, 5 * (grid - 1), grid)
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, gridSize * (grid - 1), grid)
     rho = [[[] for col in range(len(R))] for col in range(len(T))]
     for filename in filenames:
         print(filename + datetime.now().strftime(" %H:%M:%S"))
@@ -172,12 +174,12 @@ if True:
             for i in range(xGrid):
                 for j in range(yGrid):
                     x = [
-                        xMin + i * 10,
-                        xMin + (i + 1) * 10,
+                        xMin + i * gridSize,
+                        xMin + (i + 1) * gridSize,
                     ]
                     y = [
-                        yMin + j * 10,
-                        yMin + (j + 1) * 10,
+                        yMin + j * gridSize,
+                        yMin + (j + 1) * gridSize,
                     ]
 
                     dfg = util.sortGrid(dft, x, y)
@@ -193,13 +195,13 @@ if True:
             for j in range(yGrid):
                 for t in T:
                     t = int(t)
-                    deltarho = np.mean(heatmapdrho[t : t + 10, i, j])
-                    if np.sum(inPlaneEcad[t : t + 10, i, j]) > 0:
+                    deltarho = np.mean(heatmapdrho[t : t + gridSizeT, i, j])
+                    if np.sum(inPlaneEcad[t : t + gridSizeT, i, j]) > 0:
                         for idash in range(xGrid):
                             for jdash in range(yGrid):
                                 for tdash in T:
                                     tdash = int(tdash)
-                                    deltaT = int((tdash - t) / 10)
+                                    deltaT = int((tdash - t) / gridSizeT)
                                     deltaR = int(
                                         ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
                                     )
@@ -208,7 +210,9 @@ if True:
                                             if (
                                                 np.sum(
                                                     inPlaneEcad[
-                                                        tdash : tdash + 10, idash, jdash
+                                                        tdash : tdash + gridSizeT,
+                                                        idash,
+                                                        jdash,
                                                     ]
                                                 )
                                                 > 0
@@ -218,7 +222,7 @@ if True:
                                                     deltarho
                                                     * np.mean(
                                                         heatmapdrho[
-                                                            tdash : tdash + 10,
+                                                            tdash : tdash + gridSizeT,
                                                             idash,
                                                             jdash,
                                                         ]
@@ -250,13 +254,13 @@ if True:
     df.to_pickle(f"databases/continuumCorrelation{fileType}.pkl")
 
 
-if True:
+if False:
     df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
     rhoCorrelation = df["rhoCorrelation"].iloc[0]
 
     deltarhoVar = df["deltarhoVar"].iloc[0]
 
-    t, r = np.mgrid[0:180:10, 0:110:5]
+    t, r = np.mgrid[0:180:10, 0:80:10]
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
     lims = np.max([np.max(rhoCorrelation), abs(np.min(rhoCorrelation))])
@@ -277,6 +281,62 @@ if True:
 
     fig.savefig(
         f"results/Correlation Rho {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+def corRho_T(T, C):
+    return C / T
+
+
+def corRho_R(R, C, D):
+    T = 5
+    return C / T * np.exp(-(R ** 2) / (4 * D * T))
+
+
+if True:
+    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, gridSize * (grid - 1), grid)
+
+    m = sp.optimize.curve_fit(
+        f=corRho_T,
+        xdata=T[1:],
+        ydata=rhoCorrelation[:, 0][1:],
+        p0=0.003,
+    )[0]
+
+    fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax[0].plot(T[1:], rhoCorrelation[:, 0][1:])
+    ax[0].plot(T[1:], corRho_T(T, m)[1:])
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([-0.00001, 0.0007])
+    ax[0].set_xlim([0, gridSizeT * timeGrid])
+    ax[0].title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+
+    m = sp.optimize.curve_fit(
+        f=corRho_R,
+        xdata=R,
+        ydata=rhoCorrelation[0],
+        p0=(0.003, 10),
+    )[0]
+
+    ax[1].plot(R, rhoCorrelation[0])
+    ax[1].plot(R, corRho_R(R, m[0], m[1]))
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([-0.00001, 0.0007])
+    ax[1].title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+    fig.savefig(
+        f"results/Correlation rho in T and R {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

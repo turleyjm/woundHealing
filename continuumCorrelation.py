@@ -32,7 +32,7 @@ import findGoodCells as fi
 import utils as util
 
 pd.options.mode.chained_assignment = None
-plt.rcParams.update({"font.size": 16})
+plt.rcParams.update({"font.size": 8})
 
 # -------------------
 
@@ -145,56 +145,122 @@ if False:
 # short range space time correlation
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 9
+    grid = 42
     timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
     theta = np.linspace(0, 2 * np.pi, 17)
 
-    deltaP1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
-    deltaP2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    dP1dP1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    dP2dP2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    # dQ1dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    # dP1dQ1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    # dP1dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    # dP2dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
 
     dfShape["dR"] = list(np.zeros([len(dfShape)]))
     dfShape["dT"] = list(np.zeros([len(dfShape)]))
     dfShape["dtheta"] = list(np.zeros([len(dfShape)]))
+
     dfShape["dp1dp1i"] = list(np.zeros([len(dfShape)]))
     dfShape["dp2dp2i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dq1dq1i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dq1dq2i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dp1dq1i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dp1dq2i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dp2dq2i"] = list(np.zeros([len(dfShape)]))
+
+    _df = []
     for k in range(len(filenames)):
         filename = filenames[k]
-        deltaP1 = [
+        dp1dp1ij = [
             [[[] for col in range(17)] for col in range(grid)]
             for col in range(timeGrid)
         ]  # t, r, theta
-        deltaP2 = [
+        dp2dp2ij = [
             [[[] for col in range(17)] for col in range(grid)]
             for col in range(timeGrid)
         ]
-        print(f"{filename}")
+        dq1dq1ij = [
+            [[[] for col in range(17)] for col in range(grid)]
+            for col in range(timeGrid)
+        ]
+        dq2dq2ij = [
+            [[[] for col in range(17)] for col in range(grid)]
+            for col in range(timeGrid)
+        ]
+        # dq1dq2ij = [
+        #     [[[] for col in range(17)] for col in range(grid)]
+        #     for col in range(timeGrid)
+        # ]  # t, r, theta
+        # dp1dq1ij = [
+        #     [[[] for col in range(17)] for col in range(grid)]
+        #     for col in range(timeGrid)
+        # ]
+        # dp1dq2ij = [
+        #     [[[] for col in range(17)] for col in range(grid)]
+        #     for col in range(timeGrid)
+        # ]
+        # dp2dq2ij = [
+        #     [[[] for col in range(17)] for col in range(grid)]
+        #     for col in range(timeGrid)
+        # ]
+
+        print(filename)
         dfShapeF = dfShape[dfShape["Filename"] == filename]
-        n = len(dfShapeF)
+        n = int(len(dfShapeF) / 10)
+        random.seed(10)
         count = 0
-        for i in range(n):
-            if i % int((n) / 10) == 0:
-                print(datetime.now().strftime("%H:%M:%S") + f" {count*10}%")
+        Is = []
+        for i0 in range(n):
+            i = int(random.random() * len(dfShapeF) / 10)
+            while i in Is:
+                i = int(random.random() * len(dfShapeF) / 10)
+            Is.append(i)
+            if i0 % int((n) / 100) == 0:
+                print(datetime.now().strftime("%H:%M:%S") + f" {count}%")
                 count += 1
+
             x = dfShapeF["X"].iloc[i]
             y = dfShapeF["Y"].iloc[i]
             t = dfShapeF["T"].iloc[i]
             dp1 = dfShapeF["dp"].iloc[i][0]
             dp2 = dfShapeF["dp"].iloc[i][1]
+            dq1 = dfShapeF["dq"].iloc[i][0, 0]
+            dq2 = dfShapeF["dq"].iloc[i][0, 1]
             dfShapeF["dR"] = (
                 (dfShapeF.loc[:, "X"] - x) ** 2 + (dfShapeF.loc[:, "Y"] - y) ** 2
             ) ** 0.5
             df = dfShapeF[
-                ["X", "Y", "T", "dp", "dR", "dT", "dtheta", "dp1dp1i", "dp2dp2i"]
+                [
+                    "X",
+                    "Y",
+                    "T",
+                    "dp",
+                    "dq",
+                    "dR",
+                    "dT",
+                    "dtheta",
+                    "dp1dp1i",
+                    "dp2dp2i",
+                    "dq1dq1i",
+                    "dq2dq2i",
+                    "dq1dq2i",
+                    "dp1dq1i",
+                    "dp1dq2i",
+                    "dp2dq2i",
+                ]
             ]
-            df = df[df["dR"] < grid]
-            df = df[df["dR"] > 0]
+            df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] > 0)]
+            # df = df[df["dR"] > 0]
 
             df["dT"] = df.loc[:, "T"] - t
-            df = df[df["dT"] < timeGrid]
-            df = df[df["dT"] >= 0]
+            df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
+            # df = df[df["dT"] >= 0]
             if len(df) != 0:
                 theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
                 df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
@@ -204,14 +270,50 @@ if False:
                 df["dp2dp2i"] = list(
                     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dp2
                 )
+                df["dq1dq1i"] = list(
+                    np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0] * dq1
+                )
+                df["dq2dq2i"] = list(
+                    np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1] * dq2
+                )
+                # df["dq1dq2i"] = list(
+                #     np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0] * dq2
+                # )
+                # df["dp1dq1i"] = list(
+                #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dq1
+                # )
+                # df["dp1dq2i"] = list(
+                #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dq2
+                # )
+                # df["dp2dq2i"] = list(
+                #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dq2
+                # )
 
                 for j in range(len(df)):
-                    deltaP1[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
+                    dp1dp1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                         int(8 * df["dtheta"].iloc[j] / np.pi)
                     ].append(df["dp1dp1i"].iloc[j])
-                    deltaP2[int(df["dT"].iloc[j])][int(df["dR"].iloc[j])][
+                    dp2dp2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                         int(8 * df["dtheta"].iloc[j] / np.pi)
                     ].append(df["dp2dp2i"].iloc[j])
+                    dq1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                        int(8 * df["dtheta"].iloc[j] / np.pi)
+                    ].append(df["dq1dq1i"].iloc[j])
+                    dq2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                        int(8 * df["dtheta"].iloc[j] / np.pi)
+                    ].append(df["dq2dq2i"].iloc[j])
+                    # dq1dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                    #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                    # ].append(df["dq1dq2i"].iloc[j])
+                    # dp1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                    #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                    # ].append(df["dp1dq1i"].iloc[j])
+                    # dp1dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                    #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                    # ].append(df["dp1dq2i"].iloc[j])
+                    # dp2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                    #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                    # ].append(df["dp2dq2i"].iloc[j])
 
         T = np.linspace(0, (timeGrid - 1), timeGrid)
         R = np.linspace(0, 2 * (grid - 1), grid)
@@ -219,24 +321,80 @@ if False:
         for i in range(len(T)):
             for j in range(len(R)):
                 for th in range(len(theta)):
-                    deltaP1Correlation[i][j][th][k] = np.mean(deltaP1[i][j][th])
-                    deltaP2Correlation[i][j][th][k] = np.mean(deltaP2[i][j][th])
+                    dP1dP1Correlation[i][j][th][k] = np.mean(dp1dp1ij[i][j][th])
+                    dP2dP2Correlation[i][j][th][k] = np.mean(dp2dp2ij[i][j][th])
+                    dQ1dQ1Correlation[i][j][th][k] = np.mean(dq1dq1ij[i][j][th])
+                    dQ2dQ2Correlation[i][j][th][k] = np.mean(dq2dq2ij[i][j][th])
+                    # dQ1dQ2Correlation[i][j][th][k] = np.mean(dq1dq2ij[i][j][th])
+                    # dP1dQ1Correlation[i][j][th][k] = np.mean(dp1dq1ij[i][j][th])
+                    # dP1dQ2Correlation[i][j][th][k] = np.mean(dp1dq2ij[i][j][th])
+                    # dP2dQ2Correlation[i][j][th][k] = np.mean(dp2dq2ij[i][j][th])
+
+        _df.append(
+            {
+                "Filename": filename,
+                "dP1dP1Correlation": dP1dP1Correlation[:, :, :, k],
+                "dP2dP2Correlation": dP2dP2Correlation[:, :, :, k],
+                "dQ1dQ1Correlation": dQ1dQ1Correlation[:, :, :, k],
+                "dQ2dQ2Correlation": dQ2dQ2Correlation[:, :, :, k],
+                # "dQ1dQ2Correlation": dQ1dQ2Correlation[:, :, :, k],
+                # "dP1dQ1Correlation": dP1dQ1Correlation[:, :, :, k],
+                # "dP1dQ2Correlation": dP1dQ2Correlation[:, :, :, k],
+                # "dP2dQ2Correlation": dP2dQ2Correlation[:, :, :, k],
+            }
+        )
+        dfCorrelation = pd.DataFrame(_df)
+        dfCorrelation.to_pickle(f"databases/dfCorMidway{filename}_1-4.pkl")
 
     _df = []
 
-    deltaP1Correlation = np.nan_to_num(deltaP1Correlation)
-    deltaP2Correlation = np.nan_to_num(deltaP2Correlation)
-    deltaP1CorrelationFile = deltaP1Correlation
-    deltaP2CorrelationFile = deltaP2Correlation
-    deltaP1Correlation = np.mean(deltaP1Correlation, axis=3)
-    deltaP2Correlation = np.mean(deltaP2Correlation, axis=3)
+
+if False:
+    dP1dP1Correlation = np.nan_to_num(dP1dP1Correlation)
+    dP2dP2Correlation = np.nan_to_num(dP2dP2Correlation)
+    dQ1dQ1Correlation = np.nan_to_num(dQ1dQ1Correlation)
+    dQ2dQ2Correlation = np.nan_to_num(dQ2dQ2Correlation)
+    dQ1dQ2Correlation = np.nan_to_num(dQ1dQ2Correlation)
+    dP1dQ1Correlation = np.nan_to_num(dP1dQ1Correlation)
+    dP1dQ2Correlation = np.nan_to_num(dP1dQ2Correlation)
+    dP2dQ2Correlation = np.nan_to_num(dP2dQ2Correlation)
+
+    dP1dP1CorrelationFilename = dP1dP1Correlation
+    dP2dP2CorrelationFilename = dP2dP2Correlation
+    dQ1dQ1CorrelationFilename = dQ1dQ1Correlation
+    dQ2dQ2CorrelationFilename = dQ2dQ2Correlation
+    dQ1dQ2CorrelationFilename = dQ1dQ2Correlation
+    dP1dQ1CorrelationFilename = dP1dQ1Correlation
+    dP1dQ2CorrelationFilename = dP1dQ2Correlation
+    dP2dQ2CorrelationFilename = dP2dQ2Correlation
+
+    dP1dP1Correlation = np.mean(dP1dP1Correlation, axis=3)
+    dP2dP2Correlation = np.mean(dP2dP2Correlation, axis=3)
+    dQ1dQ1Correlation = np.mean(dQ1dQ1Correlation, axis=3)
+    dQ2dQ2Correlation = np.mean(dQ2dQ2Correlation, axis=3)
+    dQ1dQ2Correlation = np.mean(dQ1dQ2Correlation, axis=3)
+    dP1dQ1Correlation = np.mean(dP1dQ1Correlation, axis=3)
+    dP1dQ2Correlation = np.mean(dP1dQ2Correlation, axis=3)
+    dP2dQ2Correlation = np.mean(dP2dQ2Correlation, axis=3)
 
     _df.append(
         {
-            "deltaP1Correlation": deltaP1Correlation,
-            "deltaP2Correlation": deltaP2Correlation,
-            "deltaP1CorrelationFile": deltaP1CorrelationFile,
-            "deltaP2CorrelationFile": deltaP2CorrelationFile,
+            "dP1dP1Correlation": dP1dP1Correlation,
+            "dP2dP2Correlation": dP2dP2Correlation,
+            "dQ1dQ1Correlation": dQ1dQ1Correlation,
+            "dQ2dQ2Correlation": dQ2dQ2Correlation,
+            "dQ1dQ2Correlation": dQ1dQ2Correlation,
+            "dP1dQ1Correlation": dP1dQ1Correlation,
+            "dP1dQ2Correlation": dP1dQ2Correlation,
+            "dP2dQ2Correlation": dP2dQ2Correlation,
+            "dP1dP1CorrelationFilename": dP1dP1CorrelationFilename,
+            "dP2dP2CorrelationFilename": dP2dP2CorrelationFilename,
+            "dQ1dQ1CorrelationFilename": dQ1dQ1CorrelationFilename,
+            "dQ2dQ2CorrelationFilename": dQ2dQ2CorrelationFilename,
+            "dQ1dQ2CorrelationFilename": dQ1dQ2CorrelationFilename,
+            "dP1dQ1CorrelationFilename": dP1dQ1CorrelationFilename,
+            "dP1dQ2CorrelationFilename": dP1dQ2CorrelationFilename,
+            "dP2dQ2CorrelationFilename": dP2dQ2CorrelationFilename,
         }
     )
 
@@ -328,7 +486,7 @@ def Integral(R, b):
     C = 8.06377854e-06
     y = np.linspace(a, a * 100, 100000)
     h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=1)
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
 
 # deltaP1
@@ -383,6 +541,7 @@ if False:
         f"results/Correlation P1 in T and R {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
@@ -437,18 +596,18 @@ def CorrdP1(R, T):
     C = 8.06377854e-06
     y = np.linspace(a, a * 100, 100000)
     h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=1)
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
 
 # fit cavre for dP1
-if True:
+if False:
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
 
     deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
 
     t, r = np.mgrid[0:102:2, 0:18:2]
-    fig, ax = plt.subplots(3, 1, figsize=(8, 16))
+    fig, ax = plt.subplots(1, 3, figsize=(12, 3))
 
     maxCorr = np.max([deltaP1Correlation, -deltaP1Correlation])
 
@@ -466,7 +625,10 @@ if True:
     ax[0].set_ylabel(r"$R (\mu m)$ ")
     ax[0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
 
-    fit_dP1 = CorrdP1(r, t)
+    fit_dP1 = np.zeros([t.shape[0], t.shape[1]])
+    for _t in range(t.shape[0]):
+        for _r in range(t.shape[1]):
+            fit_dP1[_t, _r] = CorrdP1(r[_t, _r], t[_t, _r])[0]
 
     c = ax[1].pcolor(
         t,
