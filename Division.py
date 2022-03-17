@@ -29,7 +29,7 @@ import cellProperties as cell
 import findGoodCells as fi
 import utils as util
 
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 12})
 
 # -------------------
 
@@ -126,47 +126,39 @@ def bestFitUnwound():
 # -------------------
 
 if False:
-    for filename in filenames:
-        dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
-        dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
-        dist = []
-        N = len(dfFilename)
-
-        mig = np.array([256, 256])
-        for t in range(N):
-
-            img = np.zeros([512, 512])
-            img[int(mig[0]), int(mig[1])] = 255
-            img = 255 - img
-            dist.append(sp.ndimage.morphology.distance_transform_edt(img))
-            mig = mig + dfFilename["v"].iloc[t] / scale
-
-        dist = np.asarray(dist, "uint16")
-        tifffile.imwrite(f"dat/{filename}/distanceWound{filename}.tif", dist)
-
-if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        Q = np.mean(dfShape["q"])
+        theta0 = 0.5 * np.arctan2(Q[0, 0], Q[0, 1])
+
         t0 = util.findStartTime(filename)
         if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
             dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
                 int
             )
             for i in range(len(dfDivision)):
                 t = dfDivision["T"].iloc[i]
+                (x_w, y_w) = dfWound["Position"].iloc[t]
                 x = dfDivision["X"].iloc[i]
                 y = dfDivision["Y"].iloc[i]
-                r = dist[t, x, 512 - y]
+                ori = dfDivision["Orientation"].iloc[i]
+                ori = (ori - np.arctan2(y - y_w, x - x_w) * 180 / np.pi) % 180
+                if ori > 90:
+                    ori = 180 - ori
+                r = dist[t, x, y]
                 _df.append(
                     {
                         "Filename": filename,
                         "Label": dfDivision["Label"].iloc[i],
-                        "T": int(t0 + t * 2),  # frames are taken every t2 minutes
-                        "X": x * scale,
-                        "Y": y * scale,
+                        "T": int(t0 + t * 2),  # frames are taken every 2 minutes
+                        "X": x,
+                        "Y": y,
                         "R": r * scale,
-                        "Orientation": dfDivision["Orientation"].iloc[i],
+                        "Theta": np.arctan2(y - y_w, x - x_w) - theta0,
+                        "Orientation": ori,
                     }
                 )
         else:
@@ -184,17 +176,19 @@ if False:
                 x = dfDivision["X"].iloc[i] * scale
                 y = dfDivision["Y"].iloc[i] * scale
                 r = ((xc - x) ** 2 + (yc - y) ** 2) ** 0.5
+                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
+                if ori > 90:
+                    ori = 180 - ori
                 _df.append(
                     {
                         "Filename": filename,
                         "Label": dfDivision["Label"].iloc[i],
-                        "T": int(
-                            t0 + dfDivision["T"].iloc[i] * 2
-                        ),  # frames are taken every t2 minutes
+                        "T": int(t0 + t * 2),  # frames are taken every t2 minutes
                         "X": x,
                         "Y": y,
                         "R": r,
-                        "Orientation": dfDivision["Orientation"].iloc[i],
+                        "Theta": np.arctan2(y - yc, x - xc) - theta0,
+                        "Orientation": ori,
                     }
                 )
 
@@ -408,11 +402,19 @@ if False:
             sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[:t2]
             * scale
         )
+        for t in range(len(dist)):
+            img = fi.imgxyrc(dist[t])
+            dist[t] = img
+
         for r in range(area.shape[1]):
             area[k, r] = (
                 np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
                 * scale ** 2
             )
+            # test = np.zeros([t2,512,512])
+            # test[(dist > rStep * r) & (dist <= rStep * (r + 1))] = 1
+            # test = np.asarray(test, "uint8")
+            # tifffile.imwrite(f"results/test.tif", test)
 
     radius = []
     dd = []
@@ -472,6 +474,9 @@ if False:
                 ]
                 * scale
             )
+            for t in range(len(dist)):
+                img = fi.imgxyrc(dist[t])
+                dist[t] = img
             for r in range(area.shape[1]):
                 area[k, r] = (
                     np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
@@ -508,8 +513,7 @@ if False:
 
 # Divison density with distance from wound edge and time
 
-
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -538,6 +542,9 @@ if False:
             sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[:t2]
             * scale
         )
+        for t in range(len(dist)):
+            img = fi.imgxyrc(dist[t])
+            dist[t] = img
         for r in range(area.shape[2]):
             for t in range(area.shape[1]):
                 t1 = int(timeStep / 2 * t - t0 / 2)
@@ -600,7 +607,7 @@ if False:
 
 # compare unwounded to hot and cold spots
 
-if True:
+if False:
     labels = ["Unwound", "WoundS", "WoundL"]
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
@@ -635,6 +642,9 @@ if True:
                 ]
                 * scale
             )
+            for t in range(len(dist)):
+                img = fi.imgxyrc(dist[t])
+                dist[t] = img
             for r in range(area.shape[2]):
                 for t in range(area.shape[1]):
                     t1 = int(timeStep / 2 * t - t0 / 2)
@@ -697,3 +707,11 @@ if True:
         dpi=300,
     )
     plt.close("all")
+
+
+if False:
+
+    y, x = np.mgrid[-255:257:1, -256:256:1]
+    y = -y
+    angle = np.arctan2(y, x) * 180 / np.pi
+    angle = angle % 360

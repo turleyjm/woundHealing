@@ -48,13 +48,13 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 # -------------------
 
-if False:
+if True:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
         dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         Q = np.mean(dfShape["q"])
-        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
+        theta0 = 0.5 * np.arctan2(Q[0, 0], Q[0, 1])
 
         t0 = util.findStartTime(filename)
         if "Wound" in filename:
@@ -80,12 +80,25 @@ if False:
                         "X": x,
                         "Y": y,
                         "R": r * scale,
+                        "Theta": np.arctan2(y - y_w, x - x_w) - theta0,
                         "Orientation": ori,
                     }
                 )
         else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
             for i in range(len(dfDivision)):
                 t = dfDivision["T"].iloc[i]
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                )
+                xc = 256 * scale - mig[0]
+                yc = 256 * scale - mig[1]
+                x = dfDivision["X"].iloc[i] * scale
+                y = dfDivision["Y"].iloc[i] * scale
+                r = ((xc - x) ** 2 + (yc - y) ** 2) ** 0.5
                 ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
                 if ori > 90:
                     ori = 180 - ori
@@ -94,8 +107,10 @@ if False:
                         "Filename": filename,
                         "Label": dfDivision["Label"].iloc[i],
                         "T": int(t0 + t * 2),  # frames are taken every t2 minutes
-                        "X": dfDivision["X"].iloc[i],
-                        "Y": dfDivision["Y"].iloc[i],
+                        "X": x,
+                        "Y": y,
+                        "R": r,
+                        "Theta": np.arctan2(y - yc, x - xc) - theta0,
                         "Orientation": ori,
                     }
                 )
@@ -251,7 +266,7 @@ if False:
 
 # Compare divison density with distance from wound edge
 
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
     for fileType in labels:
