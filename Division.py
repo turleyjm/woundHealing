@@ -26,7 +26,6 @@ from scipy import optimize
 import xml.etree.ElementTree as et
 
 import cellProperties as cell
-import findGoodCells as fi
 import utils as util
 
 plt.rcParams.update({"font.size": 12})
@@ -399,12 +398,9 @@ if False:
             / 255
         )
         dist = (
-            sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[:t2]
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
             * scale
         )
-        for t in range(len(dist)):
-            img = fi.imgxyrc(dist[t])
-            dist[t] = img
 
         for r in range(area.shape[1]):
             area[k, r] = (
@@ -469,14 +465,9 @@ if False:
                 / 255
             )
             dist = (
-                sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[
-                    :t2
-                ]
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
                 * scale
             )
-            for t in range(len(dist)):
-                img = fi.imgxyrc(dist[t])
-                dist[t] = img
             for r in range(area.shape[1]):
                 area[k, r] = (
                     np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
@@ -539,12 +530,10 @@ if True:
             / 255
         )
         dist = (
-            sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[:t2]
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
             * scale
         )
-        for t in range(len(dist)):
-            img = fi.imgxyrc(dist[t])
-            dist[t] = img
+
         for r in range(area.shape[2]):
             for t in range(area.shape[1]):
                 t1 = int(timeStep / 2 * t - t0 / 2)
@@ -564,6 +553,7 @@ if True:
 
     dd = np.zeros([int(T / timeStep), int(R / rStep)])
     std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
 
     for r in range(area.shape[2]):
         for t in range(area.shape[1]):
@@ -573,6 +563,7 @@ if True:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
                 dd[t, r] = _dd
                 std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
             else:
                 dd[t, r] = np.nan
                 std[t, r] = np.nan
@@ -581,6 +572,8 @@ if True:
     time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
     for r in range(dd.shape[1]):
         dd[:, r] = dd[:, r] - (m * time + c)
+
+    dd[sumArea < 8000] = np.nan
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
@@ -603,6 +596,26 @@ if True:
         dpi=300,
     )
     plt.close("all")
+
+    # t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    # fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    # c = ax.pcolor(
+    #     t,
+    #     r,
+    #     sumArea,
+    #     cmap="Reds",
+    # )
+    # fig.colorbar(c, ax=ax)
+    # ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+    # ax.title.set_text(f"Area of division bins distance and time {fileType}")
+
+    # fig.savefig(
+    #     f"results/Divison density Area bin heatmap {fileType}",
+    #     transparent=True,
+    #     bbox_inches="tight",
+    #     dpi=300,
+    # )
+    # plt.close("all")
 
 
 # compare unwounded to hot and cold spots
@@ -637,14 +650,10 @@ if False:
                 / 255
             )
             dist = (
-                sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)[
-                    :t2
-                ]
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
                 * scale
             )
-            for t in range(len(dist)):
-                img = fi.imgxyrc(dist[t])
-                dist[t] = img
+
             for r in range(area.shape[2]):
                 for t in range(area.shape[1]):
                     t1 = int(timeStep / 2 * t - t0 / 2)
@@ -709,9 +718,67 @@ if False:
     plt.close("all")
 
 
-if False:
+if True:
 
-    y, x = np.mgrid[-255:257:1, -256:256:1]
+    y, x = np.mgrid[-512:512:1, -512:512:1]
     y = -y
     angle = np.arctan2(y, x) * 180 / np.pi
     angle = angle % 360
+
+    count = np.zeros([len(filenames), int(R / rStep)])
+    area = np.zeros([len(filenames), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        t0 = util.findStartTime(filename)
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[1]):
+            df1 = dfFile[dfFile["R"] > rStep * r]
+            df = df1[df1["R"] <= rStep * (r + 1)]
+            count[k, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        angle = (
+            sm.io.imread(f"dat/{filename}/angle{filename}.tif").astype(int)[:t2] * scale
+        )
+
+        for r in range(area.shape[1]):
+            area[k, r] = (
+                np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
+                * scale ** 2
+            )
+            # test = np.zeros([t2,512,512])
+            # test[(dist > rStep * r) & (dist <= rStep * (r + 1))] = 1
+            # test = np.asarray(test, "uint8")
+            # tifffile.imwrite(f"results/test.tif", test)
+
+    radius = []
+    dd = []
+    std = []
+    for r in range(area.shape[1]):
+        _area = area[:, r][area[:, r] > 0]
+        _count = count[:, r][area[:, r] > 0]
+        if len(_area) > 0:
+            _dd, _std = weighted_avg_and_std(_count / _area, _area)
+            dd.append(_dd)
+            std.append(_std)
+            radius.append(r * 10 + rStep / 2)
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    ax.errorbar(radius, dd, yerr=std, marker="o")
+    ax.set(xlabel="Distance", ylabel=r"Divison density ($\mu m^{-2}$)")
+    ax.title.set_text(f"Divison density with distance from wound {fileType}")
+    ax.set_ylim([0, 0.0007])
+
+    fig.savefig(
+        f"results/Divison density with distance {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")

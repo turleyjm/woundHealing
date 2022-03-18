@@ -26,7 +26,6 @@ from scipy import optimize
 import xml.etree.ElementTree as et
 
 import cellProperties as cell
-import findGoodCells as fi
 import utils as util
 
 plt.rcParams.update({"font.size": 14})
@@ -137,8 +136,8 @@ if True:
 
         ax.plot(time, dQ1, marker="o", label=f"{fileType}")
 
-    ax.set(xlabel="Time (min)", ylabel=r"$\delta Q^{(1)}$")
-    ax.title.set_text(r"$\delta Q^{(1)}$ Close to the Wound Edge with Time")
+    ax.set(xlabel="Time (min)", ylabel="Elongation Towards the Wound")
+    ax.title.set_text("Elongation Close to the Wound Edge with Time")
     ax.set_ylim([-0.02, 0.004])
     ax.legend()
 

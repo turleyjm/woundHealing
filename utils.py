@@ -24,7 +24,6 @@ from scipy import optimize
 import xml.etree.ElementTree as et
 
 import cellProperties as cell
-import findGoodCells as fi
 
 plt.rcParams.update({"font.size": 20})
 
@@ -51,6 +50,12 @@ def getFilesType():
 
         if ".DS_Store" in filenames:
             filenames.remove(".DS_Store")
+
+        if "confocalRawLocation.txt" in filenames:
+            filenames.remove("confocalRawLocation.txt")
+
+        if "woundDetails.xlsx" in filenames:
+            filenames.remove("woundDetails.xlsx")
     else:
         cwd = os.getcwd()
         Fullfilenames = os.listdir(cwd + "/dat")

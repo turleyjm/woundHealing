@@ -28,7 +28,6 @@ import xml.etree.ElementTree as et
 from scipy.optimize import leastsq
 from datetime import datetime
 import cellProperties as cell
-import findGoodCells as fi
 import utils as util
 
 pd.options.mode.chained_assignment = None
@@ -143,7 +142,7 @@ if False:
 
 
 # short range space time correlation
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 42
     timeGrid = 51
@@ -155,7 +154,7 @@ if False:
     dP1dP1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
     dP2dP2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
     dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
-    dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
+    # dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
     # dQ1dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
     # dP1dQ1Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
     # dP1dQ2Correlation = np.zeros([len(T), len(R), len(theta), len(filenames)])
@@ -168,11 +167,11 @@ if False:
     dfShape["dp1dp1i"] = list(np.zeros([len(dfShape)]))
     dfShape["dp2dp2i"] = list(np.zeros([len(dfShape)]))
     dfShape["dq1dq1i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dq1dq2i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dp1dq1i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dp1dq2i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dp2dq2i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dq1dq2i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dp1dq1i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dp1dq2i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dp2dq2i"] = list(np.zeros([len(dfShape)]))
 
     _df = []
     for k in range(len(filenames)):
@@ -189,10 +188,10 @@ if False:
             [[[] for col in range(17)] for col in range(grid)]
             for col in range(timeGrid)
         ]
-        dq2dq2ij = [
-            [[[] for col in range(17)] for col in range(grid)]
-            for col in range(timeGrid)
-        ]
+        # dq2dq2ij = [
+        #     [[[] for col in range(17)] for col in range(grid)]
+        #     for col in range(timeGrid)
+        # ]
         # dq1dq2ij = [
         #     [[[] for col in range(17)] for col in range(grid)]
         #     for col in range(timeGrid)
@@ -248,19 +247,17 @@ if False:
                     "dp1dp1i",
                     "dp2dp2i",
                     "dq1dq1i",
-                    "dq2dq2i",
-                    "dq1dq2i",
-                    "dp1dq1i",
-                    "dp1dq2i",
-                    "dp2dq2i",
+                    # "dq2dq2i",
+                    # "dq1dq2i",
+                    # "dp1dq1i",
+                    # "dp1dq2i",
+                    # "dp2dq2i",
                 ]
             ]
             df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] > 0)]
-            # df = df[df["dR"] > 0]
 
             df["dT"] = df.loc[:, "T"] - t
             df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-            # df = df[df["dT"] >= 0]
             if len(df) != 0:
                 theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
                 df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
@@ -273,9 +270,9 @@ if False:
                 df["dq1dq1i"] = list(
                     np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0] * dq1
                 )
-                df["dq2dq2i"] = list(
-                    np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1] * dq2
-                )
+                # df["dq2dq2i"] = list(
+                #     np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1] * dq2
+                # )
                 # df["dq1dq2i"] = list(
                 #     np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0] * dq2
                 # )
@@ -299,9 +296,9 @@ if False:
                     dq1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                         int(8 * df["dtheta"].iloc[j] / np.pi)
                     ].append(df["dq1dq1i"].iloc[j])
-                    dq2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                        int(8 * df["dtheta"].iloc[j] / np.pi)
-                    ].append(df["dq2dq2i"].iloc[j])
+                    # dq2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                    #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                    # ].append(df["dq2dq2i"].iloc[j])
                     # dq1dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                     #     int(8 * df["dtheta"].iloc[j] / np.pi)
                     # ].append(df["dq1dq2i"].iloc[j])
@@ -324,7 +321,7 @@ if False:
                     dP1dP1Correlation[i][j][th][k] = np.mean(dp1dp1ij[i][j][th])
                     dP2dP2Correlation[i][j][th][k] = np.mean(dp2dp2ij[i][j][th])
                     dQ1dQ1Correlation[i][j][th][k] = np.mean(dq1dq1ij[i][j][th])
-                    dQ2dQ2Correlation[i][j][th][k] = np.mean(dq2dq2ij[i][j][th])
+                    # dQ2dQ2Correlation[i][j][th][k] = np.mean(dq2dq2ij[i][j][th])
                     # dQ1dQ2Correlation[i][j][th][k] = np.mean(dq1dq2ij[i][j][th])
                     # dP1dQ1Correlation[i][j][th][k] = np.mean(dp1dq1ij[i][j][th])
                     # dP1dQ2Correlation[i][j][th][k] = np.mean(dp1dq2ij[i][j][th])
@@ -336,7 +333,7 @@ if False:
                 "dP1dP1Correlation": dP1dP1Correlation[:, :, :, k],
                 "dP2dP2Correlation": dP2dP2Correlation[:, :, :, k],
                 "dQ1dQ1Correlation": dQ1dQ1Correlation[:, :, :, k],
-                "dQ2dQ2Correlation": dQ2dQ2Correlation[:, :, :, k],
+                # "dQ2dQ2Correlation": dQ2dQ2Correlation[:, :, :, k],
                 # "dQ1dQ2Correlation": dQ1dQ2Correlation[:, :, :, k],
                 # "dP1dQ1Correlation": dP1dQ1Correlation[:, :, :, k],
                 # "dP1dQ2Correlation": dP1dQ2Correlation[:, :, :, k],
@@ -344,7 +341,7 @@ if False:
             }
         )
         dfCorrelation = pd.DataFrame(_df)
-        dfCorrelation.to_pickle(f"databases/dfCorMidway{filename}_1-4.pkl")
+        dfCorrelation.to_pickle(f"databases/dfCorMidway{filename}_1-3.pkl")
 
     _df = []
 

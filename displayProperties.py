@@ -8,7 +8,6 @@ import skimage.draw
 import utils as util
 import cv2
 import shutil
-import findGoodCells as fi
 import cellProperties as cell
 from shapely.geometry import Polygon
 

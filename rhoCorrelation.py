@@ -28,7 +28,6 @@ import xml.etree.ElementTree as et
 from scipy.optimize import leastsq
 from datetime import datetime
 import cellProperties as cell
-import findGoodCells as fi
 import utils as util
 
 pd.options.mode.chained_assignment = None

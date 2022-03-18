@@ -26,7 +26,6 @@ from scipy import optimize
 import xml.etree.ElementTree as et
 
 import cellProperties as cell
-import findGoodCells as fi
 import utils as util
 
 plt.rcParams.update({"font.size": 14})
