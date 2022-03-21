@@ -38,6 +38,8 @@ T = 160
 timeStep = 10
 R = 110
 rStep = 10
+Theta = 390
+thetaStep = 30
 
 
 def weighted_avg_and_std(values, weight, axis=0):
@@ -124,7 +126,7 @@ def bestFitUnwound():
 
 # -------------------
 
-if False:
+if True:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -135,9 +137,7 @@ if False:
         t0 = util.findStartTime(filename)
         if "Wound" in filename:
             dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-            dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
-                int
-            )
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
             for i in range(len(dfDivision)):
                 t = dfDivision["T"].iloc[i]
                 (x_w, y_w) = dfWound["Position"].iloc[t]
@@ -147,7 +147,7 @@ if False:
                 ori = (ori - np.arctan2(y - y_w, x - x_w) * 180 / np.pi) % 180
                 if ori > 90:
                     ori = 180 - ori
-                r = dist[t, x, y]
+                r = dist[t, 512 - y, x]
                 _df.append(
                     {
                         "Filename": filename,
@@ -156,7 +156,8 @@ if False:
                         "X": x,
                         "Y": y,
                         "R": r * scale,
-                        "Theta": np.arctan2(y - y_w, x - x_w) - theta0,
+                        "Theta": ((np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi)
+                        % 360,
                         "Orientation": ori,
                     }
                 )
@@ -186,7 +187,7 @@ if False:
                         "X": x,
                         "Y": y,
                         "R": r,
-                        "Theta": np.arctan2(y - yc, x - xc) - theta0,
+                        "Theta": ((np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi),
                         "Orientation": ori,
                     }
                 )
@@ -504,7 +505,7 @@ if False:
 
 # Divison density with distance from wound edge and time
 
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -719,37 +720,41 @@ if False:
 
 
 if True:
-
-    y, x = np.mgrid[-512:512:1, -512:512:1]
-    y = -y
-    angle = np.arctan2(y, x) * 180 / np.pi
-    angle = angle % 360
-
-    count = np.zeros([len(filenames), int(R / rStep)])
-    area = np.zeros([len(filenames), int(R / rStep)])
+    count = np.zeros([len(filenames), int(Theta / thetaStep)])
+    area = np.zeros([len(filenames), int(Theta / thetaStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     for k in range(len(filenames)):
         filename = filenames[k]
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        Q = np.mean(dfShape["q"])
+        theta0 = 0.5 * np.arctan2(Q[0, 0], Q[0, 1])
+        theta0 = theta0 * 180 / np.pi
+
         dfFile = dfDivisions[dfDivisions["Filename"] == filename]
         t0 = util.findStartTime(filename)
         t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
 
-        for r in range(count.shape[1]):
-            df1 = dfFile[dfFile["R"] > rStep * r]
-            df = df1[df1["R"] <= rStep * (r + 1)]
-            count[k, r] = len(df)
+        for theta in range(count.shape[1]):
+            df1 = dfFile[dfFile["Theta"] > thetaStep * theta]
+            df = df1[df1["Theta"] <= thetaStep * (theta + 1)]
+            count[k, theta] = len(df)
 
         inPlane = 1 - (
             sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
             / 255
         )
         angle = (
-            sm.io.imread(f"dat/{filename}/angle{filename}.tif").astype(int)[:t2] * scale
-        )
+            sm.io.imread(f"dat/{filename}/angle{filename}.tif").astype(int)[:t2]
+        ) - theta0
+        angle = angle % 360
 
-        for r in range(area.shape[1]):
-            area[k, r] = (
-                np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
+        for theta in range(area.shape[1]):
+            area[k, theta] = (
+                np.sum(
+                    inPlane[
+                        (angle > thetaStep * theta) & (angle <= thetaStep * (theta + 1))
+                    ]
+                )
                 * scale ** 2
             )
             # test = np.zeros([t2,512,512])
@@ -760,23 +765,23 @@ if True:
     radius = []
     dd = []
     std = []
-    for r in range(area.shape[1]):
-        _area = area[:, r][area[:, r] > 0]
-        _count = count[:, r][area[:, r] > 0]
+    for theta in range(area.shape[1]):
+        _area = area[:, theta][area[:, theta] > 0]
+        _count = count[:, theta][area[:, theta] > 0]
         if len(_area) > 0:
             _dd, _std = weighted_avg_and_std(_count / _area, _area)
             dd.append(_dd)
             std.append(_std)
-            radius.append(r * 10 + rStep / 2)
+            radius.append(theta * thetaStep + thetaStep / 2)
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     ax.errorbar(radius, dd, yerr=std, marker="o")
-    ax.set(xlabel="Distance", ylabel=r"Divison density ($\mu m^{-2}$)")
-    ax.title.set_text(f"Divison density with distance from wound {fileType}")
-    ax.set_ylim([0, 0.0007])
+    ax.set(xlabel=r"$\theta$", ylabel=r"Divison density ($\mu m^{-2}$)")
+    ax.title.set_text(f"Divison density with theta from wound {fileType}")
+    # ax.set_ylim([0, 0.0007])
 
     fig.savefig(
-        f"results/Divison density with distance {fileType}",
+        f"results/Divison density with theta {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
