@@ -32,11 +32,20 @@ plt.rcParams.update({"font.size": 14})
 
 # -------------------
 
+
+def weighted_avg_and_std(values, weight, axis=0):
+    average = np.average(values, weights=weight, axis=axis)
+    variance = np.average((values - average) ** 2, weights=weight, axis=axis)
+    return average, np.sqrt(variance)
+
+
+# -------------------
+
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 90
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -45,7 +54,7 @@ if False:
         theta = np.arctan2(Q[0, 1], Q[0, 0]) / 2
         R = util.rotation_matrix(-theta)
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-        dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(int)
+        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
         t0 = util.findStartTime(filename)
 
         for t in range(T):
@@ -57,7 +66,7 @@ if False:
             for i in range(len(dft)):
                 x = dft["Centroid"].iloc[i][0]
                 y = dft["Centroid"].iloc[i][1]
-                r = dist[t, int(x), int(y)]
+                r = dist[t, int(512 - y), int(x)]
                 phi = np.arctan2(y - yw, x - xw)
                 Rw = util.rotation_matrix(-phi)
 
@@ -75,7 +84,7 @@ if False:
                         "T": int(2 * t + t0),
                         "X": x * scale,
                         "Y": y * scale,
-                        "r": r * scale,
+                        "R": r * scale,
                         "Phi": phi,
                         "Area": A,
                         "dq": dq,
@@ -94,9 +103,9 @@ if False:
     dQ1_std = []
     for i in range(10):
         dft = dfShape[(dfShape["T"] >= 10 * i) & (dfShape["T"] < 10 * (i + 1))]
-        dQ = np.mean(dft["dq"][dft["r"] < 20], axis=0)
+        dQ = np.mean(dft["dq"][dft["R"] < 20], axis=0)
         dQ1.append(dQ[0, 0])
-        dQ_std = np.std(np.array(dft["dq"][dft["r"] < 20]), axis=0)
+        dQ_std = np.std(np.array(dft["dq"][dft["R"] < 20]), axis=0)
         dQ1_std.append(dQ_std[0, 0] / (len(dft)) ** 0.5)
         time.append(10 * i + 5)
 
@@ -117,7 +126,7 @@ if False:
     plt.close("all")
 
 # compare
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL"]
     for fileType in labels:
@@ -143,6 +152,100 @@ if True:
 
     fig.savefig(
         f"results/dQ1 Close to the Wound Edge Compare",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Divison density with distance from wound edge and time
+if True:
+    T = 160
+    timeStep = 10
+    R = 110
+    rStep = 10
+    count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfShape[dfShape["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[2]):
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                count[k, t, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    dd = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _area = area[:, t, r][area[:, t, r] > 800]
+            _count = count[:, t, r][area[:, t, r] > 800]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd[t, r] = _dd
+                std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
+            else:
+                dd[t, r] = np.nan
+                std[t, r] = np.nan
+
+    dd[sumArea < 8000] = np.nan
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    c = ax.pcolor(
+        t,
+        r,
+        dd,
+        vmin=0.04,
+        vmax=0.08,
+        cmap="Reds",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+    ax.title.set_text(f"Change in divison density distance and time {fileType}")
+
+    fig.savefig(
+        f"results/Divison density heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

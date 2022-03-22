@@ -143,7 +143,7 @@ if False:
 
 
 # short range space time correlation
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 42
     timeGrid = 51
@@ -223,8 +223,8 @@ if True:
                 while i in Is:
                     i = int(random.random() * len(dfShapeF) / 10)
                 Is.append(i)
-                if i0 % int((n) / 100) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {count}%")
+                if i0 % int((n) / 10) == 0:
+                    print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
                     count += 1
 
                 x = dfShapeF["X"].iloc[i]
@@ -487,6 +487,15 @@ def Integral(R, b):
     return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
 
+def Integral_P2(R, b):
+    a = 0.014231800277153952
+    T = 2
+    C = 2.89978933e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+
 # deltaP1
 if False:
     grid = 9
@@ -494,10 +503,7 @@ if False:
 
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
-    deltaP2Correlation = dfCorrelation["deltaP2Correlation"].iloc[0]
-
     deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
-    deltaP2Correlation = np.mean(deltaP2Correlation[:, :, :-1], axis=2)
 
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -509,7 +515,7 @@ if False:
         p0=(0.000006, 0.01),
     )[0]
 
-    fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -537,6 +543,69 @@ if False:
     ax[1].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
     fig.savefig(
         f"results/Correlation P1 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# deltaP2
+if False:
+    grid = 9
+    timeGrid = 51
+
+    dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
+
+    deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
+    deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
+    deltaP2Correlation = dfCorrelation["deltaP2Correlation"].iloc[0]
+    deltaP2Correlation = np.mean(deltaP2Correlation[:, :, :-1], axis=2)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    m_P1 = sp.optimize.curve_fit(
+        f=CorR0,
+        xdata=T[1:],
+        ydata=deltaP1Correlation[:, 0][1:],
+        p0=(0.000006, 0.01),
+    )[0]
+    m = sp.optimize.curve_fit(
+        f=CorR0,
+        xdata=T[1:],
+        ydata=deltaP2Correlation[:, 0][1:],
+        p0=(0.000006, 0.01),
+    )[0]
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax[0].plot(T[1:], deltaP2Correlation[:, 0][1:])
+    ax[0].plot(T[1:], CorR0(T[1:], m[0], m_P1[1]))
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$P_2$ Correlation")
+    ax[0].set_ylim([-0.000002, 0.00001])
+    ax[0].set_xlim([0, 2 * timeGrid])
+    ax[0].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+
+    m = sp.optimize.curve_fit(
+        f=Integral_P2,
+        xdata=R,
+        ydata=deltaP2Correlation[1],
+        p0=0.025,
+        method="lm",
+    )[0]
+
+    ax[1].plot(R, deltaP2Correlation[1])
+    ax[1].plot(R, Integral_P2(R, m))
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$P_2$ Correlation")
+    ax[1].set_ylim([-0.000002, 0.00001])
+    ax[1].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+    fig.savefig(
+        f"results/Correlation P2 in T and R {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -597,8 +666,17 @@ def CorrdP1(R, T):
     return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
 
+def CorrdP2(R, T):
+    a = 0.014231800277153952
+    b = 0.02502418
+    C = 2.89978933e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+
 # fit cavre for dP1
-if False:
+if True:
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
 
@@ -657,7 +735,75 @@ if False:
     ax[2].title.set_text(r"Differnce between curves")
 
     fig.savefig(
-        f"results/Correlation P {fileType}",
+        f"results/Correlation P1 {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# fit cavre for dP1
+if True:
+    dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
+    deltaP2Correlation = dfCorrelation["deltaP2Correlation"].iloc[0]
+
+    deltaP2Correlation = np.mean(deltaP2Correlation[:, :, :-1], axis=2)
+
+    t, r = np.mgrid[0:102:2, 0:18:2]
+    fig, ax = plt.subplots(1, 3, figsize=(12, 3))
+
+    maxCorr = np.max([deltaP2Correlation, -deltaP2Correlation])
+
+    c = ax[0].pcolor(
+        t,
+        r,
+        deltaP2Correlation,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[0])
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+
+    fit_dP2 = np.zeros([t.shape[0], t.shape[1]])
+    for _t in range(t.shape[0]):
+        for _r in range(t.shape[1]):
+            fit_dP2[_t, _r] = CorrdP2(r[_t, _r], t[_t, _r])[0]
+
+    c = ax[1].pcolor(
+        t,
+        r,
+        fit_dP2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1])
+    ax[1].set_xlabel("Time (min)")
+    ax[1].set_ylabel(r"$R (\mu m)$")
+    ax[1].title.set_text(r"Model Correlation of $\delta P_2$")
+
+    c = ax[2].pcolor(
+        t,
+        r,
+        deltaP2Correlation - fit_dP2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (min)")
+    ax[2].set_ylabel(r"$R (\mu m)$")
+    ax[2].title.set_text(r"Differnce between curves")
+
+    fig.savefig(
+        f"results/Correlation P2 {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
