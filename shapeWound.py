@@ -242,10 +242,10 @@ if True:
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Change in divison density distance and time {fileType}")
+    ax.title.set_text(f"Density distance and time {fileType}")
 
     fig.savefig(
-        f"results/Divison density heatmap {fileType}",
+        f"results/Density heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

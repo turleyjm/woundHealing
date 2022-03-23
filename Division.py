@@ -504,7 +504,7 @@ if False:
 
 
 # Divison density with distance from wound edge and time
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")

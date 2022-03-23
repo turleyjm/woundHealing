@@ -143,7 +143,7 @@ if False:
 
 
 # short range space time correlation
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 42
     timeGrid = 51
@@ -178,6 +178,14 @@ if False:
             # dP1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
             # dP1dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
             # dP2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dP1dP1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dP2dP2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dQ1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dQ2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dQ1dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dP1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dP1dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dP2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
 
             dp1dp1ij = [
                 [[[] for col in range(17)] for col in range(grid)]
@@ -330,6 +338,15 @@ if False:
                         # dP1dQ2Correlation[i][j][th] = np.mean(dp1dq2ij[i][j][th])
                         # dP2dQ2Correlation[i][j][th] = np.mean(dp2dq2ij[i][j][th])
 
+                        dP1dP1Correlation_std[i][j][th] = np.std(dp1dp1ij[i][j][th])
+                        dP2dP2Correlation_std[i][j][th] = np.std(dp2dp2ij[i][j][th])
+                        # dQ1dQ1Correlation_std[i][j][th] = np.std(dq1dq1ij[i][j][th])
+                        # dQ2dQ2Correlation_std[i][j][th] = np.std(dq2dq2ij[i][j][th])
+                        # dQ1dQ2Correlation_std[i][j][th] = np.std(dq1dq2ij[i][j][th])
+                        # dP1dQ1Correlation_std[i][j][th] = np.std(dp1dq1ij[i][j][th])
+                        # dP1dQ2Correlation_std[i][j][th] = np.std(dp1dq2ij[i][j][th])
+                        # dP2dQ2Correlation_std[i][j][th] = np.std(dp2dq2ij[i][j][th])
+
             _df.append(
                 {
                     "Filename": filename,
@@ -341,6 +358,14 @@ if False:
                     # "dP1dQ1Correlation": dP1dQ1Correlation,
                     # "dP1dQ2Correlation": dP1dQ2Correlation,
                     # "dP2dQ2Correlation": dP2dQ2Correlation,
+                    "dP1dP1Correlation_std": dP1dP1Correlation_std,
+                    "dP2dP2Correlation_std": dP2dP2Correlation_std,
+                    # "dQ1dQ1Correlation_std": dQ1dQ1Correlation_std,
+                    # "dQ2dQ2Correlation_std": dQ2dQ2Correlation_std,
+                    # "dQ1dQ2Correlation_std": dQ1dQ2Correlation_std,
+                    # "dP1dQ1Correlation_std": dP1dQ1Correlation_std,
+                    # "dP1dQ2Correlation_std": dP1dQ2Correlation_std,
+                    # "dP2dQ2Correlation_std": dP2dQ2Correlation_std,
                 }
             )
             dfCorrelation = pd.DataFrame(_df)
@@ -498,6 +523,7 @@ def Integral_P2(R, b):
 
 # deltaP1
 if False:
+    plt.rcParams.update({"font.size": 7})
     grid = 9
     timeGrid = 51
 
@@ -515,17 +541,18 @@ if False:
         p0=(0.000006, 0.01),
     )[0]
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig, ax = plt.subplots(1, 2, figsize=(6, 3))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    ax[0].plot(T[1:], deltaP1Correlation[:, 0][1:])
-    ax[0].plot(T[1:], CorR0(T[1:], m[0], m[1]))
+    ax[0].plot(T[1:], deltaP1Correlation[:, 0][1:], label="Data")
+    ax[0].plot(T[1:], CorR0(T[1:], m[0], m[1]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$P_1$ Correlation")
     ax[0].set_ylim([-0.000005, 0.000025])
     ax[0].set_xlim([0, 2 * timeGrid])
-    ax[0].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
+    ax[0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
+    ax[0].legend()
 
     m = sp.optimize.curve_fit(
         f=Integral,
@@ -535,12 +562,13 @@ if False:
         method="lm",
     )[0]
 
-    ax[1].plot(R, deltaP1Correlation[1])
-    ax[1].plot(R, Integral(R, m))
+    ax[1].plot(R, deltaP1Correlation[1], label="Data")
+    ax[1].plot(R, Integral(R, m), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$P_1$ Correlation")
     ax[1].set_ylim([-0.000005, 0.000025])
-    ax[1].title.set_text(r"Correlation of $\delta P_1$" + f" {fileType}")
+    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=2$")
+    ax[1].legend()
     fig.savefig(
         f"results/Correlation P1 in T and R {fileType}",
         dpi=300,
@@ -578,17 +606,18 @@ if False:
         p0=(0.000006, 0.01),
     )[0]
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig, ax = plt.subplots(1, 2, figsize=(6, 3))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    ax[0].plot(T[1:], deltaP2Correlation[:, 0][1:])
-    ax[0].plot(T[1:], CorR0(T[1:], m[0], m_P1[1]))
+    ax[0].plot(T[1:], deltaP2Correlation[:, 0][1:], label="Data")
+    ax[0].plot(T[1:], CorR0(T[1:], m[0], m_P1[1]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$P_2$ Correlation")
     ax[0].set_ylim([-0.000002, 0.00001])
     ax[0].set_xlim([0, 2 * timeGrid])
-    ax[0].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+    ax[0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
+    ax[0].legend()
 
     m = sp.optimize.curve_fit(
         f=Integral_P2,
@@ -598,12 +627,13 @@ if False:
         method="lm",
     )[0]
 
-    ax[1].plot(R, deltaP2Correlation[1])
-    ax[1].plot(R, Integral_P2(R, m))
+    ax[1].plot(R, deltaP2Correlation[1], label="Data")
+    ax[1].plot(R, Integral_P2(R, m), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$P_2$ Correlation")
     ax[1].set_ylim([-0.000002, 0.00001])
-    ax[1].title.set_text(r"Correlation of $\delta P_2$" + f" {fileType}")
+    ax[1].title.set_text(r"Correlation of $\delta P_2$, $T=2$")
+    ax[1].legend()
     fig.savefig(
         f"results/Correlation P2 in T and R {fileType}",
         dpi=300,
@@ -676,7 +706,7 @@ def CorrdP2(R, T):
 
 
 # fit cavre for dP1
-if True:
+if False:
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
 
@@ -743,7 +773,7 @@ if True:
     plt.close("all")
 
 
-# fit cavre for dP1
+# fit cavre for dP2
 if True:
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP2Correlation = dfCorrelation["deltaP2Correlation"].iloc[0]
