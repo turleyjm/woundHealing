@@ -126,7 +126,7 @@ def bestFitUnwound():
 
 # -------------------
 
-if True:
+if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -316,8 +316,10 @@ if False:
 if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL", "Unwound"]
+    legend = ["Small Wound", "Large Wound", "Unwounded"]
     dat_dd = []
     total = 0
+    i = 0
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep)])
@@ -356,19 +358,20 @@ if False:
             _count = count[:, t][area[:, t] > 0]
             if len(_area) > 0:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                dd.append(_dd)
+                dd.append(_dd * 10000 * timeStep)
                 std.append(_std)
                 time.append(t * 10 + timeStep / 2)
 
-        ax.plot(time, dd, label=f"{fileType}", marker="o")
+        ax.plot(time, dd, label=f"{legend[i]}", marker="o")
+        i += 1
 
-    ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
-    ax.title.set_text(f"Divison density with time")
-    ax.set_ylim([0, 0.00053])
+    ax.set(xlabel="Time", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.title.set_text(f"Division density with time")
+    ax.set_ylim([0, 4.5 * timeStep])
     ax.legend()
 
     fig.savefig(
-        f"results/Compared divison density with time",
+        f"results/Compared division density with time",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -574,6 +577,7 @@ if True:
         dd[:, r] = dd[:, r] - (m * time + c)
 
     dd[sumArea < 8000] = np.nan
+    dd = dd * 10000 * timeStep
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
@@ -581,16 +585,16 @@ if True:
         t,
         r,
         dd,
-        vmin=-0.0004,
-        vmax=0.0004,
+        vmin=-4 * timeStep,
+        vmax=4 * timeStep,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Change in divison density distance and time {fileType}")
+    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax.title.set_text(f"Change in division density small wound")
 
     fig.savefig(
-        f"results/Divison density heatmap {fileType}",
+        f"results/Division density heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

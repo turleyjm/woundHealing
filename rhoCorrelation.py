@@ -252,8 +252,42 @@ if False:
     df = pd.DataFrame(_df)
     df.to_pickle(f"databases/continuumCorrelation{fileType}.pkl")
 
+if True:
+    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
 
-if False:
+    deltarhoVar = df["deltarhoVar"].iloc[0]
+
+    t, r = np.mgrid[0:180:10, 0:80:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+    lims = np.max([np.max(rhoCorrelation), abs(np.min(rhoCorrelation))])
+
+    rhoCorrelation = rhoCorrelation - rhoCorrelation[-1]
+
+    c = ax.pcolor(
+        t,
+        r,
+        rhoCorrelation,
+        cmap="RdBu_r",
+        vmin=-lims,
+        vmax=lims,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time (min)")
+    ax.set_ylabel(r"$R (\mu m)$ ")
+    ax.title.set_text(r"Correlation of $\delta \rho$ str" + f" {fileType}")
+
+    fig.savefig(
+        f"results/Correlation Rho str {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+if True:
     df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
     rhoCorrelation = df["rhoCorrelation"].iloc[0]
 
@@ -276,7 +310,7 @@ if False:
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time (min)")
     ax.set_ylabel(r"$R (\mu m)$ ")
-    ax.title.set_text(r"Correlation of $\delta \rho$ Norm" + f" {fileType}")
+    ax.title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
 
     fig.savefig(
         f"results/Correlation Rho {fileType}",

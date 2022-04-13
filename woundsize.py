@@ -106,9 +106,9 @@ if False:
     )
     plt.close("all")
 
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-    labels = ["WoundS", "WoundL"]
+    labels = ["Small Wound", "Large Wound"]
 
     for fileType in labels:
         filenames = util.getFilesOfType(fileType)
@@ -147,6 +147,7 @@ if False:
     plt.xlabel("Time (mins)")
     plt.ylabel(r" Mean Area ($\mu m ^2$)")
     plt.title(f"Mean area of wound")
+    plt.rcParams.update({"font.size": 12})
     plt.legend()
     fig.savefig(
         f"results/Mean Wound Area",
@@ -156,7 +157,7 @@ if False:
     plt.close("all")
 
 # Normalise by start size
-if True:
+if False:
     T = 93
     fig = plt.figure(1, figsize=(5, 5))
     sf = []
