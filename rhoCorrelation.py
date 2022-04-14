@@ -1,4 +1,5 @@
 import os
+from os.path import exists
 import shutil
 from math import floor, log10, factorial
 
@@ -142,10 +143,10 @@ if False:
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
-# space time correlation
+# space time density correlation
 grid = 8
 timeGrid = 18
-gridSize = 10
+gridSize = 20
 gridSizeT = 5
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -194,8 +195,12 @@ if False:
             for j in range(yGrid):
                 for t in T:
                     t = int(t)
-                    deltarho = np.mean(heatmapdrho[t : t + gridSizeT, i, j])
                     if np.sum(inPlaneEcad[t : t + gridSizeT, i, j]) > 0:
+                        deltarho = np.mean(
+                            heatmapdrho[t : t + gridSizeT, i, j][
+                                inPlaneEcad[t : t + gridSizeT, i, j] > 0
+                            ]
+                        )
                         for idash in range(xGrid):
                             for jdash in range(yGrid):
                                 for tdash in T:
@@ -224,6 +229,11 @@ if False:
                                                             tdash : tdash + gridSizeT,
                                                             idash,
                                                             jdash,
+                                                        ][
+                                                            inPlaneEcad[
+                                                                t : t + gridSizeT, i, j
+                                                            ]
+                                                            > 0
                                                         ]
                                                     )
                                                 )
@@ -250,10 +260,175 @@ if False:
     )
 
     df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    df.to_pickle(f"databases/dfCorRho{fileType}.pkl")
 
+# space time density correlation
+grid = 8
+timeGrid = 18
+gridSize = 20
+gridSizeT = 5
+theta = np.linspace(0, 2 * np.pi, 17)
 if True:
-    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    dfShape["dR"] = list(np.zeros([len(dfShape)]))
+    dfShape["dT"] = list(np.zeros([len(dfShape)]))
+    dfShape["dtheta"] = list(np.zeros([len(dfShape)]))
+
+    dfShape["drhodq1i"] = list(np.zeros([len(dfShape)]))
+    dfShape["drhodq2i"] = list(np.zeros([len(dfShape)]))
+
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+    xGrid = int(1 + (xMax - xMin) // gridSize)
+    yGrid = int(1 + (yMax - yMin) // gridSize)
+
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, gridSize * (grid - 1), grid)
+    rho = [[[] for col in range(len(R))] for col in range(len(T))]
+    for filename in filenames:
+        path_to_file = f"databases/dfCorRhoQ{filename}.pkl"
+        if False == exists(path_to_file):
+            print(datetime.now().strftime("%H:%M:%S ") + filename)
+
+            dfShapeF = dfShape[dfShape["Filename"] == filename]
+            heatmapdrho = np.zeros([90, xGrid, yGrid])
+            inPlaneEcad = np.zeros([90, xGrid, yGrid])
+
+            for t in range(90):
+
+                dft = dfShapeF[dfShapeF["T"] == t]
+                for i in range(xGrid):
+                    for j in range(yGrid):
+                        x = [
+                            xMin + i * gridSize,
+                            xMin + (i + 1) * gridSize,
+                        ]
+                        y = [
+                            yMin + j * gridSize,
+                            yMin + (j + 1) * gridSize,
+                        ]
+
+                        dfg = util.sortGrid(dft, x, y)
+                        if list(dfg["Area"]) != []:
+                            heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(
+                                dfg["Area"]
+                            )
+                            inPlaneEcad[t, i, j] = 1
+
+                heatmapdrho[t] = heatmapdrho[t] - np.mean(
+                    heatmapdrho[t][inPlaneEcad[t] == 1]
+                )
+
+            dRhodQ1Correlation = np.zeros([len(T), len(R), len(theta)])
+            dRhodQ2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dRhodQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dRhodQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            total = np.zeros([len(T), len(R), len(theta)])
+            drhodq1ij = [
+                [[[] for col in range(17)] for col in range(grid)]
+                for col in range(timeGrid)
+            ]
+            drhodq2ij = [
+                [[[] for col in range(17)] for col in range(grid)]
+                for col in range(timeGrid)
+            ]
+            count = 0
+            percent_count = 0
+            for i in range(xGrid):
+                for j in range(yGrid):
+                    if count % int((xGrid * yGrid) / 10) == 0:
+                        print(
+                            datetime.now().strftime("%H:%M:%S")
+                            + f" {10*percent_count}%"
+                        )
+                        percent_count += 1
+                    count += 1
+                    for t in T:
+                        t = int(t)
+                        if np.sum(inPlaneEcad[t : int(t + gridSizeT), i, j]) > 0:
+                            drho = np.mean(
+                                heatmapdrho[t : int(t + gridSizeT), i, j][
+                                    inPlaneEcad[t : int(t + gridSizeT), i, j] > 0
+                                ]
+                            )
+                            x = xMin + (i + 0.5) * gridSize
+                            y = yMin + (j + 0.5) * gridSize
+
+                            dfShapeF["dR"] = (
+                                (dfShapeF.loc[:, "X"] - x) ** 2
+                                + (dfShapeF.loc[:, "Y"] - y) ** 2
+                            ) ** 0.5
+                            df = dfShapeF[
+                                [
+                                    "X",
+                                    "Y",
+                                    "T",
+                                    "dp",
+                                    "dq",
+                                    "dR",
+                                    "dT",
+                                    "dtheta",
+                                    "drhodq1i",
+                                    "drhodq2i",
+                                ]
+                            ]
+                            df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] > 0)]
+
+                            df["dT"] = df.loc[:, "T"] - t
+                            df = df[
+                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                            ]
+                            if len(df) != 0:
+                                phi = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
+                                df["dtheta"] = np.where(phi < 0, 2 * np.pi + phi, phi)
+                                df["drhodq1i"] = list(
+                                    np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0]
+                                    * drho
+                                )
+                                df["drhodq2i"] = list(
+                                    np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1]
+                                    * drho
+                                )
+                                for k in range(len(df)):
+                                    drhodq1ij[int(df["dT"].iloc[k] / gridSizeT)][
+                                        int(df["dR"].iloc[k] / gridSize)
+                                    ][int(8 * df["dtheta"].iloc[k] / np.pi)].append(
+                                        df["drhodq1i"].iloc[k]
+                                    )
+                                    drhodq2ij[int(df["dT"].iloc[k] / gridSizeT)][
+                                        int(df["dR"].iloc[k] / gridSize)
+                                    ][int(8 * df["dtheta"].iloc[k] / np.pi)].append(
+                                        df["drhodq2i"].iloc[k]
+                                    )
+
+            for i in range(len(T)):
+                for j in range(len(R)):
+                    for th in range(len(theta)):
+                        dRhodQ1Correlation[i][j][th] = np.mean(drhodq1ij[i][j][th])
+                        dRhodQ2Correlation[i][j][th] = np.mean(drhodq2ij[i][j][th])
+                        dRhodQ1Correlation_std[i][j][th] = np.std(drhodq1ij[i][j][th])
+                        dRhodQ2Correlation_std[i][j][th] = np.std(drhodq2ij[i][j][th])
+                        total[i][j][th] = len(drhodq1ij[i][j][th])
+
+            _df = []
+            _df.append(
+                {
+                    "Filename": filename,
+                    "dRhodQ1Correlation": dRhodQ1Correlation,
+                    "dRhodQ2Correlation": dRhodQ2Correlation,
+                    "dRhodQ1Correlation_std": dRhodQ1Correlation_std,
+                    "dRhodQ2Correlation_std": dRhodQ2Correlation_std,
+                    "Count": total,
+                }
+            )
+
+            df = pd.DataFrame(_df)
+            df.to_pickle(f"databases/dfCorRhoQ{filename}.pkl")
+
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
     rhoCorrelation = df["rhoCorrelation"].iloc[0]
 
     deltarhoVar = df["deltarhoVar"].iloc[0]
@@ -287,8 +462,8 @@ if True:
     )
     plt.close("all")
 
-if True:
-    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
     rhoCorrelation = df["rhoCorrelation"].iloc[0]
 
     deltarhoVar = df["deltarhoVar"].iloc[0]
@@ -330,8 +505,8 @@ def corRho_R(R, C, D):
     return C / T * np.exp(-(R ** 2) / (4 * D * T))
 
 
-if True:
-    df = pd.read_pickle(f"databases/continuumCorrelation{fileType}.pkl")
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
     rhoCorrelation = df["rhoCorrelation"].iloc[0]
     T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
     R = np.linspace(0, gridSize * (grid - 1), grid)
