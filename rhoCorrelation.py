@@ -144,11 +144,12 @@ if False:
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 # space time density correlation
-grid = 8
+grid = 9
 timeGrid = 18
-gridSize = 20
+gridSize = 10
 gridSizeT = 5
-if False:
+theta = np.linspace(0, 2 * np.pi, 17)
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
     xMax = np.max(dfShape["X"])
@@ -160,9 +161,15 @@ if False:
 
     T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
     R = np.linspace(0, gridSize * (grid - 1), grid)
-    rho = [[[] for col in range(len(R))] for col in range(len(T))]
     for filename in filenames:
         print(filename + datetime.now().strftime(" %H:%M:%S"))
+        drhodrhoij = [
+            [[[] for col in range(17)] for col in range(len(R))]
+            for col in range(len(T))
+        ]
+        dRhodRhoCorrelation = np.zeros([len(T), len(R), len(theta)])
+        dRhodRhoCorrelation_std = np.zeros([len(T), len(R), len(theta)])
+        total = np.zeros([len(T), len(R), len(theta)])
 
         df = dfShape[dfShape["Filename"] == filename]
         heatmapdrho = np.zeros([90, xGrid, yGrid])
@@ -209,6 +216,10 @@ if False:
                                     deltaR = int(
                                         ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
                                     )
+                                    deltaTheta = int(
+                                        np.arctan2((j - jdash), (i - idash)) * 8 / np.pi
+                                    )
+
                                     if deltaR < grid:
                                         if deltaT >= 0 and deltaT < timeGrid:
                                             if (
@@ -222,7 +233,9 @@ if False:
                                                 > 0
                                             ):
 
-                                                rho[deltaT][deltaR].append(
+                                                drhodrhoij[deltaT][deltaR][
+                                                    deltaTheta
+                                                ].append(
                                                     deltarho
                                                     * np.mean(
                                                         heatmapdrho[
@@ -238,34 +251,31 @@ if False:
                                                     )
                                                 )
 
-    rhoCorrelation = [[] for col in range(len(T))]
+        for i in range(len(T)):
+            for j in range(len(R)):
+                for th in range(len(theta)):
+                    dRhodRhoCorrelation[i][j][th] = np.mean(drhodrhoij[i][j][th])
+                    dRhodRhoCorrelation_std[i][j][th] = np.std(drhodrhoij[i][j][th])
+                    total[i][j] = len(drhodrhoij[i][j][th])
 
-    for i in range(len(T)):
-        for j in range(len(R)):
-            rhoCorrelation[i].append(np.mean(rho[i][j]))
+        _df = []
 
-    rhoCorrelation = np.array(rhoCorrelation)
-    rhoCorrelation = np.nan_to_num(rhoCorrelation)
+        _df.append(
+            {
+                "Filename": filename,
+                "dRhodRhoCorrelation": dRhodRhoCorrelation,
+                "dRhodRhoCorrelation_std": dRhodRhoCorrelation_std,
+                "Count": total,
+            }
+        )
 
-    deltarhoVar = np.mean(heatmapdrho[inPlaneEcad == 1] ** 2)
-
-    _df = []
-
-    _df.append(
-        {
-            "rho": rho,
-            "rhoCorrelation": rhoCorrelation,
-            "deltarhoVar": deltarhoVar,
-        }
-    )
-
-    df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/dfCorRho{fileType}.pkl")
+        df = pd.DataFrame(_df)
+        df.to_pickle(f"databases/dfCorRho{filename}.pkl")
 
 # space time density correlation
-grid = 8
+grid = 9
 timeGrid = 18
-gridSize = 20
+gridSize = 10
 gridSizeT = 5
 theta = np.linspace(0, 2 * np.pi, 17)
 if True:
@@ -286,7 +296,6 @@ if True:
 
     T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
     R = np.linspace(0, gridSize * (grid - 1), grid)
-    rho = [[[] for col in range(len(R))] for col in range(len(T))]
     for filename in filenames:
         path_to_file = f"databases/dfCorRhoQ{filename}.pkl"
         if False == exists(path_to_file):
