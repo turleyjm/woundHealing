@@ -20,6 +20,7 @@ import skimage.io
 import skimage.measure
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import LinearRing
+from sympy import true
 import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
@@ -35,7 +36,7 @@ plt.rcParams.update({"font.size": 12})
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 160
-timeStep = 10
+timeStep = 4
 R = 110
 rStep = 10
 Theta = 390
@@ -571,6 +572,96 @@ if True:
                 dd[t, r] = np.nan
                 std[t, r] = np.nan
 
+    dd[sumArea < 8000] = np.nan
+    dd = dd * 10000 * timeStep
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    c = ax.pcolor(
+        t,
+        r,
+        dd,
+        vmin=0,
+        vmax=18,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax.title.set_text(f"Division density {fileType}")
+
+    fig.savefig(
+        f"results/Division density heatmap {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Change in divison density with distance from wound edge and time
+if False:
+    count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[2]):
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                count[k, t, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    dd = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _area = area[:, t, r][area[:, t, r] > 800]
+            _count = count[:, t, r][area[:, t, r] > 800]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd[t, r] = _dd
+                std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
+            else:
+                dd[t, r] = np.nan
+                std[t, r] = np.nan
+
     (m, c) = bestFitUnwound()
     time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
     for r in range(dd.shape[1]):
@@ -594,7 +685,7 @@ if True:
     ax.title.set_text(f"Change in division density small wound")
 
     fig.savefig(
-        f"results/Division density heatmap {fileType}",
+        f"results/Change in Division density heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

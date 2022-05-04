@@ -149,7 +149,7 @@ timeGrid = 18
 gridSize = 10
 gridSizeT = 5
 theta = np.linspace(0, 2 * np.pi, 17)
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
     xMax = np.max(dfShape["X"])
@@ -256,7 +256,7 @@ if True:
                 for th in range(len(theta)):
                     dRhodRhoCorrelation[i][j][th] = np.mean(drhodrhoij[i][j][th])
                     dRhodRhoCorrelation_std[i][j][th] = np.std(drhodrhoij[i][j][th])
-                    total[i][j] = len(drhodrhoij[i][j][th])
+                    total[i][j][th] = len(drhodrhoij[i][j][th])
 
         _df = []
 
@@ -383,11 +383,15 @@ if True:
                                     "drhodq2i",
                                 ]
                             ]
-                            df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] > 0)]
+                            df = df[
+                                np.array(df["dR"] < R[-1] + gridSize)
+                                & np.array(df["dR"] >= 0)
+                            ]
 
                             df["dT"] = df.loc[:, "T"] - t
                             df = df[
-                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                                np.array(df["dT"] < T[-1] + gridSizeT)
+                                & np.array(df["dT"] >= 0)
                             ]
                             if len(df) != 0:
                                 phi = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
