@@ -508,7 +508,7 @@ if False:
 
 
 # Divison density with distance from wound edge and time
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -881,3 +881,122 @@ if False:
         dpi=300,
     )
     plt.close("all")
+
+from pySTARMA import starma_model
+from pySTARMA import stacf_stpacf
+
+# Divison density STARIMA
+if True:
+    weights = np.zeros([7, 7])
+    for r in range(7 - 1):
+        weights[r, r] = 1 / 3
+        weights[r, r + 1] = 1 / 3
+        weights[r + 1, r] = 1 / 3
+
+    weights[6, 6] = 1 / 3
+
+    fileType = "Unwound"
+    count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[2]):
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                count[k, t, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    dd = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _area = area[:, t, r][area[:, t, r] > 800]
+            _count = count[:, t, r][area[:, t, r] > 800]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd[t, r] = _dd
+                std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
+            else:
+                dd[t, r] = np.nan
+                std[t, r] = np.nan
+
+    dd[sumArea < 8000] = np.nan
+    dd = dd * 10000 * timeStep
+
+    dd = np.nan_to_num(dd[:, 1:8])
+
+    diff_dd = dd[:-1] - dd[1:]
+
+    stacf = stacf_stpacf.Stacf(dd, weights, 15)
+    stacf.estimate()
+    acf = stacf.get()
+
+    stacf = stacf_stpacf.Stacf(diff_dd, weights, 15)
+    stacf.estimate()
+    acfd1 = stacf.get()
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    ax[0].plot(np.linspace(1, 15, 15), acf[:, 0], marker="o")
+    ax[0].set(xlabel="time lags", ylabel="acf")
+    ax[0].title.set_text(f"Space Time Autocorrelation Function")
+    ax[0].set_ylim([-1, 1])
+
+    ax[1].plot(np.linspace(1, 15, 15), acfd1[:, 0], marker="o")
+    ax[1].set(xlabel="time lags", ylabel="acf")
+    ax[1].title.set_text(f"Space Time Autocorrelation Function")
+    ax[1].set_ylim([-1, 1])
+
+    fig.savefig(
+        f"results/Space Time Autocorrelation Function",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+    print("------- Start STARIMA -------")
+    model = starma_model.STARIMA(0, 0, (1,), dd, weights)
+    model.fit()
+    # print(model.get_item("residuals"))
+    print(model.get_item("phi"))
+    print(model.get_item("theta"))
+    print(model.get_item("sigma2") ** 0.5)

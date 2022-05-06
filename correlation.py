@@ -700,12 +700,81 @@ def corRho_R(R, C, D):
     return C / T * np.exp(-(R ** 2) / (4 * D * T))
 
 
-def corRhoS_R(R, C, D):
+# fit carves dRhodRho based on model
+if False:
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    plt.rcParams.update({"font.size": 12})
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+
+    dRhodRho = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        RhoCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
+        dRhodRho[i] = np.sum(
+            dfCor["dRhodRho"].iloc[i][:, :, :-1] * RhoCount, axis=2
+        ) / np.sum(RhoCount, axis=2)
+
+    dfCor = 0
+
+    dRhodRho = np.mean(dRhodRho, axis=0)
+
+    dRhodRhoN = dRhodRho - dRhodRho[-1]
+    limMax = np.max(dRhodRhoN[1:, 0])
+    limMin = np.min(dRhodRhoN[0, 1:])
+
+    m = sp.optimize.curve_fit(
+        f=corRho_R,
+        xdata=np.linspace(10, 80, 8),
+        ydata=dRhodRhoN[0, 1:],
+        p0=(0.003, 10),
+    )[0]
+
+    ax[0].plot(np.linspace(10, 80, 8), dRhodRhoN[0, 1:])
+    ax[0].plot(np.linspace(10, 80, 8), corRho_R(np.linspace(10, 80, 8), m[0], m[1]))
+    ax[0].set_xlabel(r"$R (\mu m)$ ")
+    ax[0].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([limMin * 1.1, limMax * 1.05])
+    ax[0].title.set_text(
+        r"$\langle \delta \rho \delta \rho \rangle$ noise $R$ $=Ce^{-aR}\cos(\omega R)$"
+    )
+
+    m = sp.optimize.curve_fit(
+        f=corRho_T,
+        xdata=np.linspace(10, 170, 17),
+        ydata=dRhodRhoN[1:, 0],
+        p0=0.003,
+    )[0]
+
+    ax[1].plot(np.linspace(10, 170, 17), dRhodRhoN[1:, 0])
+    ax[1].plot(np.linspace(10, 170, 17), corRho_T(np.linspace(10, 170, 17), m))
+    ax[1].set_xlabel(r"Time (mins)")
+    ax[1].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[1].set_ylim([limMin * 1.1, limMax * 1.05])
+    ax[1].title.set_text(
+        r"$\langle \delta \rho \delta \rho \rangle$ noise $T$ $=Ce^{-aT}$"
+    )
+
+    fig.savefig(
+        f"results/fit dRhodRho model",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+def expCos(R, C, D, w):
+    return C * np.exp(-D * R) * np.cos(w * R)
+
+
+def exp(R, C, D):
     return C * np.exp(-D * R)
 
 
 # fit carves dRhodRho
-if True:
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     plt.rcParams.update({"font.size": 12})
@@ -720,61 +789,327 @@ if True:
             dfCor["dRhodRho"].iloc[i][:, :, :-1] * RhoCount, axis=2
         ) / np.sum(RhoCount, axis=2)
 
+    dfCor = 0
+
     dRhodRho = np.mean(dRhodRho, axis=0)
 
     dRhodRhoS = np.mean(dRhodRho, axis=0)
 
     m = sp.optimize.curve_fit(
-        f=corRhoS_R,
+        f=expCos,
         xdata=np.linspace(0, 80, 9),
         ydata=dRhodRhoS,
-        p0=(0.0003, 0.04),
+        p0=(0.0003, 0.04, 0.01),
     )[0]
 
     limMax = np.max(dRhodRhoS)
     limMin = np.min(dRhodRhoS)
 
     ax[0].plot(np.linspace(0, 80, 9), dRhodRhoS)
-    ax[0].plot(np.linspace(0, 80, 9), corRhoS_R(np.linspace(0, 80, 9), m[0], m[1]))
+    ax[0].plot(
+        np.linspace(0, 80, 900), expCos(np.linspace(0, 80, 900), m[0], m[1], m[2])
+    )
     ax[0].set_xlabel(r"$R (\mu m)$ ")
     ax[0].set_ylabel(r"$\delta\rho$ Correlation")
     ax[0].set_ylim([limMin * 1.1, limMax * 1.05])
-    ax[0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ structure")
+    ax[0].title.set_text(
+        r"$\langle \delta \rho \delta \rho \rangle$ structure $=Ce^{-aR}\cos(\omega R)$"
+    )
 
     dRhodRhoN = dRhodRho - dRhodRho[-1]
     limMax = np.max(dRhodRhoN[1:, 0])
     limMin = np.min(dRhodRhoN[0, 1:])
 
     m = sp.optimize.curve_fit(
-        f=corRho_R,
+        f=expCos,
         xdata=np.linspace(10, 80, 8),
         ydata=dRhodRhoN[0, 1:],
-        p0=(0.003, 10),
+        p0=(0.00008, 0.00004, 0.03),
     )[0]
 
     ax[1].plot(np.linspace(10, 80, 8), dRhodRhoN[0, 1:])
-    ax[1].plot(np.linspace(10, 80, 8), corRho_R(np.linspace(10, 80, 8), m[0], m[1]))
+    ax[1].plot(
+        np.linspace(10, 80, 800), expCos(np.linspace(10, 80, 800), m[0], m[1], m[2])
+    )
     ax[1].set_xlabel(r"$R (\mu m)$ ")
     ax[1].set_ylabel(r"$\delta\rho$ Correlation")
     ax[1].set_ylim([limMin * 1.1, limMax * 1.05])
-    ax[1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ noise $R$")
+    ax[1].title.set_text(
+        r"$\langle \delta \rho \delta \rho \rangle$ noise $R$ $=Ce^{-aR}\cos(\omega R)$"
+    )
 
     m = sp.optimize.curve_fit(
-        f=corRho_T,
+        f=exp,
         xdata=np.linspace(10, 170, 17),
         ydata=dRhodRhoN[1:, 0],
-        p0=0.003,
+        p0=(0.0003, 0.04),
     )[0]
 
     ax[2].plot(np.linspace(10, 170, 17), dRhodRhoN[1:, 0])
-    ax[2].plot(np.linspace(10, 170, 17), corRho_T(np.linspace(10, 170, 17), m))
+    ax[2].plot(np.linspace(10, 170, 17), exp(np.linspace(10, 170, 17), m[0], m[1]))
     ax[2].set_xlabel(r"Time (mins)")
     ax[2].set_ylabel(r"$\delta\rho$ Correlation")
     ax[2].set_ylim([limMin * 1.1, limMax * 1.05])
-    ax[2].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ noise $T$")
+    ax[2].title.set_text(
+        r"$\langle \delta \rho \delta \rho \rangle$ noise $T$ $=Ce^{-aT}$"
+    )
 
     fig.savefig(
         f"results/fit dRhodRho",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+def expStretched(R, C, D, alpha):
+    return C * np.exp(-D * R ** alpha)
+
+
+# fit carves Polarisation
+if False:
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    plt.rcParams.update({"font.size": 12})
+    fig, ax = plt.subplots(2, 2, figsize=(15, 15))
+
+    T, R, Theta = dfCor["dP1dP1"].iloc[0].shape
+
+    dP1dP1 = np.zeros([len(filenames), T, R])
+    dP2dP2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        Count = dfCor["Count"].iloc[i][:, :, :-1]
+        dP1dP1[i] = np.sum(dfCor["dP1dP1"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
+            Count, axis=2
+        )
+        dP2dP2[i] = np.sum(dfCor["dP2dP2"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
+            Count, axis=2
+        )
+
+    dfCor = 0
+
+    dP1dP1 = np.mean(dP1dP1, axis=0)
+    dP2dP2 = np.mean(dP2dP2, axis=0)
+
+    limMax = np.max(dP1dP1[:, :-1])
+    limMin = np.min(dP1dP1[:, :-1])
+
+    m = sp.optimize.curve_fit(
+        f=expCos,
+        xdata=np.linspace(0, 80, 41),
+        ydata=dP1dP1[0, :-1],
+        p0=(0.00008, 0.00004, 1),
+    )[0]
+
+    print(m[0], m[1], m[2])
+
+    ax[0, 0].plot(np.linspace(0, 80, 41), dP1dP1[0, :-1])
+    ax[0, 0].plot(
+        np.linspace(0, 80, 410), expCos(np.linspace(0, 80, 410), m[0], m[1], m[2])
+    )
+    ax[0, 0].set_xlabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_ylabel(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    ax[0, 0].set_ylim([limMin * 2, limMax * 1.05])
+    ax[0, 0].title.set_text(
+        r"$\langle \delta P_1(r,t) \delta P_1(r',t) \rangle = Ce^{-aR}\cos(\omega R)$"
+    )
+
+    m = sp.optimize.curve_fit(
+        f=expStretched,
+        xdata=np.linspace(0, 100, 51),
+        ydata=dP1dP1[:, 0],
+        p0=(0.0003, 0.04, 1),
+    )[0]
+
+    print(m[0], m[1], m[2])
+
+    ax[0, 1].plot(np.linspace(0, 100, 51), dP1dP1[:, 0])
+    ax[0, 1].plot(
+        np.linspace(0, 100, 510),
+        expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
+    )
+    ax[0, 1].set_xlabel(r"Time (mins)")
+    ax[0, 1].set_ylabel(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    ax[0, 1].set_ylim([limMin * 2, limMax * 1.05])
+    ax[0, 1].title.set_text(
+        r"$\langle \delta P_1(r,t) \delta P_1(r,t') \rangle = Ce^{-aT^\alpha}$"
+    )
+
+    limMax = np.max(dP2dP2[:, :-1])
+    limMin = np.min(dP2dP2[:, :-1])
+
+    m = sp.optimize.curve_fit(
+        f=expCos,
+        xdata=np.linspace(0, 80, 41),
+        ydata=dP2dP2[0, :-1],
+        p0=(0.00008, 0.00004, 1),
+    )[0]
+
+    print(m[0], m[1], m[2])
+
+    ax[1, 0].plot(np.linspace(0, 80, 41), dP2dP2[0, :-1])
+    ax[1, 0].plot(
+        np.linspace(0, 80, 410), expCos(np.linspace(0, 80, 410), m[0], m[1], m[2])
+    )
+    ax[1, 0].set_xlabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_ylabel(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    ax[1, 0].set_ylim([limMin * 2, limMax * 1.05])
+    ax[1, 0].title.set_text(
+        r"$\langle \delta P_2(r,t) \delta P_2(r',t) \rangle = Ce^{-aR}\cos(\omega R)$"
+    )
+
+    m = sp.optimize.curve_fit(
+        f=expStretched,
+        xdata=np.linspace(0, 100, 51),
+        ydata=dP2dP2[:, 0],
+        p0=(0.0003, 0.04, 1),
+    )[0]
+
+    print(m[0], m[1], m[2])
+
+    ax[1, 1].plot(np.linspace(0, 100, 51), dP2dP2[:, 0])
+    ax[1, 1].plot(
+        np.linspace(0, 100, 510),
+        expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
+    )
+    ax[1, 1].set_xlabel(r"Time (mins)")
+    ax[1, 1].set_ylabel(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    ax[1, 1].set_ylim([limMin * 2, limMax * 1.05])
+    ax[1, 1].title.set_text(
+        r"$\langle \delta P_2(r,t) \delta P_2(r,t') \rangle = Ce^{-aT^\alpha}$"
+    )
+
+    fig.savefig(
+        f"results/fit polarisation",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+def explinear(R, C, D, m, c):
+    return C * np.exp(-D * R) + m * R + c
+
+
+# fit carves Q
+if True:
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    plt.rcParams.update({"font.size": 12})
+    fig, ax = plt.subplots(2, 2, figsize=(15, 15))
+
+    T, R, Theta = dfCor["dQ1dQ1"].iloc[0].shape
+
+    dQ1dQ1 = np.zeros([len(filenames), T, R])
+    dQ2dQ2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        Count = dfCor["Count"].iloc[i][:, :, :-1]
+        dQ1dQ1[i] = np.sum(dfCor["dQ1dQ1"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
+            Count, axis=2
+        )
+        dQ2dQ2[i] = np.sum(dfCor["dQ2dQ2"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
+            Count, axis=2
+        )
+
+    dfCor = 0
+
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+
+    limMax = np.max(dQ1dQ1[:, :-1])
+    limMin = np.min(dQ1dQ1[:, :-1])
+
+    m = sp.optimize.curve_fit(
+        f=explinear,
+        xdata=np.linspace(0, 80, 41),
+        ydata=dQ1dQ1[0, :-1],
+        p0=(0.0006, 1, -3e-06, 0.00016),
+    )[0]
+
+    print(m[0], m[1], m[2], m[3])
+
+    ax[0, 0].plot(np.linspace(0, 80, 41), dQ1dQ1[0, :-1])
+    ax[0, 0].plot(
+        np.linspace(0, 80, 410),
+        explinear(np.linspace(0, 80, 410), m[0], m[1], m[2], m[3]),
+    )
+    ax[0, 0].set_xlabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_ylabel(r"$\langle \delta Q_1 \delta Q_1 \rangle$")
+    ax[0, 0].set_ylim([limMin * 2, limMax * 1.05])
+    ax[0, 0].title.set_text(
+        r"$\langle \delta Q_1(r,t) \delta Q_1(r',t) \rangle = Ce^{-aR} + mR + c$"
+    )
+
+    m = sp.optimize.curve_fit(
+        f=expStretched,
+        xdata=np.linspace(0, 100, 51),
+        ydata=dQ1dQ1[:, 0],
+        p0=(0.0003, 0.04, 1),
+    )[0]
+
+    # print(m[0], m[1], m[2])
+
+    ax[0, 1].plot(np.linspace(0, 100, 51), dQ1dQ1[:, 0])
+    ax[0, 1].plot(
+        np.linspace(0, 100, 510),
+        expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
+    )
+    ax[0, 1].set_xlabel(r"Time (mins)")
+    ax[0, 1].set_ylabel(r"$\langle \delta Q_1 \delta Q_1 \rangle$")
+    ax[0, 1].set_ylim([limMin * 2, limMax * 1.05])
+    ax[0, 1].title.set_text(
+        r"$\langle \delta Q_1(r,t) \delta Q_1(r,t') \rangle = Ce^{-aT^\alpha}$"
+    )
+
+    limMax = np.max(dQ2dQ2[:, :-1])
+    limMin = np.min(dQ2dQ2[:, :-1])
+
+    m = sp.optimize.curve_fit(
+        f=explinear,
+        xdata=np.linspace(0, 80, 41),
+        ydata=dQ2dQ2[0, :-1],
+        p0=(0.0006, 1, -3e-06, 0.00016),
+    )[0]
+
+    print(m[0], m[1], m[2], m[3])
+
+    ax[1, 0].plot(np.linspace(0, 80, 41), dQ2dQ2[0, :-1])
+    ax[1, 0].plot(
+        np.linspace(0, 80, 410),
+        explinear(np.linspace(0, 80, 410), m[0], m[1], m[2], m[3]),
+    )
+    ax[1, 0].set_xlabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_ylabel(r"$\langle \delta Q_2 \delta Q_2 \rangle$")
+    ax[1, 0].set_ylim([limMin * 2, limMax * 1.05])
+    ax[1, 0].title.set_text(
+        r"$\langle \delta Q_2(r,t) \delta Q_2(r',t) \rangle = Ce^{-aR} + mR + c$"
+    )
+
+    m = sp.optimize.curve_fit(
+        f=expStretched,
+        xdata=np.linspace(0, 100, 51),
+        ydata=dQ2dQ2[:, 0],
+        p0=(0.0003, 0.04, 1),
+    )[0]
+
+    # print(m[0], m[1], m[2])
+
+    ax[1, 1].plot(np.linspace(0, 100, 51), dQ2dQ2[:, 0])
+    ax[1, 1].plot(
+        np.linspace(0, 100, 510),
+        expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
+    )
+    ax[1, 1].set_xlabel(r"Time (mins)")
+    ax[1, 1].set_ylabel(r"$\langle \delta Q_2 \delta Q_2 \rangle$")
+    ax[1, 1].set_ylim([limMin * 2, limMax * 1.05])
+    ax[1, 1].title.set_text(
+        r"$\langle \delta Q_2(r,t) \delta Q_2(r,t') \rangle = Ce^{-aT^\alpha}$"
+    )
+
+    fig.savefig(
+        f"results/fit Q",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
