@@ -34,13 +34,11 @@ import utils as util
 pd.options.mode.chained_assignment = None
 plt.rcParams.update({"font.size": 14})
 
-
 # -------------------
 
 filenames, fileType = util.getFilesType()
 T = 90
 scale = 123.26 / 512
-
 
 # -------------------
 
