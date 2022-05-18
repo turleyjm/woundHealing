@@ -109,9 +109,47 @@ if False:
     )
     plt.close("all")
 
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    ori = np.array(dfDivisions["Orientation"])
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    plt.subplots_adjust(wspace=0.3, hspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax.hist(ori, bins=10)
+    ax.set(xlabel="Orientation")
+
+    fig.savefig(
+        f"results/xy distributions {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for filename in filenames:
+        df = dfDivisions[dfDivisions["Filename"] == filename]
+        ori = np.array(df["Orientation"])
+
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        plt.subplots_adjust(wspace=0.3, hspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        ax.hist(ori, bins=10)
+        ax.set(xlabel="Orientation")
+
+        fig.savefig(
+            f"results/xy distributions {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
 
 # correction of divisions
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     expectedXY = np.zeros([int(T / timeStep), int(R / rStep)])
     oriCorr = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -133,8 +171,7 @@ if True:
         [[[] for col in range(len(filenames))] for col in range(int(R / rStep))]
         for col in range(int(T / timeStep))
     ]
-    n = 200
-
+    n = 1000
     for m in range(len(filenames)):
         filename = filenames[m]
         print(filename)
@@ -179,7 +216,7 @@ if True:
                 r1 = r0 + 10
                 for k in range(len(x)):
                     if t[k] + t0 < 91:
-                        if outPlane[int(t[i]), int(x[i]), int(y[i])] == 0:
+                        if outPlane[int(t[k]), int(x[k]), int(y[k])] == 0:
                             shell = inPlaneShell(
                                 int(x[k]),
                                 int(y[k]),
@@ -248,8 +285,8 @@ if True:
             ori = []
             corRan = []
             for m in range(len(filenames)):
-                cor.append(np.sum(expectedXYFile[i][j]) / N[m])
-                ori.append(np.mean(thetaCorr[i][j]))
+                cor.append(np.sum(expectedXYFile[i][j][m]) / N[m])
+                ori.append(np.mean(thetaCorr[i][j][m]))
                 corRan.append(
                     np.sum(ExXExYFile[i][j][m]) * (divisionNum[m] / (N[m] * n))
                 )
@@ -273,6 +310,7 @@ if True:
             "expectedXY": expectedXY,
             "ExXExY": ExXExY,
             "divCorr": divCorr,
+            "thetaCorr": thetaCorr,
             "oriCorr": oriCorr,
         }
     )
@@ -280,7 +318,7 @@ if True:
     df = pd.DataFrame(_df)
     df.to_pickle(f"databases/divCorr{fileType}.pkl")
 
-if True:
+if False:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]
@@ -298,17 +336,14 @@ if True:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (min)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(f"Correlation")
-
-    maxCorr = np.max(ExXExY)
+    ax[0, 0].title.set_text(f"expectedXY")
 
     c = ax[0, 1].pcolor(t, r, ExXExY, cmap="Reds", vmin=0, vmax=maxCorr)
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (min)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$")
-    ax[0, 1].title.set_text(f"Correlation of Random i")
+    ax[0, 1].title.set_text(f"ExXExY")
 
-    maxCorr = np.max(divCorr)
     c = ax[1, 0].pcolor(
         t,
         r,
@@ -320,7 +355,7 @@ if True:
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time (min)")
     ax[1, 0].set_ylabel(r"$R (\mu m)$")
-    ax[1, 0].title.set_text(f"Difference in Correlation")
+    ax[1, 0].title.set_text(f"Correlation")
 
     c = ax[1, 1].pcolor(
         t,
@@ -337,6 +372,239 @@ if True:
 
     fig.savefig(
         f"results/Division Correlation {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+if False:
+    df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
+    thetaCorr = df["thetaCorr"].iloc[0]
+    df = 0
+    time = np.array(range(int(T / timeStep))) * timeStep
+    rad = np.array(range(int(R / rStep))) * rStep
+
+    t, r = np.mgrid[0:160:10, 0:110:10]
+
+    for m in range(len(filenames)):
+        oriCorr = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for i in range(len(time)):
+            for j in range(len(rad)):
+                oriCorr[i][j] = np.mean(thetaCorr[i][j][m])
+
+        fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+        plt.subplots_adjust(wspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        c = ax.pcolor(
+            t,
+            r,
+            oriCorr,
+            cmap="RdBu_r",
+            vmin=-1,
+            vmax=1,
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set_xlabel("Time (min)")
+        ax.set_ylabel(r"$R (\mu m)$")
+        ax.title.set_text(f"Correlation Orientation {filenames[m]}")
+
+        fig.savefig(
+            f"results/Correlation Orientation {filenames[m]}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+
+# correction of divisions
+if True:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    expectedXY = np.zeros([int(T / timeStep), int(R / rStep)])
+    ExXExY = np.zeros([int(T / timeStep), int(R / rStep)])
+    N = []
+    divisionNum = []
+    time = np.array(range(int(T / timeStep))) * timeStep
+    rad = np.array(range(int(R / rStep))) * rStep
+
+    expectedXYFile = [
+        [[[] for col in range(len(filenames))] for col in range(int(R / rStep))]
+        for col in range(int(T / timeStep))
+    ]
+    ExXExYFile = [
+        [[[] for col in range(len(filenames))] for col in range(int(R / rStep))]
+        for col in range(int(T / timeStep))
+    ]
+    n = 1000
+    for m in range(len(filenames)):
+        filename = filenames[m]
+        print(filename)
+        df = dfDivisions[dfDivisions["Filename"] == filename]
+        dfFileShape = dfShape[dfShape["Filename"] == filename]
+        t0 = util.findStartTime(filename)
+
+        cells = np.zeros([90, 124, 124])
+        outPlanePixel = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(
+            float
+        )[:90]
+        outPlane = []
+        for t in range(len(outPlanePixel)):
+            img = Image.fromarray(outPlanePixel[t])
+            outPlane.append(np.array(img.resize((124, 124))))
+        outPlane = np.array(outPlane)
+        outPlane[outPlane > 50] = 255
+        outPlane[outPlane < 0] = 0
+
+        N.append(90 * 124 ** 2 - np.sum(outPlane) / 255)
+
+        x = np.array(df["X"])
+        y = np.array(df["Y"])
+        t = np.array((df["T"] - t0) / 2)
+        X = np.stack(np.array(dfFileShape.loc[:, "Centroid"]), axis=0)[:, 0]
+        Y = np.stack(np.array(dfFileShape.loc[:, "Centroid"]), axis=0)[:, 1]
+        T = np.array(dfFileShape["T"])
+
+        count = 0
+        for i in range(len(x)):
+            if outPlane[int(t[i]), int(x[i]), int(y[i])] == 0:
+                count += 1
+        divisionNum.append(count)
+
+        for i in range(len(X)):
+            if outPlane[int(T[i]), int(X[i]), int(Y[i])] == 0:
+                cells[int(T[i]), int(X[i]), int(Y[i])] = 1
+
+        for i in range(len(time)):
+            print(i)
+            t0 = int(time[i] / 2)
+            t1 = int(t0 + timeStep / 2)
+            for j in range(len(rad)):
+                r0 = rad[j]
+                r1 = r0 + 10
+                for k in range(len(x)):
+                    if t[k] + t0 < 91:
+                        if outPlane[int(t[k]), int(x[k]), int(y[k])] == 0:
+                            shell = inPlaneShell(
+                                int(x[k]),
+                                int(y[k]),
+                                int(t[k]),
+                                t0,
+                                t1,
+                                r0,
+                                r1,
+                                outPlane,
+                            )
+                            if np.sum(shell) != 0:
+                                expectedXYFile[i][j][m].append(
+                                    np.sum(cells[shell == 1]) / np.sum(shell)
+                                )
+
+        x = 124 * np.random.random_sample(n)
+        y = 124 * np.random.random_sample(n)
+        t = 90 * np.random.random_sample(n)
+
+        for i in range(len(time)):
+            print(i)
+            t0 = int(time[i] / 2)
+            t1 = int(t0 + timeStep / 2)
+            for j in range(len(rad)):
+                r0 = rad[j]
+                r1 = r0 + 10
+                for k in range(len(x)):
+                    if t[k] + t0 < 90:
+                        if outPlane[int(t[k]), int(x[k]), int(y[k])] == 0:
+                            shell = inPlaneShell(
+                                int(x[k]),
+                                int(y[k]),
+                                int(t[k]),
+                                t0,
+                                t1,
+                                r0,
+                                r1,
+                                outPlane,
+                            )
+                            if np.sum(shell) != 0:
+                                ExXExYFile[i][j][m].append(
+                                    np.sum(cells[shell == 1]) / np.sum(shell)
+                                )
+
+    for i in range(len(time)):
+        for j in range(len(rad)):
+            cor = []
+            corRan = []
+            for m in range(len(filenames)):
+                cor.append(np.sum(expectedXYFile[i][j][m]) / N[m])
+                corRan.append(
+                    np.sum(ExXExYFile[i][j][m]) * (divisionNum[m] / (N[m] * n))
+                )
+
+            expectedXY[i, j] = np.mean(cor)
+            ExXExY[i, j] = np.mean(corRan)
+
+    expectedXY = np.nan_to_num(expectedXY)
+    ExXExY = np.nan_to_num(ExXExY)
+
+    divRhoCorr = expectedXY - ExXExY
+
+    _df = []
+
+    _df.append(
+        {
+            "expectedXYFile": expectedXYFile,
+            "ExXExYFile": ExXExYFile,
+            "expectedXY": expectedXY,
+            "ExXExY": ExXExY,
+            "divRhoCorr": divRhoCorr,
+        }
+    )
+
+    df = pd.DataFrame(_df)
+    df.to_pickle(f"databases/divRhoCorr{fileType}.pkl")
+
+
+if True:
+    df = pd.read_pickle(f"databases/divRhoCorr{fileType}.pkl")
+    expectedXY = df["expectedXY"].iloc[0]
+    ExXExY = df["ExXExY"].iloc[0]
+    divRhoCorr = df["divRhoCorr"].iloc[0]
+    df = 0
+    maxCorr = np.max(expectedXY)
+
+    t, r = np.mgrid[0:160:10, 0:110:10]
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    c = ax[0, 0].pcolor(t, r, expectedXY, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(f"expectedXY")
+
+    c = ax[0, 1].pcolor(t, r, ExXExY, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$")
+    ax[0, 1].title.set_text(f"ExXExY")
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        divRhoCorr,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$")
+    ax[1, 0].title.set_text(f"Correlation")
+
+    fig.savefig(
+        f"results/Division Rho Correlation {fileType}",
         dpi=300,
         transparent=True,
     )
