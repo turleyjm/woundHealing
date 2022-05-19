@@ -38,7 +38,7 @@ plt.rcParams.update({"font.size": 12})
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 160
+T = 180
 timeStep = 8
 R = 110
 rStep = 10
@@ -320,7 +320,7 @@ if False:
 if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     labels = ["WoundS", "WoundL", "Unwound"]
-    legend = ["Small Wound", "Large Wound", "Unwounded"]
+    legend = ["small wound", "large wound", "unwounded"]
     dat_dd = []
     total = 0
     i = 0
@@ -362,16 +362,16 @@ if False:
             _count = count[:, t][area[:, t] > 0]
             if len(_area) > 0:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                dd.append(_dd * 10000 * timeStep)
+                dd.append(_dd * 10000 * timeStep / 2)
                 std.append(_std)
-                time.append(t * 10 + timeStep / 2)
+                time.append(t * timeStep + timeStep / 2)
 
         ax.plot(time, dd, label=f"{legend[i]}", marker="o")
         i += 1
 
-    ax.set(xlabel="Time", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
     ax.title.set_text(f"Division density with time")
-    ax.set_ylim([0, 4.5 * timeStep])
+    ax.set_ylim([0, 20])
     ax.legend()
 
     fig.savefig(
@@ -601,7 +601,7 @@ if False:
 
 
 # Change in divison density with distance from wound edge and time
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -670,22 +670,23 @@ if False:
     for r in range(dd.shape[1]):
         dd[:, r] = dd[:, r] - (m * time + c)
 
-    dd[sumArea < 8000] = np.nan
-    dd = dd * 10000 * timeStep
+    dd[sumArea < 600 * len(filenames)] = np.nan
+    dd = dd * 10000 * timeStep / 2
 
+    fileTitle = util.getFileTitle(fileType)
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     c = ax.pcolor(
         t,
         r,
         dd,
-        vmin=-4 * timeStep,
-        vmax=4 * timeStep,
+        vmin=-20,
+        vmax=20,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Change in division density small wound")
+    ax.title.set_text(f"Change in division density {fileTitle}")
 
     fig.savefig(
         f"results/Change in Division density heatmap {fileType}",

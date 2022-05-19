@@ -1,4 +1,5 @@
 import os
+from pickle import FALSE
 import shutil
 from math import dist, floor, log10
 
@@ -33,9 +34,9 @@ plt.rcParams.update({"font.size": 16})
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 160
-timeStep = 10
-R = 80
+T = 180
+timeStep = 8
+R = 110
 rStep = 10
 
 
@@ -47,7 +48,7 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 # -------------------
 
-if True:
+if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -58,9 +59,7 @@ if True:
         t0 = util.findStartTime(filename)
         if "Wound" in filename:
             dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-            dist = sm.io.imread(f"dat/{filename}/distanceWound{filename}.tif").astype(
-                int
-            )
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
             for i in range(len(dfDivision)):
                 t = dfDivision["T"].iloc[i]
                 (x_w, y_w) = dfWound["Position"].iloc[t]
@@ -118,39 +117,21 @@ if True:
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
 
-# Divison orientation with time Unwound
+# Divison orientation with time
 
 if False:
-    count = np.zeros([len(filenames), int(T / timeStep)])
-    orientation = np.zeros([len(filenames), int(T / timeStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
-    for k in range(len(filenames)):
-        filename = filenames[k]
-        t0 = util.findStartTime(filename)
-        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
 
-        for t in range(count.shape[1]):
-            df1 = dfFile[dfFile["T"] > timeStep * t]
-            df = df1[df1["T"] <= timeStep * (t + 1)]
+    data = []
+    for t in range(int(T / timeStep)):
+        df1 = dfDivisions[dfDivisions["T"] > timeStep * t]
+        df = df1[df1["T"] <= timeStep * (t + 1)]
 
-            count[k, t] = len(df)
-            orientation[k, t] = np.mean(df["Orientation"])
-
-    time = []
-    dd = []
-    std = []
-    for t in range(count.shape[1]):
-        _orientation = orientation[:, t][count[:, t] > 0]
-        _count = count[:, t][count[:, t] > 0]
-        if len(_count) > 0:
-            _dd, _std = weighted_avg_and_std(_orientation, _count)
-            dd.append(_dd)
-            std.append(_std)
-            time.append(t * 10 + timeStep / 2)
+        data.append(df["Orientation"])
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.errorbar(time, dd, yerr=std)
-    if "Wound" in filename:
+    ax.boxplot(data)
+    if "Wound" in fileType:
         ax.set(xlabel="Time", ylabel="Divison orientation towards wound")
     else:
         ax.set(xlabel="Time", ylabel="Divison orientation")
@@ -164,7 +145,8 @@ if False:
     )
     plt.close("all")
 
-# Compare divison density with time
+
+# Compare divison orientation with time
 
 if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -201,9 +183,9 @@ if False:
         ax.plot(time, dd, label=f"{fileType}", marker="o")
 
     if "Wound" in filename:
-        ax.set(xlabel="Time", ylabel="Divison orientation towards wound")
+        ax.set(xlabel=r"$R (\mu m)$", ylabel="Divison orientation towards wound")
     else:
-        ax.set(xlabel="Time", ylabel="Divison orientation")
+        ax.set(xlabel=r"$R (\mu m)$", ylabel="Divison orientation")
     ax.title.set_text(f"Divison orientation with time")
     ax.set_ylim([0, 90])
     ax.legend()
@@ -216,7 +198,7 @@ if False:
     plt.close("all")
 
 
-# Divison density with distance from wound edge
+# Divison orientation with distance from wound edge
 
 if False:
     count = np.zeros([len(filenames), int(R / rStep)])
@@ -263,7 +245,7 @@ if False:
     plt.close("all")
 
 
-# Compare divison density with distance from wound edge
+# Compare divison orientation with distance from wound edge
 
 if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -300,9 +282,9 @@ if False:
         ax.plot(radius, dd, label=f"{fileType}", marker="o")
 
     if "Wound" in filename:
-        ax.set(xlabel="Time", ylabel="Divison orientation towards wound")
+        ax.set(xlabel="Time (mins)", ylabel="Divison orientation towards wound")
     else:
-        ax.set(xlabel="Time", ylabel="Divison orientation")
+        ax.set(xlabel="Time (mins)", ylabel="Divison orientation")
     ax.set_ylim([0, 90])
     ax.title.set_text(f"Divison orientation with distance from wound")
     ax.legend()
@@ -315,8 +297,7 @@ if False:
     plt.close("all")
 
 
-# Divison density with distance from wound edge and time
-
+# Divison orientation with distance from wound edge and time
 
 if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -364,7 +345,7 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
     ax.title.set_text(f"Divison orientation distance and time {fileType}")
 
     fig.savefig(
@@ -373,3 +354,46 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
+
+
+# Divison orientation with distance from wound edge and time
+
+if False:
+    count = np.zeros([int(T / timeStep), int(R / rStep)])
+    orientation = np.zeros([int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        t0 = util.findStartTime(filename)
+
+        for r in range(count.shape[1]):
+            for t in range(count.shape[0]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                count[t, r] = len(df)
+                orientation[t, r] = np.mean(df["Orientation"])
+
+        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+        c = ax.pcolor(
+            t,
+            r,
+            orientation,
+            cmap="RdBu_r",
+            vmin=0,
+            vmax=90,
+            shading="auto",
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+        ax.title.set_text(f"Divison orientation distance and time {filename}")
+
+        fig.savefig(
+            f"results/Divison orientation heatmap {filename}",
+            transparent=True,
+            bbox_inches="tight",
+        )
+        plt.close("all")

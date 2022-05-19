@@ -83,6 +83,18 @@ def getFilesOfType(fileType):
     return filenames
 
 
+def getFileTitle(fileType):
+
+    if fileType == "WoundL":
+        fileTitle = "large wound"
+    elif fileType == "WoundS":
+        fileTitle = "small wound"
+    elif fileType == "Unwound":
+        fileTitle = "unwounded"
+
+    return fileTitle
+
+
 def ThreeD(a):
     lst = [[[] for col in range(a)] for col in range(a)]
     return lst
@@ -269,3 +281,31 @@ def findStartTime(filename):
         t0 = 0
 
     return t0
+
+
+def vidrcxyRGB(vid):
+
+    T, X, Y, C = vid.shape
+
+    vidxy = np.zeros(shape=(T, X, Y, C))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
+
+    return vidxy
+
+
+def vidxyrcRGB(vid):
+
+    T, X, Y, C = vid.shape
+
+    vidrc = np.zeros(shape=(T, X, Y, C))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
+
+    return vidrc

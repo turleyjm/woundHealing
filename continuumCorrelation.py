@@ -90,7 +90,7 @@ if False:
     dfVelocity = pd.DataFrame(_df2)
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
-if False:
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -127,6 +127,7 @@ if False:
                         "T": t,
                         "X": x - mig[0],
                         "Y": y - mig[1],
+                        "Centroid": np.array(dft["Centroid"].iloc[i]) * scale,
                         "dq": dq,
                         "q": q,
                         "TrQdq": TrQdq,
@@ -143,7 +144,7 @@ if False:
 
 
 # short range space time correlation
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 42
     timeGrid = 51
