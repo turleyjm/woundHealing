@@ -116,7 +116,7 @@ if True:
                 q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
                 dq = q - Q
                 A = dft["Area"].iloc[i] * scale ** 2
-                TrQdq = np.trace(np.matmul(Q, dq))
+                sf = dft["Shape Factor"].iloc[i]
                 dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                 [x, y] = np.matmul(R, np.array([x, y]))
                 p = np.matmul(R, dft["Polar"].iloc[i])
@@ -130,10 +130,10 @@ if True:
                         "Centroid": np.array(dft["Centroid"].iloc[i]) * scale,
                         "dq": dq,
                         "q": q,
-                        "TrQdq": TrQdq,
                         "Area": A,
                         "dp": dp,
                         "Polar": p,
+                        "Shape Factor": sf,
                     }
                 )
 

@@ -38,112 +38,10 @@ scale = 123.26 / 512
 
 # -------------------
 
-if False:
-    _df2 = []
-    _df = []
-    for filename in filenames:
-
-        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
-        Q = np.mean(df["q"])
-        theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
-        R = util.rotation_matrix(-theta0)
-
-        df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
-        mig = np.zeros(2)
-
-        for t in range(T):
-            dft = df[df["T"] == t]
-            v = np.mean(dft["Velocity"]) * scale
-            v = np.matmul(R, v)
-            _df.append(
-                {
-                    "Filename": filename,
-                    "T": t,
-                    "v": v,
-                }
-            )
-
-            for i in range(len(dft)):
-                x = dft["X"].iloc[i] * scale
-                y = dft["Y"].iloc[i] * scale
-                dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - v
-                [x, y] = np.matmul(R, np.array([x, y]))
-
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": t,
-                        "X": x - mig[0],
-                        "Y": y - mig[1],
-                        "dv": dv,
-                    }
-                )
-            mig += v
-
-    dfVelocityMean = pd.DataFrame(_df)
-    dfVelocityMean.to_pickle(f"databases/dfVelocityMean{fileType}.pkl")
-    dfVelocity = pd.DataFrame(_df2)
-    dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
-
-else:
-    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
-    dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
-
-if False:
-    _df2 = []
-    for filename in filenames:
-
-        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
-        dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
-        mig = np.zeros(2)
-        Q = np.mean(df["q"])
-        theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
-        R = util.rotation_matrix(-theta0)
-
-        for t in range(T):
-            dft = df[df["Time"] == t]
-            Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
-            P = np.matmul(R, np.mean(dft["Polar"]))
-
-            for i in range(len(dft)):
-                [x, y] = [
-                    dft["Centroid"].iloc[i][0] * scale,
-                    dft["Centroid"].iloc[i][1] * scale,
-                ]
-                q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
-                dq = q - Q
-                A = dft["Area"].iloc[i] * scale ** 2
-                TrQdq = np.trace(np.matmul(Q, dq))
-                dp = np.matmul(R, dft["Polar"].iloc[i]) - P
-                [x, y] = np.matmul(R, np.array([x, y]))
-                p = np.matmul(R, dft["Polar"].iloc[i])
-
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": t,
-                        "X": x - mig[0],
-                        "Y": y - mig[1],
-                        "dq": dq,
-                        "q": q,
-                        "TrQdq": TrQdq,
-                        "Area": A,
-                        "dp": dp,
-                        "Polar": p,
-                    }
-                )
-
-            mig += np.array(dfFilename["v"][dfFilename["T"] == t])[0]
-
-    dfShape = pd.DataFrame(_df2)
-    dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
-
-else:
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-
 
 # typical cell length
-if False:
+if True:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     A = []
     for t in range(T):
         A.append(np.mean(dfShape["Area"][dfShape["T"] == t] ** 0.5))
@@ -156,10 +54,50 @@ if False:
         f"results/Typical cell length {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# mean sf
+if True:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    sf = []
+    sfstd = []
+    for t in range(T):
+        sf.append(np.mean(dfShape["Shape Factor"][dfShape["T"] == t]))
+        sfstd.append(
+            np.std(np.stack(dfShape["Shape Factor"][dfShape["T"] == t], axis=0))
+        )
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].errorbar(2 * np.array(range(T)), sf, yerr=sfstd)
+    ax[0].set(xlabel=r"Time", ylabel=r"$\bar{S_f}$")
+    ax[0].title.set_text(r"Mean of $S_f$")
+    # ax[0].set_ylim([-0.03, 0.05])
+
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        sf = []
+        for t in range(T):
+            sf.append(np.mean(df["Shape Factor"][df["T"] == t]))
+
+        ax[1].plot(2 * np.array(range(T)), sf)
+
+    ax[1].set(xlabel=r"Time", ylabel=r"$\bar{S_f}$")
+    ax[1].title.set_text(r"Mean of $S_f$ indivial videos")
+    # ax[1].set_ylim([-0.03, 0.05])
+
+    fig.savefig(
+        f"results/mean sf {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
     Q1std = []
     for t in range(T):
@@ -167,7 +105,6 @@ if False:
         Q1std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 0]))
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].errorbar(2 * np.array(range(T)), Q1, yerr=Q1std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
     ax[0].title.set_text(r"Mean of $Q^{(1)}$")
@@ -189,10 +126,12 @@ if False:
         f"results/mean Q1 {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q2 = []
     Q2std = []
     for t in range(T):
@@ -200,7 +139,6 @@ if False:
         Q2std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 1]))
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}$")
     ax[0].title.set_text(r"Mean of $Q^{(2)}$")
@@ -223,11 +161,13 @@ if False:
         f"results/mean Q2 {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
     Q2 = []
     Q2std = []
@@ -241,7 +181,6 @@ if False:
     Q2std = np.array(Q2std) / Q1max
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}/\bar{Q}^{(1)}$")
     ax[0].title.set_text(r"Mean of $Q^{(2)}$")
@@ -264,11 +203,13 @@ if False:
         f"results/mean Q2 over Q1 {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     P1 = []
     P1std = []
     for t in range(T):
@@ -278,7 +219,6 @@ if False:
         )
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].errorbar(2 * np.array(range(T)), P1, yerr=P1std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_1$")
     ax[0].title.set_text(r"Mean of $P_1$")
@@ -300,11 +240,13 @@ if False:
         f"results/mean P1 {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 
 if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     P2 = []
     P2std = []
     for t in range(T):
@@ -314,7 +256,6 @@ if False:
         )
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].errorbar(2 * np.array(range(T)), P2, yerr=P2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_2$")
     ax[0].title.set_text(r"Mean of $P_2$")
@@ -336,17 +277,18 @@ if False:
         f"results/mean P2 {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")
 
 
-if True:
+if False:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     rho = []
     for t in range(T):
         rho.append(1 / np.mean(dfShape["Area"][dfShape["T"] == t]))
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    plt.subplots_adjust(wspace=0.3)
     ax[0].plot(2 * np.array(range(T)), rho)
     ax[0].set(xlabel=r"Time", ylabel=r"$\rho$")
     ax[0].title.set_text(r"$\rho$")
@@ -368,5 +310,6 @@ if True:
         f"results/mean rho {fileType}",
         dpi=300,
         transparent=True,
+        bbox_inches="tight",
     )
     plt.close("all")

@@ -309,3 +309,59 @@ def vidxyrcRGB(vid):
             vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
 
     return vidrc
+
+
+def vidrcxy(vid):
+
+    T, X, Y = vid.shape
+
+    vidxy = np.zeros(shape=(T, X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
+
+    return vidxy
+
+
+def vidxyrc(vid):
+
+    T, X, Y = vid.shape
+
+    vidrc = np.zeros(shape=(T, X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
+
+    return vidrc
+
+
+def imgrcxy(img):
+
+    X, Y = img.shape
+
+    imgxy = np.zeros(shape=(X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            imgxy[x, y] = img[(Y - 1) - y, x]
+
+    return imgxy
+
+
+def imgxyrc(img):
+
+    X, Y = img.shape
+
+    imgrc = np.zeros(shape=(X, Y))
+
+    for x in range(X):
+        for y in range(Y):
+
+            imgrc[(Y - 1) - y, x] = img[x, y]
+
+    return imgrc
