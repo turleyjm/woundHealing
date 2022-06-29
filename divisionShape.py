@@ -6,6 +6,7 @@ from math import floor, log10, factorial
 
 from collections import Counter
 from trace import Trace
+from turtle import position
 import cv2
 import matplotlib
 import matplotlib.lines as lines
@@ -172,7 +173,7 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 
 
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
@@ -505,7 +506,7 @@ if True:
 
 
 # display division tracks
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
@@ -546,7 +547,7 @@ if True:
 
 
 # area of parent dividing cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -610,7 +611,7 @@ if True:
 
 
 # shape of parent dividing cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -674,7 +675,7 @@ if True:
 
 
 # orientation of parent dividing cells
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -724,7 +725,7 @@ if True:
 
 
 # orientation tcj of parent dividing cells
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -774,7 +775,7 @@ if True:
 
 
 # Area of daughter cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -838,7 +839,7 @@ if True:
 
 
 # shape of daughter cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -923,11 +924,11 @@ def maskQ(mask):
     I[1, 1] = 1
     q = S - TrS * I / 2
 
-    return q
+    return q, Cx, Cy
 
 
-# orientation of daughter cells
-if True:
+# orientation of daughter cells relative to tissue
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -937,18 +938,25 @@ if True:
     for filename in filenames:
         tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
         dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        Q = np.mean(dfShape["q"][dfShape["Filename"] == filename])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+        R = util.rotation_matrix(-theta0)
+
         dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
         dfFileShape = dfFileShape[dfFileShape["Track length"] > 13]
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
+
         for label in labels:
             dfDiv = df[df["Label"] == label]
             polygon = dfDiv["Polygon"][dfDiv["Division Time"] == time[0]].iloc[0]
-            q0 = cell.qTensor(polygon)
+            q0 = np.matmul(R, np.matmul(cell.qTensor(polygon), np.matrix.transpose(R)))
             for t in time:
                 if dfDiv["Type"][dfDiv["Division Time"] == t].iloc[0] == "parent":
                     polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[0]
-                    q = cell.qTensor(polygon)
+                    q = np.matmul(
+                        R, np.matmul(cell.qTensor(polygon), np.matrix.transpose(R))
+                    )
                     dq[time.index(t)].append(q - q0)
                 else:
                     T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
@@ -957,7 +965,7 @@ if True:
                     mask = np.zeros([512, 512])
                     mask[np.all((tracks[int(T)] - colour1) == 0, axis=2)] = 1
                     mask[np.all((tracks[int(T)] - colour2) == 0, axis=2)] = 1
-                    q = maskQ(mask)
+                    q = np.matmul(R, np.matmul(maskQ(mask)[0], np.matrix.transpose(R)))
                     dq[time.index(t)].append(q - q0)
 
     dQ = []
@@ -974,16 +982,140 @@ if True:
 
     ax[0].errorbar(time, dQ[:, 0, 0], dQstd[:, 0, 0])
     ax[0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
-    ax[0].title.set_text(r"$S_f$ during division")
+    ax[0].title.set_text(r"$\delta Q_1$ during division")
     ax[0].set_ylim([-0.07, 0.07])
 
     ax[1].errorbar(time, dQ[:, 1, 0], dQstd[:, 1, 0])
     ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
-    ax[1].title.set_text(r"$\delta S_f$ during division")
+    ax[1].title.set_text(r"$\delta Q_2$ during division")
     ax[1].set_ylim([-0.07, 0.07])
 
     fig.savefig(
-        f"results/change in Q division {fileType}",
+        f"results/change in Q division relative to tissue {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# orientation of daughter cells relative to wound
+if True:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    time = list(np.linspace(-10, 10, 21))
+    dq = [[] for col in range(len(time))]
+    for filename in filenames:
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+
+        dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 13]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            polygon = dfDiv["Polygon"][dfDiv["Division Time"] == time[0]].iloc[0]
+            T = dfDiv["Time"][dfDiv["Division Time"] == time[0]].iloc[0]
+            if "Wound" in filename:
+                (xc, yc) = dfWound["Position"].iloc[T]
+            else:
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0), axis=0
+                )
+                xc = 256 * scale - mig[0]
+                yc = 256 * scale - mig[1]
+            x, y = np.array(cell.centroid(polygon)) * scale
+            r = dist[T, int(x / scale), int(512 - y / scale)]
+            if r * scale < 30:
+                phi = np.arctan2(y - yc, x - xc)
+                Rw = util.rotation_matrix(-phi)
+                q0 = np.matmul(
+                    Rw, np.matmul(cell.qTensor(polygon), np.matrix.transpose(Rw))
+                )
+
+                for t in time:
+                    if dfDiv["Type"][dfDiv["Division Time"] == t].iloc[0] == "parent":
+                        polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[0]
+                        T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
+                        if "Wound" in filename:
+                            (xc, yc) = dfWound["Position"].iloc[T]
+                        else:
+                            mig = np.sum(
+                                np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0),
+                                axis=0,
+                            )
+                            xc = 256 * scale - mig[0]
+                            yc = 256 * scale - mig[1]
+                        x, y = np.array(cell.centroid(polygon)) * scale
+                        phi = np.arctan2(y - yc, x - xc)
+                        Rw = util.rotation_matrix(-phi)
+
+                        q = np.matmul(
+                            Rw,
+                            np.matmul(cell.qTensor(polygon), np.matrix.transpose(Rw)),
+                        )
+                        dq[time.index(t)].append(q - q0)
+                    else:
+                        T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
+                        if "Wound" in filename:
+                            (xc, yc) = dfWound["Position"].iloc[T]
+                        else:
+                            mig = np.sum(
+                                np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0),
+                                axis=0,
+                            )
+                            xc = 256 * scale - mig[0]
+                            yc = 256 * scale - mig[1]
+
+                        colour1 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[0]
+                        colour2 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[1]
+                        mask = np.zeros([512, 512])
+                        mask[np.all((tracks[int(T)] - colour1) == 0, axis=2)] = 1
+                        mask[np.all((tracks[int(T)] - colour2) == 0, axis=2)] = 1
+                        q, x, y = maskQ(mask)
+                        x, y = np.array([x, y]) * scale
+                        phi = np.arctan2(y - yc, x - xc)
+                        Rw = util.rotation_matrix(-phi)
+
+                        q = np.matmul(Rw, np.matmul(q, np.matrix.transpose(Rw)))
+                        dq[time.index(t)].append(q - q0)
+
+    dQ = []
+    dQstd = []
+    for i in range(len(dq)):
+        dQ.append(np.mean(dq[i], axis=0))
+        dQstd.append(np.std(dq[i], axis=0))
+
+    dQ = np.array(dQ)
+    dQstd = np.array(dQstd)
+    time = 2 * np.array(time)
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+
+    ax[0].errorbar(time, dQ[:, 0, 0], dQstd[:, 0, 0])
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
+    ax[0].title.set_text(r"$\delta Q_1$ during division")
+    ax[0].set_ylim([-0.07, 0.07])
+
+    ax[1].errorbar(time, dQ[:, 1, 0], dQstd[:, 1, 0])
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
+    ax[1].title.set_text(r"$\delta Q_2$ during division")
+    ax[1].set_ylim([-0.07, 0.07])
+
+    fig.savefig(
+        f"results/change in Q division relative to wound {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

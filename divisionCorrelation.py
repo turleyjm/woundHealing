@@ -149,7 +149,7 @@ if False:
 
 
 # correction of divisions
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     expectedXY = np.zeros([int(T / timeStep), int(R / rStep)])
     oriCorr = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -318,7 +318,7 @@ if False:
     df = pd.DataFrame(_df)
     df.to_pickle(f"databases/divCorr{fileType}.pkl")
 
-if False:
+if True:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]
@@ -378,7 +378,7 @@ if False:
     plt.close("all")
 
 
-if False:
+if True:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     thetaCorr = df["thetaCorr"].iloc[0]
     df = 0
@@ -419,8 +419,8 @@ if False:
         plt.close("all")
 
 
-# correction of divisions
-if True:
+# correction of divisions and
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     expectedXY = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -565,7 +565,7 @@ if True:
     df.to_pickle(f"databases/divRhoCorr{fileType}.pkl")
 
 
-if True:
+if False:
     df = pd.read_pickle(f"databases/divRhoCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]

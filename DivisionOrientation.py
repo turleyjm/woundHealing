@@ -167,7 +167,7 @@ if True:
         df = df1[df1["R"] <= rStep * (r + 1)]
         mu.append(np.mean(df["Orientation Wound"]))
         std.append(np.std(df["Orientation Wound"]))
-        rad.append(rStep * r)
+        rad.append(rStep * r + rStep / 2)
         for i in range(len(df)):
             ori = df["Orientation Wound"].iloc[i]
             count[r, int(ori / 9)] += 1
@@ -255,7 +255,7 @@ if True:
         stdS.append(np.std(dfS["Orientation Wound"]))
         muL.append(np.mean(dfL["Orientation Wound"]))
         stdL.append(np.std(dfL["Orientation Wound"]))
-        rad.append(rStep * r)
+        rad.append(rStep * r + rStep / 2)
 
         _dfttestS.append(
             {
