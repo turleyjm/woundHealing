@@ -43,7 +43,7 @@ scale = 123.26 / 512
 
 # -------------------
 
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:

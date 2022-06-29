@@ -136,7 +136,7 @@ if True:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
         dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         Q = np.mean(dfShape["q"])
-        theta0 = 0.5 * np.arctan2(Q[0, 0], Q[0, 1])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
 
         t0 = util.findStartTime(filename)
         if "Wound" in filename:
@@ -147,11 +147,15 @@ if True:
                 (x_w, y_w) = dfWound["Position"].iloc[t]
                 x = dfDivision["X"].iloc[i]
                 y = dfDivision["Y"].iloc[i]
-                ori = dfDivision["Orientation"].iloc[i]
-                ori = (ori - np.arctan2(y - y_w, x - x_w) * 180 / np.pi) % 180
+                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
                 if ori > 90:
                     ori = 180 - ori
-                r = dist[t, 512 - y, x]
+                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
+                r = dist[t, x, 512 - y]
                 _df.append(
                     {
                         "Filename": filename,
@@ -160,9 +164,9 @@ if True:
                         "X": x * scale,
                         "Y": y * scale,
                         "R": r * scale,
-                        "Theta": ((np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi)
-                        % 360,
+                        "Theta": theta % 360,
                         "Orientation": ori,
+                        "Orientation Wound": ori_w,
                     }
                 )
         else:
@@ -183,6 +187,11 @@ if True:
                 ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
                 if ori > 90:
                     ori = 180 - ori
+                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
                 _df.append(
                     {
                         "Filename": filename,
@@ -191,8 +200,9 @@ if True:
                         "X": x,
                         "Y": y,
                         "R": r,
-                        "Theta": ((np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi),
+                        "Theta": theta % 360,
                         "Orientation": ori,
+                        "Orientation Wound": ori_w,
                     }
                 )
 
@@ -376,6 +386,75 @@ if False:
 
     fig.savefig(
         f"results/Compared division density with time",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+    print(total)
+
+
+# Compare divison density with time error bar
+
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    labels = ["WoundS", "Unwound"]
+    legend = ["small wound", "unwounded"]
+    dat_dd = []
+    total = 0
+    i = 0
+    for fileType in labels:
+        filenames = util.getFilesOfType(fileType)
+        count = np.zeros([len(filenames), int(T / timeStep)])
+        area = np.zeros([len(filenames), int(T / timeStep)])
+        dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        total += len(dfDivisions)
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            t0 = util.findStartTime(filename)
+            dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df = df1[df1["T"] <= timeStep * (t + 1)]
+                count[k, t] = len(df)
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+            )
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+
+        dat_dd.append(count / area)
+
+        time = []
+        dd = []
+        std = []
+        for t in range(area.shape[1]):
+            _area = area[:, t][area[:, t] > 0]
+            _count = count[:, t][area[:, t] > 0]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd.append(_dd * 10000 * timeStep / 2)
+                std.append(_std * 10000 * timeStep / 2)
+                time.append((-1 + i) + t * timeStep + timeStep / 2)
+
+        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
+        i += 1
+
+    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.title.set_text(f"Division density with time")
+    ax.set_ylim([0, 25])
+    ax.legend()
+
+    fig.savefig(
+        f"results/Compared division density with time errorbars",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -601,7 +680,7 @@ if False:
 
 
 # Change in divison density with distance from wound edge and time
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
