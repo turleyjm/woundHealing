@@ -29,7 +29,7 @@ import xml.etree.ElementTree as et
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 16})
+plt.rcParams.update({"font.size": 12})
 
 # -------------------
 
@@ -51,7 +51,7 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 
 # Divison orientation with respect to tissue over time
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(T / timeStep), 10])
@@ -81,12 +81,13 @@ if True:
         f"results/Divison orientation with respect to tissue over time {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
 
 # Divison orientation with respect to tissue
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
@@ -98,12 +99,13 @@ if True:
         f"results/Divison orientation with respect to tissue {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
 
 # Divison orientation with respect to a wound over time
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(T / timeStep), 10])
@@ -133,12 +135,13 @@ if True:
         f"results/Divison orientation with respect to a wound over time {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
 
 # Divison orientation with respect to a wound
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
@@ -150,12 +153,13 @@ if True:
         f"results/Divison orientation with respect to a wound {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
 
 # Divison orientation with respect to a wound over distance from wound
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(R / rStep), 10])
@@ -196,6 +200,55 @@ if True:
         f"results/Divison orientation with respect to a wound over distance from wound {fileType}",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Divison orientation with respect to a wound over distance from wound
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+
+    count = np.zeros([int(R / rStep), 10])
+    rad = []
+    mu = []
+    std = []
+    for r in range(int(R / rStep)):
+        df1 = dfDivisions[dfDivisions["R"] > rStep * r]
+        df2 = df1[df1["T"] < 50]
+        df = df2[df2["R"] <= rStep * (r + 1)]
+        mu.append(np.mean(df["Orientation Wound"]))
+        std.append(np.std(df["Orientation Wound"]))
+        rad.append(rStep * r + rStep / 2)
+        for i in range(len(df)):
+            ori = df["Orientation Wound"].iloc[i]
+            count[r, int(ori / 9)] += 1
+
+    t, r = np.mgrid[0:R:rStep, 0:100:10]
+    fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+    c = ax[0].pcolor(
+        t,
+        r,
+        count,
+        vmin=0,
+        vmax=80,
+    )
+    fig.colorbar(c, ax=ax[0])
+    ax[0].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+
+    ax[1].errorbar(rad, mu, yerr=std)
+    ax[1].set_ylim([0, 90])
+    ax[1].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+
+    fig.suptitle(
+        f"Divison orientation with respect to a wound over distance from wound {fileType}"
+    )
+
+    fig.savefig(
+        f"results/Divison orientation WRTW over distance from wound {fileType} short time",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")
 
@@ -225,7 +278,120 @@ def star(p):
 
 
 # Divison orientation with respect to a wound over distance from wound t-tests
-if True:
+if False:
+    alpha = 0.05
+    dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound.pkl")
+    dfDivisionsS = pd.read_pickle(f"databases/dfDivisionsWoundS.pkl")
+    dfDivisionsL = pd.read_pickle(f"databases/dfDivisionsWoundL.pkl")
+
+    count = np.zeros([int(R / rStep), 10])
+    rad = []
+    mu = []
+    std = []
+    muS = []
+    stdS = []
+    muL = []
+    stdL = []
+    _dfttestS = []
+    _dfttestL = []
+    for r in range(int(R / rStep)):
+        df1 = dfDivisions[dfDivisions["R"] > rStep * r]
+        df = df1[df1["R"] <= rStep * (r + 1)]
+        df1 = dfDivisionsS[dfDivisionsS["R"] > rStep * r]
+        dfS = df1[df1["R"] <= rStep * (r + 1)]
+        df1 = dfDivisionsL[dfDivisionsL["R"] > rStep * r]
+        dfL = df1[df1["R"] <= rStep * (r + 1)]
+
+        mu.append(np.mean(df["Orientation Wound"]))
+        std.append(np.std(df["Orientation Wound"]))
+        muS.append(np.mean(dfS["Orientation Wound"]))
+        stdS.append(np.std(dfS["Orientation Wound"]))
+        muL.append(np.mean(dfL["Orientation Wound"]))
+        stdL.append(np.std(dfL["Orientation Wound"]))
+        rad.append(rStep * r + rStep / 2)
+
+        _dfttestS.append(
+            {
+                "R": rStep * r,
+                "P-value": stats.ttest_ind(
+                    df["Orientation Wound"], dfS["Orientation Wound"]
+                ).pvalue,
+                "Sig": star(
+                    stats.ttest_ind(
+                        df["Orientation Wound"], dfS["Orientation Wound"]
+                    ).pvalue
+                ),
+            }
+        )
+        _dfttestL.append(
+            {
+                "R": rStep * r,
+                "P-value": stats.ttest_ind(
+                    df["Orientation Wound"], dfL["Orientation Wound"]
+                ).pvalue,
+                "Sig": star(
+                    stats.ttest_ind(
+                        df["Orientation Wound"], dfL["Orientation Wound"]
+                    ).pvalue
+                ),
+            }
+        )
+
+    dfttestS = pd.DataFrame(_dfttestS)
+    dfttestL = pd.DataFrame(_dfttestL)
+
+    dfttestS = HolmBonferroni(dfttestS, alpha)
+    dfttestL = HolmBonferroni(dfttestL, alpha)
+
+    print("Small")
+    print(dfttestS)
+    print("Large")
+    print(dfttestL)
+
+    rad = np.array(rad)
+    # fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+
+    # ax[0].errorbar(rad, mu, yerr=std, label=f"Unwound")
+    # ax[0].errorbar(rad + 1, muS, yerr=stdS, label=f"Small wound")
+    # ax[0].set_ylim([0, 90])
+    # ax[0].legend()
+    # ax[0].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+    # ax[0].title.set_text(f"Small wound")
+
+    # ax[1].errorbar(rad, mu, yerr=std, label=f"Unwound")
+    # ax[1].errorbar(rad + 1, muL, yerr=stdL, label=f"Large wound")
+    # ax[1].set_ylim([0, 90])
+    # ax[1].legend()
+    # ax[1].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+    # ax[1].title.set_text(f"Large wound")
+
+    # fig.suptitle(
+    #     f"Divison orientation with respect to a wound over distance from wound"
+    # )
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+
+    ax.errorbar(rad - 1, mu, yerr=std, label=f"Unwounded")
+    ax.errorbar(rad, muS, yerr=stdS, label=f"Small wound")
+    ax.errorbar(rad + 1, muL, yerr=stdL, label=f"large wound")
+    ax.set_ylim([0, 90])
+    ax.legend()
+    ax.set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+    ax.title.set_text(
+        f"Divison orientation with respect to a wound over distance from wound"
+    )
+
+    fig.savefig(
+        f"results/Divison orientation with respect to a wound over distance from wound t-test",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Divison orientation with respect to a wound over distance from wound t-tests
+if False:
     alpha = 0.05
     dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound.pkl")
     dfDivisionsS = pd.read_pickle(f"databases/dfDivisionsWoundS.pkl")
@@ -320,5 +486,41 @@ if True:
         f"results/Divison orientation with respect to a wound over distance from wound t-test",
         transparent=True,
         bbox_inches="tight",
+        dpi=300,
+    )
+
+
+# Divison density with distance from wound edge and time
+if True:
+    ori = np.zeros([int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+
+    for r in range(ori.shape[1]):
+        for t in range(ori.shape[0]):
+            df1 = dfDivisions[dfDivisions["T"] > timeStep * t]
+            df2 = df1[df1["T"] <= timeStep * (t + 1)]
+            df3 = df2[df2["R"] > rStep * r]
+            df = df3[df3["R"] <= rStep * (r + 1)]
+            ori[t, r] = np.mean(df["Orientation Wound"])
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    c = ax.pcolor(
+        t,
+        r,
+        ori,
+        vmin=70,
+        vmax=20,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax.title.set_text(f"Division ori {fileType}")
+
+    fig.savefig(
+        f"results/Division ori heatmap {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
     )
     plt.close("all")

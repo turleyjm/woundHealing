@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import skimage as sm
+from skimage import color
 import tifffile
 import skimage.io
 import skimage.draw
@@ -10,6 +11,9 @@ import cv2
 import shutil
 import cellProperties as cell
 from shapely.geometry import Polygon
+from colour import Color
+from PIL import ImageColor
+from PIL import Image
 
 plt.rcParams.update({"font.size": 20})
 
@@ -19,7 +23,8 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 8
 
-if True:
+
+if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -35,12 +40,20 @@ if True:
         for i in range(len(dfDivisions)):
 
             t0 = dfDivisions["T"].iloc[i]
+            ori = np.pi * dfDivisions["Orientation"].iloc[i] / 180
             (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])
             x = int(x)
             y = int(y)
 
             rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 16)
             rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 11)
+
+            rr2, cc2, val = sm.draw.line_aa(
+                int(551 - (y + 17 * np.sin(ori) + 20)),
+                int(x + 17 * np.cos(ori) + 20),
+                int(551 - (y - 17 * np.sin(ori) + 20)),
+                int(x - 17 * np.cos(ori) + 20),
+            )
 
             times = [t0, int(t0 + 1)]
 
@@ -52,11 +65,149 @@ if True:
             for t in timeVid:
                 divisions[t][rr0, cc0, 2] = 200
                 divisions[t][rr1, cc1, 2] = 0
+                divisions[t][rr2, cc2, 2] = 200
 
         divisions = divisions[:, 20:532, 20:532]
 
         divisions = np.asarray(divisions, "uint8")
         tifffile.imwrite(f"results/divisionsDisplay{filename}.tif", divisions)
+
+
+# orientation to wound
+if True:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
+
+        (T, X, Y, rgb) = focus.shape
+
+        divisions = np.zeros([T, 552, 552, 3])
+
+        for x in range(X):
+            for y in range(Y):
+                divisions[:, 20 + x, 20 + y, :] = focus[:, x, y, :]
+
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        Q = np.mean(dfShape["q"])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+
+        t0 = util.findStartTime(filename)
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+            for t in range(T):
+                (xc, yc) = dfWound["Position"].iloc[t]
+                rr0, cc0 = sm.draw.disk([551 - (yc + 20), xc + 20], 5)
+                divisions[t][rr0, cc0, 0] = 255
+                divisions[t][rr0, cc0, 1] = 255
+                divisions[t][rr0, cc0, 2] = 255
+
+            for i in range(len(dfDivisions)):
+                t = dfDivisions["T"].iloc[i]
+                (x_w, y_w) = dfWound["Position"].iloc[t]
+                x = dfDivisions["X"].iloc[i]
+                y = dfDivisions["Y"].iloc[i]
+                ori = (dfDivisions["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
+                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+
+                t0 = dfDivisions["T"].iloc[i]
+                ori = np.pi * dfDivisions["Orientation"].iloc[i] / 180
+                (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])
+                x = int(x)
+                y = int(y)
+
+                rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 16)
+                rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 11)
+                rr2, cc2, val = sm.draw.line_aa(
+                    int(551 - (y + 17 * np.sin(ori) + 20)),
+                    int(x + 17 * np.cos(ori) + 20),
+                    int(551 - (y - 17 * np.sin(ori) + 20)),
+                    int(x - 17 * np.cos(ori) + 20),
+                )
+
+                times = [t0, int(t0 + 1)]
+
+                timeVid = []
+                for t in times:
+                    if t >= 0 and t <= T - 1:
+                        timeVid.append(t)
+
+                for t in timeVid:
+                    divisions[t][rr0, cc0, 2] = 250 * (ori_w / 90)
+                    divisions[t][rr1, cc1, 2] = 0
+                    divisions[t][rr2, cc2, 2] = 250 * (ori_w / 90)
+                    divisions[t][rr0, cc0, 1] = 250 * (1 - ori_w / 90)
+                    divisions[t][rr1, cc1, 1] = 0
+                    divisions[t][rr2, cc2, 1] = 250 * (1 - ori_w / 90)
+
+        else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+            for t in range(T):
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                )
+                xc = int(255 + mig[0] / scale)
+                yc = int(255 + mig[1] / scale)
+                rr0, cc0 = sm.draw.disk([551 - (yc + 20), xc + 20], 5)
+                divisions[t][rr0, cc0, 0] = 255
+                divisions[t][rr0, cc0, 1] = 255
+                divisions[t][rr0, cc0, 2] = 255
+
+            for i in range(len(dfDivisions)):
+                t = dfDivisions["T"].iloc[i]
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                )
+                xc = 255 + mig[0] / scale
+                yc = 255 + mig[1] / scale
+                x = dfDivisions["X"].iloc[i]
+                y = dfDivisions["Y"].iloc[i]
+                ori = (dfDivisions["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
+                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+
+                t0 = dfDivisions["T"].iloc[i]
+                ori = np.pi * dfDivisions["Orientation"].iloc[i] / 180
+                (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])
+                x = int(x)
+                y = int(y)
+
+                rr0, cc0 = sm.draw.disk([551 - (y + 20), x + 20], 16)
+                rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 11)
+                rr2, cc2, val = sm.draw.line_aa(
+                    int(551 - (y + 17 * np.sin(ori) + 20)),
+                    int(x + 17 * np.cos(ori) + 20),
+                    int(551 - (y - 17 * np.sin(ori) + 20)),
+                    int(x - 17 * np.cos(ori) + 20),
+                )
+
+                times = [t0, int(t0 + 1)]
+
+                timeVid = []
+                for t in times:
+                    if t >= 0 and t <= T - 1:
+                        timeVid.append(t)
+
+                for t in timeVid:
+                    divisions[t][rr0, cc0, 2] = 250 * (ori_w / 90)
+                    divisions[t][rr1, cc1, 2] = 0
+                    divisions[t][rr2, cc2, 2] = 250 * (ori_w / 90)
+                    divisions[t][rr0, cc0, 1] = 250 * (1 - ori_w / 90)
+                    divisions[t][rr1, cc1, 1] = 0
+                    divisions[t][rr2, cc2, 1] = 250 * (1 - ori_w / 90)
+
+        divisions = divisions[:, 20:532, 20:532]
+
+        divisions = np.asarray(divisions, "uint8")
+        tifffile.imwrite(f"results/orientationWound{filename}.tif", divisions)
 
 
 if False:
