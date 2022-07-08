@@ -121,7 +121,7 @@ if False:
     ax.set(xlabel="Orientation")
 
     fig.savefig(
-        f"results/xy distributions {fileType}",
+        f"results/ori distributions {fileType}",
         dpi=300,
         transparent=True,
     )
@@ -141,7 +141,7 @@ if False:
         ax.set(xlabel="Orientation")
 
         fig.savefig(
-            f"results/xy distributions {filename}",
+            f"results/ori distributions {filename}",
             dpi=300,
             transparent=True,
         )

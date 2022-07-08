@@ -73,6 +73,18 @@ if False:
         tifffile.imwrite(f"results/divisionsDisplay{filename}.tif", divisions)
 
 
+def rgb2gray(rgb):
+
+    r, g, b = rgb[:, :, :, 0], rgb[:, :, :, 1], rgb[:, :, :, 2]
+    gray = 0.4 * r + 0.5870 * g + 0.1140 * b
+
+    return gray
+
+
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
+
+
 # orientation to wound
 if True:
     for filename in filenames:
@@ -80,12 +92,12 @@ if True:
         dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
 
         (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
 
         divisions = np.zeros([T, 552, 552, 3])
-
-        for x in range(X):
-            for y in range(Y):
-                divisions[:, 20 + x, 20 + y, :] = focus[:, x, y, :]
 
         dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         Q = np.mean(dfShape["q"])
@@ -128,21 +140,29 @@ if True:
                     int(x - 17 * np.cos(ori) + 20),
                 )
 
-                times = [t0, int(t0 + 1)]
+                times = [t0, int(t0 + 1), int(t0 + 2), int(t0 + 3)]
 
                 timeVid = []
                 for t in times:
                     if t >= 0 and t <= T - 1:
                         timeVid.append(t)
 
+                blue = 255 * gaussian(ori_w, 0, 45)
+                red = 255 * gaussian(ori_w, 90, 45)
+                green = 155 * gaussian(ori_w, 45, 10)
+                blue, red, green = (
+                    np.array([blue, red, green]) * 255 / np.max([blue, red, green])
+                )
                 for t in timeVid:
-                    divisions[t][rr0, cc0, 2] = 250 * (ori_w / 90)
-                    divisions[t][rr1, cc1, 2] = 0
-                    divisions[t][rr2, cc2, 2] = 250 * (ori_w / 90)
-                    divisions[t][rr0, cc0, 1] = 250 * (1 - ori_w / 90)
+                    divisions[t][rr0, cc0, 0] = red
+                    divisions[t][rr1, cc1, 0] = 0
+                    divisions[t][rr2, cc2, 0] = red
+                    divisions[t][rr0, cc0, 1] = green
                     divisions[t][rr1, cc1, 1] = 0
-                    divisions[t][rr2, cc2, 1] = 250 * (1 - ori_w / 90)
-
+                    divisions[t][rr2, cc2, 1] = green
+                    divisions[t][rr0, cc0, 2] = blue
+                    divisions[t][rr1, cc1, 2] = 0
+                    divisions[t][rr2, cc2, 2] = blue
         else:
             dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
             dfFilename = dfVelocityMean[
@@ -189,22 +209,37 @@ if True:
                     int(x - 17 * np.cos(ori) + 20),
                 )
 
-                times = [t0, int(t0 + 1)]
+                times = [t0, int(t0 + 1), int(t0 + 2), int(t0 + 3)]
 
                 timeVid = []
                 for t in times:
                     if t >= 0 and t <= T - 1:
                         timeVid.append(t)
 
+                blue = 255 * gaussian(ori_w, 0, 45)
+                red = 255 * gaussian(ori_w, 90, 45)
+                green = 155 * gaussian(ori_w, 45, 10)
+                blue, red, green = (
+                    np.array([blue, red, green]) * 255 / np.max([blue, red, green])
+                )
                 for t in timeVid:
-                    divisions[t][rr0, cc0, 2] = 250 * (ori_w / 90)
-                    divisions[t][rr1, cc1, 2] = 0
-                    divisions[t][rr2, cc2, 2] = 250 * (ori_w / 90)
-                    divisions[t][rr0, cc0, 1] = 250 * (1 - ori_w / 90)
+                    divisions[t][rr0, cc0, 0] = red
+                    divisions[t][rr1, cc1, 0] = 0
+                    divisions[t][rr2, cc2, 0] = red
+                    divisions[t][rr0, cc0, 1] = green
                     divisions[t][rr1, cc1, 1] = 0
-                    divisions[t][rr2, cc2, 1] = 250 * (1 - ori_w / 90)
+                    divisions[t][rr2, cc2, 1] = green
+                    divisions[t][rr0, cc0, 2] = blue
+                    divisions[t][rr1, cc1, 2] = 0
+                    divisions[t][rr2, cc2, 2] = blue
 
         divisions = divisions[:, 20:532, 20:532]
+
+        mask = np.all((divisions - np.zeros(3)) == 0, axis=3)
+
+        divisions[:, :, :, 0][mask] = gray[mask]
+        divisions[:, :, :, 1][mask] = gray[mask]
+        divisions[:, :, :, 2][mask] = gray[mask]
 
         divisions = np.asarray(divisions, "uint8")
         tifffile.imwrite(f"results/orientationWound{filename}.tif", divisions)

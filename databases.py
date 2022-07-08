@@ -217,7 +217,7 @@ if True:
                 if ori_w > 90:
                     ori_w = 180 - ori_w
                 theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
-                r = dist[t, x, 512 - y]
+                r = dist[t, 512 - y, x]
                 _df.append(
                     {
                         "Filename": filename,

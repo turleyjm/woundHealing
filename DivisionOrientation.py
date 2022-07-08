@@ -37,7 +37,7 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 180
 timeStep = 8
-R = 110
+R = 60
 rStep = 10
 
 
@@ -47,11 +47,35 @@ def weighted_avg_and_std(values, weight, axis=0):
     return average, np.sqrt(variance)
 
 
+def HolmBonferroni(df, alpha):
+
+    df = df.sort_values(by=["P-value"])
+    n = len(df)
+    for i in range(n):
+        p = df["P-value"].iloc[i]
+        if p < alpha / (n - i):
+            df["Sig"].iloc[i] = star(p * (n - i))
+        else:
+            df["Sig"].iloc[i] = False
+
+    df = df.sort_values(by=["R"])
+
+    return df
+
+
+def star(p):
+
+    if p >= 0.05:
+        return 0
+    else:
+        return int(-np.log10(p))
+
+
 # -------------------
 
 
 # Divison orientation with respect to tissue over time
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(T / timeStep), 10])
@@ -87,7 +111,7 @@ if False:
 
 
 # Divison orientation with respect to tissue
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
@@ -105,7 +129,7 @@ if False:
 
 
 # Divison orientation with respect to a wound over time
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(T / timeStep), 10])
@@ -141,7 +165,7 @@ if False:
 
 
 # Divison orientation with respect to a wound
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
@@ -159,7 +183,7 @@ if False:
 
 
 # Divison orientation with respect to a wound over distance from wound
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(R / rStep), 10])
@@ -206,7 +230,7 @@ if False:
 
 
 # Divison orientation with respect to a wound over distance from wound
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
     count = np.zeros([int(R / rStep), 10])
@@ -253,32 +277,8 @@ if False:
     plt.close("all")
 
 
-def HolmBonferroni(df, alpha):
-
-    df = df.sort_values(by=["P-value"])
-    n = len(df)
-    for i in range(n):
-        p = df["P-value"].iloc[i]
-        if p < alpha / (n - i):
-            df["Sig"].iloc[i] = star(p * (n - i))
-        else:
-            df["Sig"].iloc[i] = False
-
-    df = df.sort_values(by=["R"])
-
-    return df
-
-
-def star(p):
-
-    if p >= 0.05:
-        return 0
-    else:
-        return int(-np.log10(p))
-
-
 # Divison orientation with respect to a wound over distance from wound t-tests
-if False:
+if True:
     alpha = 0.05
     dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound.pkl")
     dfDivisionsS = pd.read_pickle(f"databases/dfDivisionsWoundS.pkl")
@@ -369,17 +369,19 @@ if False:
     #     f"Divison orientation with respect to a wound over distance from wound"
     # )
 
-    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
 
     ax.errorbar(rad - 1, mu, yerr=std, label=f"Unwounded")
     ax.errorbar(rad, muS, yerr=stdS, label=f"Small wound")
-    ax.errorbar(rad + 1, muL, yerr=stdL, label=f"large wound")
+    ax.errorbar(rad + 1, muL, yerr=stdL, label=f"Large wound")
     ax.set_ylim([0, 90])
-    ax.legend()
-    ax.set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
-    ax.title.set_text(
-        f"Divison orientation with respect to a wound over distance from wound"
-    )
+    ax.set_xlim([0, 60])
+
+    ax.legend(loc="lower right")
+    ax.set(xlabel=r"Distance from wound ($\mu m$)", ylabel="Mean orientation")
+    # ax.title.set_text(
+    #     f"Divison orientation with respect to a wound over distance from wound"
+    # )
 
     fig.savefig(
         f"results/Divison orientation with respect to a wound over distance from wound t-test",
@@ -490,6 +492,10 @@ if False:
     )
 
 
+timeStep = 16
+R = 80
+rStep = 20
+
 # Divison density with distance from wound edge and time
 if True:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -504,7 +510,7 @@ if True:
             ori[t, r] = np.mean(df["Orientation Wound"])
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 2))
     c = ax.pcolor(
         t,
         r,
@@ -515,7 +521,7 @@ if True:
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Division ori {fileType}")
+    # ax.title.set_text(f"Division ori {fileType}")
 
     fig.savefig(
         f"results/Division ori heatmap {fileType}",

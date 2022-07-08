@@ -167,18 +167,73 @@ if False:
         _count = count[:, t][area[:, t] > 0]
         if len(_area) > 0:
             _dd, _std = weighted_avg_and_std(_count / _area, _area)
-            dd.append(_dd)
-            std.append(_std)
-            time.append(t * 10 + timeStep / 2)
+            dd.append(_dd * 10000)
+            std.append(_std * 10000)
+            time.append(t * timeStep + timeStep / 2)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     ax.errorbar(time, dd, yerr=std, marker="o")
-    ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
+    ax.set(xlabel="Time", ylabel=r"Divison density ($100\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with time {fileType}")
-    ax.set_ylim([0, 0.0007])
+    # ax.set_ylim([0, 0.0007])
 
     fig.savefig(
         f"results/Divison density with time {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Divison density with time
+
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+
+    for k in range(len(filenames)):
+        area = np.zeros([int(T / timeStep)])
+        count = np.zeros([int(T / timeStep)])
+        filename = filenames[k]
+        t0 = util.findStartTime(filename)
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
+        for t in range(len(area)):
+            df1 = dfFile[dfFile["T"] > timeStep * t]
+            df = df1[df1["T"] <= timeStep * (t + 1)]
+            count[t] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+        )
+        for t in range(len(area)):
+            t1 = int(timeStep / 2 * t - t0 / 2)
+            t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+            if t1 < 0:
+                t1 = 0
+            if t2 < 0:
+                t2 = 0
+            area[t] = np.sum(inPlane[t1:t2]) * scale ** 2
+
+        time = []
+        dd = []
+        for t in range(len(area)):
+            _area = area[t]
+            _count = count[t]
+            if _area > 0:
+                dd.append(_count / _area * 10000)
+                time.append(t * timeStep + timeStep / 2)
+
+        ax.plot(time, dd)
+
+    ax.set(xlabel="Time", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.title.set_text(f"Divison density with time individual videos {fileType}")
+    # ax.set_ylim([0, 0.0007])
+
+    fig.savefig(
+        f"results/Divison density with time individual videos {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -293,8 +348,8 @@ if False:
             _count = count[:, t][area[:, t] > 0]
             if len(_area) > 0:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                dd.append(_dd * 10000 * timeStep / 2)
-                std.append(_std)
+                dd.append(_dd * 10000)
+                std.append(_std * 10000)
                 time.append(t * timeStep + timeStep / 2)
 
         ax.plot(time, dd, label=f"{legend[i]}", marker="o")
@@ -317,10 +372,10 @@ if False:
 
 # Compare divison density with time error bar
 
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-    labels = ["WoundS", "Unwound"]
-    legend = ["small wound", "unwounded"]
+    labels = ["WoundS", "WoundL", "Unwound"]
+    legend = ["small wound", "large wound", "unwounded"]
     dat_dd = []
     total = 0
     i = 0
@@ -362,8 +417,8 @@ if True:
             _count = count[:, t][area[:, t] > 0]
             if len(_area) > 0:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                dd.append(_dd * 10000 * timeStep / 2)
-                std.append(_std * 10000 * timeStep / 2)
+                dd.append(_dd * 10000)
+                std.append(_std * 10000)
                 time.append((-1 + i) + t * timeStep + timeStep / 2)
 
         ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
@@ -371,7 +426,7 @@ if True:
 
     ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
     ax.title.set_text(f"Division density with time")
-    ax.set_ylim([0, 25])
+    ax.set_ylim([0, 8])
     ax.legend()
 
     fig.savefig(
@@ -576,7 +631,7 @@ if False:
                 std[t, r] = np.nan
 
     dd[sumArea < 8000] = np.nan
-    dd = dd * 10000 * timeStep / 2
+    dd = dd * 10000
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
@@ -584,8 +639,8 @@ if False:
         t,
         r,
         dd,
-        vmin=0,
-        vmax=18,
+        # vmin=0,
+        # vmax=18,
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
@@ -601,7 +656,7 @@ if False:
 
 
 # Change in divison density with distance from wound edge and time
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -671,7 +726,7 @@ if False:
         dd[:, r] = dd[:, r] - (m * time + c)
 
     dd[sumArea < 600 * len(filenames)] = np.nan
-    dd = dd * 10000 * timeStep / 2
+    dd = dd * 10000
 
     fileTitle = util.getFileTitle(fileType)
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
@@ -680,8 +735,8 @@ if False:
         t,
         r,
         dd,
-        vmin=-20,
-        vmax=20,
+        vmin=-4,
+        vmax=4,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
@@ -963,7 +1018,7 @@ if False:
                 std[t, r] = np.nan
 
     dd[sumArea < 8000] = np.nan
-    dd = dd * 10000 * timeStep
+    dd = dd * 10000
 
     dd = np.nan_to_num(dd[:, 1:8])
 
@@ -1128,7 +1183,7 @@ if False:
                 std[t, r] = np.nan
 
     ddWS[sumArea < 8000] = np.nan
-    ddWS = ddWS * 10000 * timeStep
+    ddWS = ddWS * 10000
 
     std = model.get_item("sigma2") ** 0.5
     print(std)
