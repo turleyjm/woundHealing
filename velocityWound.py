@@ -45,46 +45,6 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 90
 
-if False:
-    _df2 = []
-    for filename in filenames:
-
-        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-        t0 = util.findStartTime(filename)
-        df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
-
-        for t in range(T):
-            dft = df[df["T"] == t]
-            xw, yw = dfWound["Position"].iloc[t]
-            V = np.mean(dft["Velocity"])
-
-            for i in range(len(dft)):
-                x = dft["X"].iloc[i]
-                y = dft["Y"].iloc[i]
-                r = dist[t, int(x), int(y)]
-                phi = np.arctan2(y - yw, x - xw)
-                R = util.rotation_matrix(-phi)
-
-                v = np.matmul(R, dft["Velocity"].iloc[i]) / 2
-                dv = np.matmul(R, dft["Velocity"].iloc[i] - V) / 2
-
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": int(2 * t + t0),  # frames are taken every 2 minutes
-                        "X": x * scale,
-                        "Y": y * scale,
-                        "R": r * scale,
-                        "Phi": phi,
-                        "v": -v * scale,
-                        "dv": -dv * scale,
-                    }
-                )
-
-    dfVelocity = pd.DataFrame(_df2)
-    dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
-
 
 if False:
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")

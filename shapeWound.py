@@ -206,9 +206,9 @@ if False:
 # Q1 with distance from wound edge and time
 if True:
     T = 160
-    timeStep = 10
-    R = 110
-    rStep = 10
+    timeStep = 4
+    R = 100
+    rStep = 20
     q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
@@ -273,10 +273,10 @@ if True:
                 Q1[t, r] = np.nan
                 std[t, r] = np.nan
 
-    Q1[meanArea < 600] = np.nan
+    Q1[meanArea < 500] = np.nan
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     c = ax.pcolor(
         t,
         r,
