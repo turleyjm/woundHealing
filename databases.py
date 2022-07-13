@@ -224,7 +224,7 @@ if False:
 
 # Cell Behaviers relative to wound
 
-if True:
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -335,42 +335,87 @@ if True:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
-        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-        t0 = util.findStartTime(filename)
-        df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+            t0 = util.findStartTime(filename)
+            df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
 
-        for t in range(T):
-            dft = df[df["T"] == t]
-            xw, yw = dfWound["Position"].iloc[t]
-            V = np.mean(dft["Velocity"])
+            for t in range(T):
+                dft = df[df["T"] == t]
+                xw, yw = dfWound["Position"].iloc[t]
+                V = np.mean(dft["Velocity"])
 
-            for i in range(len(dft)):
-                x = dft["X"].iloc[i]
-                y = dft["Y"].iloc[i]
-                r = dist[t, int(x), int(y)]
-                phi = np.arctan2(y - yw, x - xw)
-                R = util.rotation_matrix(-phi)
+                for i in range(len(dft)):
+                    x = dft["X"].iloc[i]
+                    y = dft["Y"].iloc[i]
+                    r = dist[t, int(511 - y), int(x)]
+                    phi = np.arctan2(y - yw, x - xw)
+                    R = util.rotation_matrix(-phi)
 
-                v = np.matmul(R, dft["Velocity"].iloc[i]) / 2
-                dv = np.matmul(R, dft["Velocity"].iloc[i] - V) / 2
+                    v = np.matmul(R, dft["Velocity"].iloc[i]) / 2
+                    dv = np.matmul(R, dft["Velocity"].iloc[i] - V) / 2
 
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": int(2 * t + t0),  # frames are taken every 2 minutes
-                        "X": x * scale,
-                        "Y": y * scale,
-                        "R": r * scale,
-                        "Phi": phi,
-                        "v": -v * scale,
-                        "dv": -dv * scale,
-                    }
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "T": int(2 * t + t0),  # frames are taken every 2 minutes
+                            "X": x * scale,
+                            "Y": y * scale,
+                            "R": r * scale,
+                            "Phi": phi,
+                            "v": -v,
+                            "dv": -dv,
+                        }
+                    )
+        else:
+            t0 = 0
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+
+            for t in range(T):
+                dft = df[df["T"] == t]
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
                 )
+                xw = 256 + mig[0] / scale
+                yw = 256 + mig[1] / scale
+                V = np.mean(dft["Velocity"])
+
+                for i in range(len(dft)):
+                    x = dft["X"].iloc[i]
+                    y = dft["Y"].iloc[i]
+                    if t > 89:
+                        tdash = 89
+                    else:
+                        tdash = t
+                    r = dist[tdash, int(511 - y), int(x)]
+                    phi = np.arctan2(y - yw, x - xw)
+                    R = util.rotation_matrix(-phi)
+
+                    v = np.matmul(R, dft["Velocity"].iloc[i]) / 2
+                    dv = np.matmul(R, dft["Velocity"].iloc[i] - V) / 2
+
+                    _df2.append(
+                        {
+                            "Filename": filename,
+                            "T": int(2 * t + t0),  # frames are taken every 2 minutes
+                            "X": x * scale,
+                            "Y": y * scale,
+                            "R": r * scale,
+                            "Phi": phi,
+                            "v": -v * scale,
+                            "dv": -dv * scale,
+                        }
+                    )
 
     dfVelocity = pd.DataFrame(_df2)
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")

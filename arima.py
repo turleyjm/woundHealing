@@ -161,6 +161,156 @@ def divisionDensitySpace(fileType, timeStep, T, rStep, R):
     return dd
 
 
+def dQ1WoundSpace(fileType, timeStep, T, rStep, R):
+
+    filenames = util.getFilesOfType(fileType)
+
+    q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfShape[dfShape["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(q1.shape[2]):
+            for t in range(q1.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                if len(df) > 0:
+                    q1[k, t, r] = np.mean(df["dq"], axis=0)[0, 0]
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    Q1 = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _Q1 = q1[:, t, r][q1[:, t, r] != 0]
+            _area = area[:, t, r][q1[:, t, r] != 0]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_Q1, _area)
+                Q1[t, r] = _dd
+                std[t, r] = _std
+                meanArea[t, r] = np.mean(_area)
+            else:
+                Q1[t, r] = np.nan
+                std[t, r] = np.nan
+
+    Q1[meanArea < 500] = np.nan
+
+    return Q1
+
+
+def dV1WoundSpace(fileType, timeStep, T, rStep, R):
+
+    filenames = util.getFilesOfType(fileType)
+
+    v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfVelocity[dfVelocity["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(v1.shape[2]):
+            for t in range(v1.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                if len(df) > 0:
+                    v1[k, t, r] = np.mean(df["dv"], axis=0)[0]
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    V1 = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _V1 = v1[:, t, r][v1[:, t, r] != 0]
+            _area = area[:, t, r][v1[:, t, r] != 0]
+            if len(_area) > 0:
+                if np.sum(_area) > 0:
+                    _dd, _std = weighted_avg_and_std(_V1, _area)
+                    V1[t, r] = _dd
+                    std[t, r] = _std
+                    meanArea[t, r] = np.mean(_area)
+                else:
+                    V1[t, r] = np.nan
+                    std[t, r] = np.nan
+            else:
+                V1[t, r] = np.nan
+                std[t, r] = np.nan
+
+    V1[meanArea < 500] = np.nan
+
+    return V1
+
+
 def starSig(z):
 
     for t in range(z.shape[0]):
@@ -181,8 +331,9 @@ R = 100
 
 # Make arima for unwounded
 
-if False:
+if True:
     _df = []
+    allFig = False
     timeStep = 4
     fileType = "Unwound"
     dd = divisionDensity(fileType, timeStep, T)[0]
@@ -195,66 +346,69 @@ if False:
         )
     df = pd.DataFrame(_df)
 
-    # Original Series
-    # fig, ax = plt.subplots(3, 2, figsize=(10, 10))
-    # ax[0, 0].plot(df.dd)
-    # ax[0, 0].set_title("Original Series")
-    # plot_acf(df.dd, ax=ax[0, 1])
-    # ax[0, 1].set_ylim([-1.1, 1.1])
+    if allFig:
+        # Original Series
+        fig, ax = plt.subplots(3, 2, figsize=(10, 10))
+        ax[0, 0].plot(df.dd)
+        ax[0, 0].set_title("Original Series")
+        plot_acf(df.dd, ax=ax[0, 1])
+        ax[0, 1].set_ylim([-1.1, 1.1])
 
-    # # 1st Differencing
-    # ax[1, 0].plot(df.dd.diff())
-    # ax[1, 0].set_title("1st Order Differencing")
-    # plot_acf(df.dd.diff().dropna(), ax=ax[1, 1])
-    # ax[1, 1].set_ylim([-1.1, 1.1])
+        # 1st Differencing
+        ax[1, 0].plot(df.dd.diff())
+        ax[1, 0].set_title("1st Order Differencing")
+        plot_acf(df.dd.diff().dropna(), ax=ax[1, 1])
+        ax[1, 1].set_ylim([-1.1, 1.1])
 
-    # # 2nd Differencing
-    # ax[2, 0].plot(df.dd.diff().diff())
-    # ax[2, 0].set_title("2nd Order Differencing")
-    # plot_acf(df.dd.diff().diff().dropna(), ax=ax[2, 1])
-    # ax[2, 1].set_ylim([-1.1, 1.1])
+        # 2nd Differencing
+        ax[2, 0].plot(df.dd.diff().diff())
+        ax[2, 0].set_title("2nd Order Differencing")
+        plot_acf(df.dd.diff().diff().dropna(), ax=ax[2, 1])
+        ax[2, 1].set_ylim([-1.1, 1.1])
 
-    # fig.savefig(
-    #     f"results/autocorrelation of division density {fileType}",
-    #     transparent=True,
-    #     bbox_inches="tight",
-    #     dpi=300,
-    # )
-    # plt.close("all")
+        fig.savefig(
+            f"results/autocorrelation of division density {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
     d = 1
 
     # find p
-    # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    # ax[0].plot(df.dd.diff())
-    # ax[0].set_title("1st Differencing")
-    # ax[1].set(ylim=(0, 5))
-    # plot_pacf(df.dd.diff().dropna(), ax=ax[1])
-    # ax[1].set_ylim([-1.1, 1.1])
+    if allFig:
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        ax[0].plot(df.dd.diff())
+        ax[0].set_title("1st Differencing")
+        ax[1].set(ylim=(0, 5))
+        plot_pacf(df.dd.diff().dropna(), ax=ax[1])
+        ax[1].set_ylim([-1.1, 1.1])
 
-    # fig.savefig(
-    #     f"results/division density AR term {fileType}",
-    #     transparent=True,
-    #     bbox_inches="tight",
-    #     dpi=300,
-    # )
-    # plt.close("all")
+        fig.savefig(
+            f"results/division density AR term {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
     p = 0
 
     # find q
-    # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    # ax[0].plot(df.dd.diff())
-    # ax[0].set_title("1st Differencing")
-    # ax[1].set(ylim=(0, 1.2))
-    # plot_acf(df.dd.diff().dropna(), ax=ax[1])
-    # ax[1].set_ylim([-1.1, 1.1])
+    if allFig:
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        ax[0].plot(df.dd.diff())
+        ax[0].set_title("1st Differencing")
+        ax[1].set(ylim=(0, 1.2))
+        plot_acf(df.dd.diff().dropna(), ax=ax[1])
+        ax[1].set_ylim([-1.1, 1.1])
 
-    # fig.savefig(
-    #     f"results/division density MA term {fileType}",
-    #     transparent=True,
-    #     bbox_inches="tight",
-    #     dpi=300,
-    # )
-    # plt.close("all")
+        fig.savefig(
+            f"results/division density MA term {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
     q = 0
 
     model = statsm.tsa.arima.ARIMA(df.dd, order=(p, d, q))
@@ -262,16 +416,17 @@ if False:
     # print(model_fit.summary())
 
     residuals = pd.DataFrame(model_fit.resid)
-    # fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    # residuals.plot(title="Residuals", ax=ax[0])
-    # residuals.plot(kind="kde", title="Density", ax=ax[1])
-    # fig.savefig(
-    #     f"results/Residuals Density {fileType}",
-    #     transparent=True,
-    #     bbox_inches="tight",
-    #     dpi=300,
-    # )
-    # plt.close("all")
+    if allFig:
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        residuals.plot(title="Residuals", ax=ax[0])
+        residuals.plot(kind="kde", title="Density", ax=ax[1])
+        fig.savefig(
+            f"results/Residuals Density {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
 
     mu = np.mean(list(df.dd.diff())[1:])
     # model_fit.params["sigma2"]
@@ -366,7 +521,7 @@ if False:
 
 # Make starima for unwounded division data
 
-if False:
+if True:
     allFig = False
     _df = []
     timeStep = 4
@@ -613,7 +768,7 @@ if False:
     )
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[1, 1].title.set_text(f"significance {fileType}")
+    ax[1, 1].title.set_text(r"$\mathrm{sgn} (\delta d) (-\log_{10}(p)))$")
 
     # plt.subplot_tool()
 
@@ -629,6 +784,9 @@ if False:
     )
     plt.close("all")
 
+    # shift wounded data by 4 mins to get prediction for beginning of wounded data
+    dd_pred = dd_pred[1:]
+    T = int(T - 4)
     fileType = "WoundL"
     dd = divisionDensitySpace(fileType, timeStep, T, rStep, R)
 
@@ -672,7 +830,7 @@ if False:
     )
     fig.colorbar(c, ax=ax[2, 0])
     ax[2, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[2, 0].title.set_text(f"significance {fileType}")
+    ax[2, 0].title.set_text(r"$\mathrm{sgn} (\delta d) (-\log_{10}(p)))$")
 
     fileType = "WoundS"
     dd = divisionDensitySpace(fileType, timeStep, T, rStep, R)
@@ -713,7 +871,7 @@ if False:
     )
     fig.colorbar(c, ax=ax[2, 1])
     ax[2, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[2, 1].title.set_text(f"significance {fileType}")
+    ax[2, 1].title.set_text(r"$\mathrm{sgn} (\delta d) (-\log_{10}(p)))$")
 
     # plt.subplot_tool()
 
@@ -730,80 +888,7 @@ if False:
     plt.close("all")
 
 
-def dQ1WoundSpace(fileType, timeStep, T, rStep, R):
-
-    filenames = util.getFilesOfType(fileType)
-
-    q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
-    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
-    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
-    for k in range(len(filenames)):
-        filename = filenames[k]
-        dfFile = dfShape[dfShape["Filename"] == filename]
-        if "Wound" in filename:
-            t0 = util.findStartTime(filename)
-        else:
-            t0 = 0
-        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
-
-        for r in range(q1.shape[2]):
-            for t in range(q1.shape[1]):
-                df1 = dfFile[dfFile["T"] > timeStep * t]
-                df2 = df1[df1["T"] <= timeStep * (t + 1)]
-                df3 = df2[df2["R"] > rStep * r]
-                df = df3[df3["R"] <= rStep * (r + 1)]
-                if len(df) > 0:
-                    q1[k, t, r] = np.mean(df["dq"], axis=0)[0, 0]
-
-        inPlane = 1 - (
-            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
-            / 255
-        )
-        dist = (
-            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
-            * scale
-        )
-
-        for r in range(area.shape[2]):
-            for t in range(area.shape[1]):
-                t1 = int(timeStep / 2 * t - t0 / 2)
-                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
-                if t1 < 0:
-                    t1 = 0
-                if t2 < 0:
-                    t2 = 0
-                area[k, t, r] = (
-                    np.sum(
-                        inPlane[t1:t2][
-                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
-                        ]
-                    )
-                    * scale ** 2
-                )
-
-    Q1 = np.zeros([int(T / timeStep), int(R / rStep)])
-    std = np.zeros([int(T / timeStep), int(R / rStep)])
-    meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
-
-    for r in range(area.shape[2]):
-        for t in range(area.shape[1]):
-            _Q1 = q1[:, t, r][q1[:, t, r] != 0]
-            _area = area[:, t, r][q1[:, t, r] != 0]
-            if len(_area) > 0:
-                _dd, _std = weighted_avg_and_std(_Q1, _area)
-                Q1[t, r] = _dd
-                std[t, r] = _std
-                meanArea[t, r] = np.mean(_area)
-            else:
-                Q1[t, r] = np.nan
-                std[t, r] = np.nan
-
-    Q1[meanArea < 500] = np.nan
-
-    return Q1
-
-
-# Make starima for unwounded division data
+# Make starima for unwounded Q1 data
 
 if True:
     allFig = False
@@ -1006,6 +1091,7 @@ if True:
         Q1,
         vmin=-0.025,
         vmax=0.025,
+        cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
@@ -1017,6 +1103,7 @@ if True:
         Q1_pred,
         vmin=-0.025,
         vmax=0.025,
+        cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
@@ -1047,13 +1134,13 @@ if True:
         t,
         r,
         Q1_z,
-        vmin=-6,
-        vmax=6,
+        vmin=-30,
+        vmax=30,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[1, 1].title.set_text(f"significance {fileType}")
+    ax[1, 1].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
 
     # plt.subplot_tool()
 
@@ -1069,6 +1156,9 @@ if True:
     )
     plt.close("all")
 
+    # shift wounded data by 4 mins to get prediction for beginning of wounded data
+    Q1_pred = Q1_pred[1:]
+    T = int(T - 4)
     fileType = "WoundL"
     Q1 = dQ1WoundSpace(fileType, timeStep, T, rStep, R)
 
@@ -1081,6 +1171,7 @@ if True:
         Q1,
         vmin=-0.025,
         vmax=0.025,
+        cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
@@ -1099,6 +1190,8 @@ if True:
     ax[1, 0].title.set_text(f"delta prediction and {fileType} data")
 
     z = (Q1 - Q1_pred) / sigma
+    z[z > 35] = 35
+    z[z < -35] = -35
     sig = np.sign(np.nan_to_num(z)) * starSig(sp.stats.norm.sf(abs(np.nan_to_num(z))))
     MaxQ1 = np.max([np.max(sig), -np.min(sig)])
 
@@ -1112,7 +1205,7 @@ if True:
     )
     fig.colorbar(c, ax=ax[2, 0])
     ax[2, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[2, 0].title.set_text(f"significance {fileType}")
+    ax[2, 0].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
 
     fileType = "WoundS"
     Q1 = dQ1WoundSpace(fileType, timeStep, T, rStep, R)
@@ -1123,6 +1216,7 @@ if True:
         Q1,
         vmin=-0.025,
         vmax=0.025,
+        cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
@@ -1141,6 +1235,8 @@ if True:
     ax[1, 1].title.set_text(f"delta prediction and {fileType} data")
 
     z = (Q1 - Q1_pred) / sigma
+    z[z > 35] = 35
+    z[z < -35] = -35
     sig = np.sign(np.nan_to_num(z)) * starSig(sp.stats.norm.sf(abs(np.nan_to_num(z))))
 
     c = ax[2, 1].pcolor(
@@ -1153,7 +1249,7 @@ if True:
     )
     fig.colorbar(c, ax=ax[2, 1])
     ax[2, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax[2, 1].title.set_text(f"significance {fileType}")
+    ax[2, 1].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
 
     # plt.subplot_tool()
 
@@ -1163,6 +1259,384 @@ if True:
 
     fig.savefig(
         f"results/dQ1Wound delta unwounded prediction and wounded data",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+# Make starima for unwounded velocity data
+
+if True:
+    allFig = False
+    _df = []
+    timeStep = 4
+    rStep = 20
+    fileType = "Unwound"
+    V1 = dV1WoundSpace(fileType, timeStep, T, rStep, R)
+    V1_pred = np.zeros([V1.shape[0], V1.shape[1]])
+    V1_pred[1:] = np.nan
+    V1_pred[:2] = np.nan
+
+    for r in range(V1.shape[1]):
+        for t in range(V1.shape[0]):
+            if np.isnan(V1[t, r]) == False:
+                _df.append(
+                    {
+                        "FileType": fileType,
+                        f"V1_{r}": V1[t, r],
+                    }
+                )
+    df = pd.DataFrame(_df)
+
+    if allFig:
+        for r in range(V1.shape[1] - 1):
+            df0 = df[f"V1_{r}"].dropna()
+            if len(df0) > 34:
+                if allFig:
+                    # Original Series
+                    fig, ax = plt.subplots(3, 2, figsize=(10, 10))
+                    ax[0, 0].plot(df0.dropna())
+                    ax[0, 0].set_title("Original Series")
+                    plot_acf(df0.dropna(), ax=ax[0, 1])
+                    ax[0, 1].set_ylim([-1.1, 1.1])
+
+                    # 1st Differencing
+                    ax[1, 0].plot(df0.diff().dropna())
+                    ax[1, 0].set_title("1st Order Differencing")
+                    plot_acf(df0.diff().dropna(), ax=ax[1, 1])
+                    ax[1, 1].set_ylim([-1.1, 1.1])
+
+                    # 2nd Differencing
+                    ax[2, 0].plot(df0.diff().dropna().diff().dropna())
+                    ax[2, 0].set_title("2nd Order Differencing")
+                    plot_acf(df0.diff().dropna().diff().dropna(), ax=ax[2, 1])
+                    ax[2, 1].set_ylim([-1.1, 1.1])
+
+                    fig.savefig(
+                        f"results/dV1Wound autocorrelation r={r} {fileType}",
+                        transparent=True,
+                        bbox_inches="tight",
+                        dpi=300,
+                    )
+                    plt.close("all")
+    d = 1
+
+    # find p
+    if allFig:
+        for r in range(V1.shape[1] - 1):
+            df0 = df[f"V1_{r}"].dropna()
+            if len(df0) > 34:
+                fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+                ax[0].plot(df0.diff().dropna())
+                ax[0].set_title("1st Differencing")
+                ax[1].set(ylim=(0, 5))
+                plot_pacf(df0.diff().dropna(), ax=ax[1])
+                ax[1].set_ylim([-1.1, 1.1])
+
+                fig.savefig(
+                    f"results/dV1Wound AR term r={r} {fileType}",
+                    transparent=True,
+                    bbox_inches="tight",
+                    dpi=300,
+                )
+                plt.close("all")
+    p = 1
+
+    # find q
+    if allFig:
+        for r in range(V1.shape[1] - 1):
+            df0 = df[f"V1_{r}"].dropna()
+            if len(df0) > 34:
+                fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+                ax[0].plot(df0.diff().dropna())
+                ax[0].set_title("1st Differencing")
+                ax[1].set(ylim=(0, 1.2))
+                plot_acf(df0.diff().dropna(), ax=ax[1])
+                ax[1].set_ylim([-1.1, 1.1])
+
+                fig.savefig(
+                    f"results/dV1Wound MA term r={r} {fileType}",
+                    transparent=True,
+                    bbox_inches="tight",
+                    dpi=300,
+                )
+                plt.close("all")
+    q = 1
+
+    sigma = []
+    ar1 = []
+    ma1 = []
+    dist = []
+    for r in range(V1.shape[1] - 1):
+        df0 = df[f"V1_{r}"].dropna()
+        if len(df0) > 34:
+            dist.append((r) * 10)
+            model = statsm.tsa.arima.ARIMA(df0.diff().dropna(), order=(p, d, q))
+            model_fit = model.fit()
+            sigma.append(model_fit.params["sigma2"] ** 0.5)
+            ar1.append(model_fit.params["ma.L1"])
+            ma1.append(model_fit.params["ar.L1"])
+
+    if allFig:
+        fig, ax = plt.subplots(1, 3, figsize=(10, 4))
+        ax[0].plot(dist, sigma)
+        ax[0].set_title("Sigma")
+        ax[1].plot(dist, ar1)
+        ax[1].set_title("ar1")
+        ax[2].plot(dist, ma1)
+        ax[2].set_title("ma1")
+        fig.savefig(
+            f"results/dV1Wound model parameters with distance {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
+    if allFig:
+        fig, ax = plt.subplots(1, 3, figsize=(10, 4))
+        ax[0].hist(sigma)
+        ax[0].set_title("Sigma")
+        ax[1].hist(ar1)
+        ax[1].set_title("ar1")
+        ax[2].hist(ma1)
+        ax[2].set_title("ma1")
+        fig.savefig(
+            f"results/dV1Wound model parameters {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
+    sigma = np.mean(sigma)
+    ar1 = np.mean(ar1)
+    ma1 = np.mean(ma1)
+
+    residuals = []
+    for r in range(V1.shape[1] - 1):
+        df0 = df[f"V1_{r}"].dropna()
+        if len(df0) > 34:
+            model = statsm.tsa.arima.ARIMA(df0.diff().dropna(), order=(p, d, q))
+            with model.fix_params({"ar.L1": ar1, "ma.L1": ma1, "sigma2": sigma}):
+                model_fit = model.fit()
+
+            mu = np.mean(df0.diff().dropna())
+            lower_1star = 1.96 * sigma - mu
+            upper_1star = 1.96 * sigma + mu
+            lower_2star = 2.576 * sigma - mu
+            upper_2star = 2.576 * sigma + mu
+            lower_3star = 3.291 * sigma - mu
+            upper_3star = 3.291 * sigma + mu
+            lower_4star = 3.91 * sigma - mu
+            upper_4star = 3.91 * sigma + mu
+
+            predict = []
+            for t in range(V1.shape[0] - 2):
+                pred = (
+                    df0.iloc[t + 2] + model_fit.predict(start=1, dynamic=False).iloc[t]
+                )
+                predict.append(pred)
+                V1_pred[t + 2, r] = pred
+
+            for i in range(len(pd.DataFrame(model_fit.resid))):
+                residuals.append(pd.DataFrame(model_fit.resid).iloc[i][0])
+
+    if allFig:
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        ax.hist(residuals, bins=10)
+        stats, p = shapiro(residuals)
+        if p > 0.05:
+            ax.title.set_text("Shapiro-Wilk Test Pass Normality")
+        else:
+            ax.title.set_text("Shapiro-Wilk Test Fail Normality")
+        fig.savefig(
+            f"results/dV1Wound Residuals Density starima {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(2, 2, figsize=(12, 4))
+
+    c = ax[0, 0].pcolor(
+        t,
+        r,
+        V1,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[0, 0].title.set_text(f"dV1Wound {fileType}")
+
+    c = ax[0, 1].pcolor(
+        t,
+        r,
+        V1_pred,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[0, 1].title.set_text(f"dV1Wound predict {fileType}")
+
+    MaxQ1 = np.max(
+        [np.max(np.nan_to_num(V1_pred - V1)), -np.min(np.nan_to_num(V1_pred - V1))]
+    )
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        V1_pred - V1,
+        vmin=-MaxQ1,
+        vmax=MaxQ1,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[1, 0].title.set_text(f"dV1Wound difference {fileType}")
+
+    Q1_z = (V1_pred - V1) / sigma
+    sig = np.sign(np.nan_to_num(Q1_z)) * starSig(
+        sp.stats.norm.sf(abs(np.nan_to_num(Q1_z)))
+    )
+
+    MaxQ1 = np.max([np.max(np.nan_to_num(Q1_z)), -np.min(np.nan_to_num(Q1_z))])
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        Q1_z,
+        vmin=-50,
+        vmax=50,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[1, 1].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
+
+    # plt.subplot_tool()
+
+    plt.subplots_adjust(
+        left=0.05, bottom=0.1, right=0.95, top=0.9, wspace=0.1, hspace=0.65
+    )
+
+    fig.savefig(
+        f"results/dV1Wound heatmap predict {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+    # shift wounded data by 4 mins to get prediction for beginning of wounded data
+    V1_pred = V1_pred[1:]
+    T = int(T - 4)
+    fileType = "WoundL"
+    V1 = dV1WoundSpace(fileType, timeStep, T, rStep, R)
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(3, 2, figsize=(12, 6))
+
+    c = ax[0, 0].pcolor(
+        t,
+        r,
+        V1,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[0, 0].title.set_text(f"dV1Wound {fileType}")
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        V1 - V1_pred,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[1, 0].title.set_text(f"delta prediction and {fileType} data")
+
+    z = (V1 - V1_pred) / sigma
+    z[z > 35] = 35
+    z[z < -35] = -35
+    sig = np.sign(np.nan_to_num(z)) * starSig(sp.stats.norm.sf(abs(np.nan_to_num(z))))
+    MaxQ1 = np.max([np.max(sig), -np.min(sig)])
+
+    c = ax[2, 0].pcolor(
+        t,
+        r,
+        sig,
+        vmin=-50,
+        vmax=50,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[2, 0])
+    ax[2, 0].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[2, 0].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
+
+    fileType = "WoundS"
+    V1 = dV1WoundSpace(fileType, timeStep, T, rStep, R)
+
+    c = ax[0, 1].pcolor(
+        t,
+        r,
+        V1,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[0, 1].title.set_text(f"dV1Wound {fileType}")
+
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        V1 - V1_pred,
+        vmin=-0.75,
+        vmax=0.75,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[1, 1].title.set_text(f"delta prediction and {fileType} data")
+
+    z = (V1 - V1_pred) / sigma
+    z[z > 35] = 35
+    z[z < -35] = -35
+    sig = np.sign(np.nan_to_num(z)) * starSig(sp.stats.norm.sf(abs(np.nan_to_num(z))))
+
+    c = ax[2, 1].pcolor(
+        t,
+        r,
+        sig,
+        vmin=-50,
+        vmax=50,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax[2, 1])
+    ax[2, 1].set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+    ax[2, 1].title.set_text(r"$\mathrm{sgn} (\delta Q_1) (-\log_{10}(p)))$")
+
+    # plt.subplot_tool()
+
+    plt.subplots_adjust(
+        left=0.05, bottom=0.1, right=0.95, top=0.9, wspace=0.1, hspace=0.65
+    )
+
+    fig.savefig(
+        f"results/dV1Wound delta unwounded prediction and wounded data",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

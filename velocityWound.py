@@ -112,9 +112,9 @@ if False:
 # v with distance from wound edge and time
 if True:
     T = 160
-    timeStep = 10
-    R = 110
-    rStep = 10
+    timeStep = 4
+    R = 100
+    rStep = 20
     v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
@@ -183,8 +183,7 @@ if True:
                 V1[t, r] = np.nan
                 std[t, r] = np.nan
 
-    V1[meanArea < 600] = np.nan
-    V1 = V1 * timeStep
+    V1[meanArea < 500] = np.nan
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
