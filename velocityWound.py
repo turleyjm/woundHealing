@@ -43,7 +43,10 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 90
+T = 160
+timeStep = 4
+R = 100
+rStep = 20
 
 
 if False:
@@ -110,11 +113,7 @@ if False:
 
 
 # v with distance from wound edge and time
-if True:
-    T = 160
-    timeStep = 4
-    R = 100
-    rStep = 20
+if False:
     v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
@@ -191,8 +190,8 @@ if True:
         t,
         r,
         V1,
-        vmin=-2,
-        vmax=2,
+        vmin=-1,
+        vmax=1,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
@@ -201,6 +200,129 @@ if True:
 
     fig.savefig(
         f"results/v heatmap {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+if True:
+
+    fig, ax = plt.subplots(2, 2, figsize=(14, 14))
+    fileType = "WoundS"
+    filenames = util.getFilesOfType(fileType)
+    dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+    dV1 = [[] for col in range(20)]
+    dV1_nor = [[] for col in range(20)]
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfVel = dfVelocity[dfVelocity["Filename"] == filename]
+        rad = (dfWound["Area"].iloc[0] / np.pi) ** 0.5
+
+        time = []
+        dv1 = []
+        dv1_std = []
+        for t in range(20):
+            dft = dfVel[
+                (dfVel["T"] >= timeStep * t) & (dfVel["T"] < timeStep * (t + 1))
+            ]
+            if len(dft[dft["R"] < 40]) > 0:
+                dv = np.mean(dft["dv"][dft["R"] < 40], axis=0)
+                dv1.append(dv[0])
+                dV1[t].append(dv[0])
+                dV1_nor[t].append(dv[0] / rad)
+                dv_std = np.std(np.array(dft["dv"][dft["R"] < 40]), axis=0)
+                dv1_std.append(dv_std[0] / (len(dft)) ** 0.5)
+                time.append(timeStep * t + timeStep / 2)
+
+        ax[0, 0].plot(time, dv1, marker="o")
+        ax[1, 0].plot(time, np.array(dv1) / rad, marker="o")
+
+    time = []
+    dV1_mu = []
+    dV1_nor_mu = []
+    dV1_std = []
+    dV1_nor_std = []
+    for t in range(20):
+        if len(dV1[t]) > 0:
+            dV1_mu.append(np.mean(dV1[t]))
+            dV1_nor_mu.append(np.mean(dV1_nor[t]))
+            dV1_std.append(np.std(dV1[t]))
+            dV1_nor_std.append(np.std(dV1_nor[t]))
+            time.append(timeStep * t + timeStep / 2)
+
+    ax[0, 1].errorbar(np.array(time) - 1 / 2, dV1_mu, yerr=dV1_std, marker="o")
+    ax[1, 1].errorbar(np.array(time) - 1 / 2, dV1_nor_mu, yerr=dV1_nor_std, marker="o")
+
+    fileType = "WoundL"
+    filenames = util.getFilesOfType(fileType)
+    dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+    dV1 = [[] for col in range(20)]
+    dV1_nor = [[] for col in range(20)]
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfVel = dfVelocity[dfVelocity["Filename"] == filename]
+        rad = (dfWound["Area"].iloc[0] / np.pi) ** 0.5
+
+        time = []
+        dv1 = []
+        dv1_std = []
+        for t in range(20):
+            dft = dfVel[
+                (dfVel["T"] >= timeStep * t) & (dfVel["T"] < timeStep * (t + 1))
+            ]
+            if len(dft[dft["R"] < 40]) > 0:
+                dv = np.mean(dft["dv"][dft["R"] < 40], axis=0)
+                dv1.append(dv[0])
+                dV1[t].append(dv[0])
+                dV1_nor[t].append(dv[0] / rad)
+                dv_std = np.std(np.array(dft["dv"][dft["R"] < 40]), axis=0)
+                dv1_std.append(dv_std[0] / (len(dft)) ** 0.5)
+                time.append(timeStep * t + timeStep / 2)
+
+        ax[0, 0].plot(time, dv1)
+        ax[1, 0].plot(time, np.array(dv1) / rad)
+
+    time = []
+    dV1_mu = []
+    dV1_nor_mu = []
+    dV1_std = []
+    dV1_nor_std = []
+    for t in range(20):
+        if len(dV1[t]) > 0:
+            dV1_mu.append(np.mean(dV1[t]))
+            dV1_nor_mu.append(np.mean(dV1_nor[t]))
+            dV1_std.append(np.std(dV1[t]))
+            dV1_nor_std.append(np.std(dV1_nor[t]))
+            time.append(timeStep * t + timeStep / 2)
+
+    ax[0, 1].errorbar(np.array(time) + 1 / 2, dV1_mu, yerr=dV1_std)
+    ax[1, 1].errorbar(np.array(time) + 1 / 2, dV1_nor_mu, yerr=dV1_nor_std)
+
+    ax[0, 0].set(xlabel=r"Time ($mins$)", ylabel=r"Speed Towards Wound ($\mu/min$)")
+    ax[0, 0].title.set_text(f"Speed Towards Wound with Time")
+    ax[0, 0].set_ylim([-0.8, 1.2])
+    ax[1, 0].set(xlabel=r"Time ($mins$)", ylabel=r"Normalised Speed Towards Wound")
+    ax[1, 0].title.set_text(f"Normalised Speed Towards Wound with Time")
+    ax[1, 0].set_ylim([-0.02, 0.02])
+    ax[0, 1].set(
+        xlabel=r"Time ($mins$)", ylabel=r"Mean Speed Towards Wound ($\mu/min$)"
+    )
+    ax[0, 1].title.set_text(f"Speed Towards Wound with Time")
+    ax[0, 1].set_ylim([-0.8, 1.2])
+    ax[1, 1].set(xlabel=r"Time ($mins$)", ylabel=r"Mean Normalised Speed Towards Wound")
+    ax[1, 1].title.set_text(f"Normalised Speed Towards Wound with Time")
+    ax[1, 1].set_ylim([-0.02, 0.02])
+    # plt.subplot_tool()
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.3, hspace=0.25
+    )
+
+    fig.savefig(
+        f"results/Compare rescale Speed Towards Wound",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

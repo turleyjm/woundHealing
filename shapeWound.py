@@ -43,7 +43,10 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 90
+T = 160
+timeStep = 4
+R = 100
+rStep = 20
 
 
 if False:
@@ -111,10 +114,6 @@ if False:
 
 # Density with distance from wound edge and time
 if False:
-    T = 160
-    timeStep = 10
-    R = 110
-    rStep = 10
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
@@ -204,11 +203,7 @@ if False:
 
 
 # Q1 with distance from wound edge and time
-if True:
-    T = 160
-    timeStep = 4
-    R = 100
-    rStep = 20
+if False:
     q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
@@ -291,6 +286,127 @@ if True:
 
     fig.savefig(
         f"results/Q1 heatmap {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+if True:
+    fig, ax = plt.subplots(2, 2, figsize=(14, 14))
+    fileType = "WoundS"
+    filenames = util.getFilesOfType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    dQ1 = [[] for col in range(20)]
+    dQ1_nor = [[] for col in range(20)]
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfSh = dfShape[dfShape["Filename"] == filename]
+        rad = (dfWound["Area"].iloc[0] / np.pi) ** 0.5
+
+        time = []
+        dq1 = []
+        dq1_std = []
+        for t in range(20):
+            dft = dfSh[(dfSh["T"] >= timeStep * t) & (dfSh["T"] < timeStep * (t + 1))]
+            if len(dft[dft["R"] < 40]) > 0:
+                dq = np.mean(dft["dq"][dft["R"] < 40], axis=0)
+                dq1.append(dq[0, 0])
+                dQ1[t].append(dq[0, 0])
+                dQ1_nor[t].append(dq[0, 0] / rad)
+                dq_std = np.std(np.array(dft["dq"][dft["R"] < 40]), axis=0)
+                dq1_std.append(dq_std[0, 0] / (len(dft)) ** 0.5)
+                time.append(timeStep * t + timeStep / 2)
+
+        ax[0, 0].plot(time, dq1, marker="o")
+        ax[1, 0].plot(time, np.array(dq1) / rad, marker="o")
+
+    time = []
+    dQ1_mu = []
+    dQ1_nor_mu = []
+    dQ1_std = []
+    dQ1_nor_std = []
+    for t in range(20):
+        if len(dQ1[t]) > 0:
+            dQ1_mu.append(np.mean(dQ1[t]))
+            dQ1_nor_mu.append(np.mean(dQ1_nor[t]))
+            dQ1_std.append(np.std(dQ1[t]))
+            dQ1_nor_std.append(np.std(dQ1_nor[t]))
+            time.append(timeStep * t + timeStep / 2)
+
+    ax[0, 1].errorbar(np.array(time) - 1 / 2, dQ1_mu, yerr=dQ1_std, marker="o")
+    ax[1, 1].errorbar(np.array(time) - 1 / 2, dQ1_nor_mu, yerr=dQ1_nor_std, marker="o")
+
+    fileType = "WoundL"
+    filenames = util.getFilesOfType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    dQ1 = [[] for col in range(20)]
+    dQ1_nor = [[] for col in range(20)]
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfSh = dfShape[dfShape["Filename"] == filename]
+        rad = (dfWound["Area"].iloc[0] / np.pi) ** 0.5
+
+        time = []
+        dq1 = []
+        dq1_std = []
+        for t in range(20):
+            dft = dfSh[(dfSh["T"] >= timeStep * t) & (dfSh["T"] < timeStep * (t + 1))]
+            if len(dft[dft["R"] < 40]) > 0:
+                dq = np.mean(dft["dq"][dft["R"] < 40], axis=0)
+                dq1.append(dq[0, 0])
+                dQ1[t].append(dq[0, 0])
+                dQ1_nor[t].append(dq[0, 0] / rad)
+                dq_std = np.std(np.array(dft["dq"][dft["R"] < 40]), axis=0)
+                dq1_std.append(dq_std[0, 0] / (len(dft)) ** 0.5)
+                time.append(timeStep * t + timeStep / 2)
+
+        ax[0, 0].plot(time, dq1)
+        ax[1, 0].plot(time, np.array(dq1) / rad)
+
+    time = []
+    dQ1_mu = []
+    dQ1_nor_mu = []
+    dQ1_std = []
+    dQ1_nor_std = []
+    for t in range(20):
+        if len(dQ1[t]) > 0:
+            dQ1_mu.append(np.mean(dQ1[t]))
+            dQ1_nor_mu.append(np.mean(dQ1_nor[t]))
+            dQ1_std.append(np.std(dQ1[t]))
+            dQ1_nor_std.append(np.std(dQ1_nor[t]))
+            time.append(timeStep * t + timeStep / 2)
+
+    ax[0, 1].errorbar(np.array(time) + 1 / 2, dQ1_mu, yerr=dQ1_std)
+    ax[1, 1].errorbar(np.array(time) + 1 / 2, dQ1_nor_mu, yerr=dQ1_nor_std)
+
+    ax[0, 0].set(xlabel=r"Time ($mins$)", ylabel=r"Q1 relative to Wound ($\mu/min$)")
+    ax[0, 0].title.set_text(f"Q1 relative to Wound with Time")
+    ax[0, 0].set_ylim([-0.02, 0.0075])
+    ax[1, 0].set(xlabel=r"Time ($mins$)", ylabel=r"Normalised Q1 relative to Wound")
+    ax[1, 0].title.set_text(f"Normalised Q1 relative to Wound with Time")
+    ax[1, 0].set_ylim([-0.0003, 0.00015])
+    ax[0, 1].set(
+        xlabel=r"Time ($mins$)", ylabel=r"Mean Q1 relative to Wound ($\mu/min$)"
+    )
+    ax[0, 1].title.set_text(f"Q1 relative to Wound with Time")
+    ax[0, 1].set_ylim([-0.02, 0.0075])
+    ax[1, 1].set(
+        xlabel=r"Time ($mins$)", ylabel=r"Mean Normalised Q1 relative to Wound"
+    )
+    ax[1, 1].title.set_text(f"Normalised Q1 relative to Wound with Time")
+    ax[1, 1].set_ylim([-0.0003, 0.00015])
+
+    # plt.subplot_tool()
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.3, hspace=0.25
+    )
+
+    fig.savefig(
+        f"results/Compare rescale Q1 relative to Wound",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
