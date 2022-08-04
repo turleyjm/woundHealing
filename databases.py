@@ -18,6 +18,7 @@ import shapely
 import skimage as sm
 import skimage.io
 import skimage.measure
+import skimage.feature
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import LinearRing
 from sympy import true
@@ -33,6 +34,151 @@ import cellProperties as cell
 import utils as util
 
 plt.rcParams.update({"font.size": 12})
+
+# -------------------
+
+
+def dist(polygon, polygon0):
+    [x1, y1] = cell.centroid(polygon)
+    [x0, y0] = cell.centroid(polygon0)
+    return ((x0 - x1) ** 2 + (y0 - y1) ** 2) ** 0.5
+
+
+def angleDiff(theta, phi):
+
+    diff = theta - phi
+
+    if abs(diff) > 90:
+        if diff > 0:
+            diff = 180 - diff
+        else:
+            diff = 180 + diff
+
+    return abs(diff)
+
+
+def findtcj(polygon, img):
+
+    centroid = cell.centroid(polygon)
+    x, y = int(centroid[0]), int(centroid[1])
+    img = 1 - img / 255
+    img = np.asarray(img, "uint8")
+
+    imgLabel = sm.measure.label(img, background=0, connectivity=1)
+    label = imgLabel[x, y]
+    contour = sm.measure.find_contours(imgLabel == label, level=0)[0]
+
+    # imgLabelrc = util.imgxyrc(imgLabel)
+    # imgLabelrc[imgLabelrc == label] = round(1.25 * imgLabelrc.max())
+    # imgLabelrc = np.asarray(imgLabelrc, "uint16")
+    # tifffile.imwrite(f"results/imgLabel{filename}.tif", imgLabelrc)
+
+    if label == 0:
+        print("label == 0")
+
+    zeros = np.zeros([512, 512])
+
+    zeros[imgLabel == label] = 1
+    for con in contour:
+        zeros[int(con[0]), int(con[1])] = 1
+
+    struct2 = sp.ndimage.generate_binary_structure(2, 2)
+    dilation = sp.ndimage.morphology.binary_dilation(zeros, structure=struct2).astype(
+        zeros.dtype
+    )
+    dilation[zeros == 1] = 0
+    # dilationrc = util.imgxyrc(dilation)
+    # dilationrc = np.asarray(dilationrc, "uint16")
+    # tifffile.imwrite(f"results/dilation{filename}.tif", dilationrc)
+
+    tcj = np.zeros([512, 512])
+    diff = img - dilation
+    tcj[diff == -1] = 1
+    tcj[tcj != 1] = 0
+
+    outerTCJ = skimage.feature.peak_local_max(tcj)
+    # tcjrc = util.imgxyrc(tcj)
+    # tcjrc = np.asarray(tcjrc, "uint16")
+    # tifffile.imwrite(f"results/tcj{filename}.tif", tcjrc)
+
+    tcj = []
+    for coord in outerTCJ:
+        tcj.append(findtcjContour(coord, contour[0:-1]))
+
+    if "False" in tcj:
+        tcj.remove("False")
+        print("removed")
+
+    return tcj
+
+
+def isBoundary(contour):
+
+    boundary = False
+
+    for con in contour:
+        if con[0] == 0:
+            boundary = True
+        if con[1] == 0:
+            boundary = True
+        if con[0] == 511:
+            boundary = True
+        if con[1] == 511:
+            boundary = True
+
+    return boundary
+
+
+def findtcjContour(coord, contour):
+
+    close = []
+    for con in contour:
+        r = ((con[0] - coord[0]) ** 2 + (con[1] - coord[1]) ** 2) ** 0.5
+        if r < 1.5:
+            close.append(con)
+
+    if len(close) == 1:
+        tcj = close[0]
+    elif len(close) == 0:
+        tcj = "False"
+    else:
+        tcj = np.mean(close, axis=0)
+
+    return tcj
+
+
+def getSecondColour(track, colour):
+    colours = track[np.all((track - colour) != 0, axis=1)]
+    colours = colours[np.all((colours - np.array([255, 255, 255])) != 0, axis=1)]
+
+    col = []
+    count = []
+    while len(colours) > 0:
+        col.append(colours[0])
+        count.append(len(colours[np.all((colours - colours[0]) == 0, axis=1)]))
+        colours = colours[np.all((colours - colours[0]) != 0, axis=1)]
+
+    maxm = np.max(count)
+    colourD = col[count.index(maxm)]
+
+    return colourD
+
+
+def vectorBoundary(pts):
+
+    n = len(pts)
+
+    test = True
+
+    for i in range(n):
+        if pts[i][0] == 0 or pts[i][0] == 511:
+            test = False
+        elif pts[i][1] == 0 or pts[i][1] == 511:
+            test = False
+        else:
+            continue
+    return test
+
 
 # -------------------
 
@@ -335,7 +481,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 
-if True:
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -422,22 +568,13 @@ if True:
 
 
 # Cells Divsions and Shape changes
-
-
-if False:
-    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
     for filename in filenames:
         print(filename)
-
-        df = dfDivisions[dfDivisions["Filename"] == filename]
-        dfFileShape = dfShape[dfShape["Filename"] == filename]
-        meanArea = np.mean(dfShape["Area"])
-        stdArea = np.std(dfShape["Area"])
-        t0 = util.findStartTime(filename)
-
+        df = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
         tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
         binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
         T, X, Y, C = tracks.shape
@@ -449,10 +586,12 @@ if False:
         for i in range(len(df)):
 
             label = df["Label"].iloc[i]
-            ori = df["Orientation"].iloc[i]
-            tm = t = int((df["T"].iloc[i] - t0) / 2)
-            x = df["X"].iloc[i] / scale
-            y = df["Y"].iloc[i] / scale
+            # if label == 41:
+            #     print(0)
+            ori = df["Orientation"].iloc[i] % 180
+            tm = t = int(df["T"].iloc[i])
+            x = df["X"].iloc[i]
+            y = df["Y"].iloc[i]
 
             colour = tracks[t, int(x), int(y)]
             if np.all((colour - np.array([255, 255, 255])) == 0):
@@ -502,7 +641,11 @@ if False:
                 poly = sm.measure.approximate_polygon(contour, tolerance=1)
                 try:
                     polygon = Polygon(poly)
-                    tcj = findtcj(polygon, binary[t])
+                    pts = list(polygon.exterior.coords)
+                    if vectorBoundary(pts):
+                        tcj = findtcj(polygon, binary[t])
+                    else:
+                        tcj = False
                     theta = cell.orientation_tcj(tcj)
                     _dfTrack.append(
                         {
@@ -513,11 +656,14 @@ if False:
                             "Time": t,
                             "Division Time": int(t - tm),
                             "Polygon": polygon,
+                            "TCJ": tcj,
                             "Area": polygon.area,
                             "Shape Factor": cell.shapeFactor(polygon),
-                            "Orientation": cell.orientation(polygon),
+                            "Orientation": (cell.orientation(polygon) * 180 / np.pi)
+                            % 180,
                             "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                            "Orientation tcj": cell.orientation_tcj(tcj),
+                            "Orientation tcj": (cell.orientation_tcj(tcj) * 180 / np.pi)
+                            % 180,
                         }
                     )
                     polyList.append(polygon)
@@ -544,7 +690,11 @@ if False:
                         elif polygon.area > 1500:
                             break
                         else:
-                            tcj = findtcj(polygon, binary[int(t)])
+                            pts = list(polygon.exterior.coords)
+                            if vectorBoundary(pts):
+                                tcj = findtcj(polygon, binary[int(t)])
+                            else:
+                                tcj = False
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -554,11 +704,18 @@ if False:
                                     "Time": int(t),
                                     "Division Time": int(t - tm),
                                     "Polygon": polygon,
+                                    "TCJ": tcj,
                                     "Area": polygon.area,
                                     "Shape Factor": cell.shapeFactor(polygon),
-                                    "Orientation": cell.orientation(polygon),
+                                    "Orientation": (
+                                        cell.orientation(polygon) * 180 / np.pi
+                                    )
+                                    % 180,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                                    "Orientation tcj": cell.orientation_tcj(tcj),
+                                    "Orientation tcj": (
+                                        cell.orientation_tcj(tcj) * 180 / np.pi
+                                    )
+                                    % 180,
                                 }
                             )
                             polyList.append(polygon)
@@ -585,7 +742,11 @@ if False:
                     elif polygon.area > 1500:
                         continue
                     else:
-                        tcj = findtcj(polygon, binary[t])
+                        pts = list(polygon.exterior.coords)
+                        if vectorBoundary(pts):
+                            tcj = findtcj(polygon, binary[t])
+                        else:
+                            tcj = False
                         theta = cell.orientation_tcj(tcj)
                         _dfTrack.append(
                             {
@@ -596,11 +757,16 @@ if False:
                                 "Time": t,
                                 "Division Time": int(t - tm),
                                 "Polygon": polygon,
+                                "TCJ": tcj,
                                 "Area": polygon.area,
                                 "Shape Factor": cell.shapeFactor(polygon),
-                                "Orientation": cell.orientation(polygon),
+                                "Orientation": (cell.orientation(polygon) * 180 / np.pi)
+                                % 180,
                                 "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                                "Orientation tcj": cell.orientation_tcj(tcj),
+                                "Orientation tcj": (
+                                    cell.orientation_tcj(tcj) * 180 / np.pi
+                                )
+                                % 180,
                             }
                         )
                         polyListD1.append(polygon)
@@ -627,7 +793,11 @@ if False:
                         elif polygon.area > 1500:
                             break
                         else:
-                            tcj = findtcj(polygon, binary[int(t)])
+                            pts = list(polygon.exterior.coords)
+                            if vectorBoundary(pts):
+                                tcj = findtcj(polygon, binary[int(t)])
+                            else:
+                                tcj = False
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -637,11 +807,18 @@ if False:
                                     "Time": int(t),
                                     "Division Time": int(t - tm),
                                     "Polygon": polygon,
+                                    "TCJ": tcj,
                                     "Area": polygon.area,
                                     "Shape Factor": cell.shapeFactor(polygon),
-                                    "Orientation": cell.orientation(polygon),
+                                    "Orientation": (
+                                        cell.orientation(polygon) * 180 / np.pi
+                                    )
+                                    % 180,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                                    "Orientation tcj": cell.orientation_tcj(tcj),
+                                    "Orientation tcj": (
+                                        cell.orientation_tcj(tcj) * 180 / np.pi
+                                    )
+                                    % 180,
                                 }
                             )
                             polyListD1.append(polygon)
@@ -664,7 +841,11 @@ if False:
                     elif polygon.area > 1500:
                         continue
                     else:
-                        tcj = findtcj(polygon, binary[t])
+                        pts = list(polygon.exterior.coords)
+                        if vectorBoundary(pts):
+                            tcj = findtcj(polygon, binary[t])
+                        else:
+                            tcj = False
                         theta = cell.orientation_tcj(tcj)
                         _dfTrack.append(
                             {
@@ -675,11 +856,16 @@ if False:
                                 "Time": t,
                                 "Division Time": int(t - tm),
                                 "Polygon": polygon,
+                                "TCJ": tcj,
                                 "Area": polygon.area,
                                 "Shape Factor": cell.shapeFactor(polygon),
-                                "Orientation": cell.orientation(polygon),
+                                "Orientation": (cell.orientation(polygon) * 180 / np.pi)
+                                % 180,
                                 "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                                "Orientation tcj": cell.orientation_tcj(tcj),
+                                "Orientation tcj": (
+                                    cell.orientation_tcj(tcj) * 180 / np.pi
+                                )
+                                % 180,
                             }
                         )
                         polyListD2.append(polygon)
@@ -706,7 +892,11 @@ if False:
                         elif polygon.area > 1500:
                             break
                         else:
-                            tcj = findtcj(polygon, binary[int(t)])
+                            pts = list(polygon.exterior.coords)
+                            if vectorBoundary(pts):
+                                tcj = findtcj(polygon, binary[int(t)])
+                            else:
+                                tcj = False
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -716,11 +906,18 @@ if False:
                                     "Time": int(t),
                                     "Division Time": int(t - tm),
                                     "Polygon": polygon,
+                                    "TCJ": tcj,
                                     "Area": polygon.area,
                                     "Shape Factor": cell.shapeFactor(polygon),
-                                    "Orientation": cell.orientation(polygon),
+                                    "Orientation": (
+                                        cell.orientation(polygon) * 180 / np.pi
+                                    )
+                                    % 180,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
-                                    "Orientation tcj": cell.orientation_tcj(tcj),
+                                    "Orientation tcj": (
+                                        cell.orientation_tcj(tcj) * 180 / np.pi
+                                    )
+                                    % 180,
                                 }
                             )
                             polyListD2.append(polygon)

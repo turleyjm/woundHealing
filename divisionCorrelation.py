@@ -32,7 +32,7 @@ import cellProperties as cell
 import utils as util
 
 pd.options.mode.chained_assignment = None
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -149,7 +149,7 @@ if False:
 
 
 # correction of divisions
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     expectedXY = np.zeros([int(T / timeStep), int(R / rStep)])
     oriCorr = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -377,8 +377,35 @@ if True:
     )
     plt.close("all")
 
+    t, r = np.mgrid[0:100:10, 0:110:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
 
-if True:
+    maxCorr = np.max(divCorr[:10])
+    c = ax.pcolor(
+        t,
+        r,
+        divCorr[:10] * 10000 ** 2,
+        cmap="RdBu_r",
+        vmin=-3,
+        vmax=3,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time (min)")
+    ax.set_ylabel(r"$R (\mu m)$")
+    ax.title.set_text(f"Division density correlation")
+
+    fig.savefig(
+        f"results/Division Correlation figure {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+
+if False:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     thetaCorr = df["thetaCorr"].iloc[0]
     df = 0

@@ -32,14 +32,14 @@ import matplotlib.colors as colors
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 12})
+plt.rcParams.update({"font.size": 15})
 
 # -------------------
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 180
-timeStep = 8
+timeStep = 10
 R = 110
 rStep = 10
 Theta = 390
@@ -372,8 +372,8 @@ if False:
 
 # Compare divison density with time error bar
 
-if False:
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     labels = ["WoundS", "WoundL", "Unwound"]
     legend = ["small wound", "large wound", "unwounded"]
     dat_dd = []
@@ -419,15 +419,15 @@ if False:
                 _dd, _std = weighted_avg_and_std(_count / _area, _area)
                 dd.append(_dd * 10000)
                 std.append(_std * 10000)
-                time.append((-1 + i) + t * timeStep + timeStep / 2)
+                time.append((2 * (i - 1)) + t * timeStep + timeStep / 2)
 
         ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
         i += 1
 
-    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($10000\mu m^{-4}$)")
     ax.title.set_text(f"Division density with time")
     ax.set_ylim([0, 8])
-    ax.legend()
+    ax.legend(loc="upper left", fontsize=11)
 
     fig.savefig(
         f"results/Compared division density with time errorbars",
@@ -656,7 +656,7 @@ if False:
 
 
 # Change in divison density with distance from wound edge and time
-if True:
+if False:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
