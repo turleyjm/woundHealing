@@ -18,6 +18,23 @@ from PIL import Image
 plt.rcParams.update({"font.size": 20})
 
 # -------------------
+
+
+def angleDiff(theta, phi):
+
+    diff = theta - phi
+
+    if abs(diff) > 90:
+        if diff > 0:
+            diff = 180 - diff
+        else:
+            diff = 180 + diff
+
+    return abs(diff)
+
+
+# -------------------
+
 filenames, fileType = util.getFilesType()
 # filename = "prettyWound"
 scale = 123.26 / 512
@@ -86,7 +103,7 @@ def gaussian(x, mu, sig):
 
 
 # orientation to wound
-if True:
+if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -244,6 +261,155 @@ if True:
         divisions = np.asarray(divisions, "uint8")
         tifffile.imwrite(f"results/orientationWound{filename}.tif", divisions)
 
+
+# orientation to of division TCJs
+if True:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        divisions = np.zeros([T, 552, 552, 3])
+        divisions_tcj = np.zeros([T, 552, 552, 3])
+
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        Q = np.mean(dfShape["q"])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                t15 = dfDiv["Time"][dfDiv["Division Time"] == -15].iloc[0]
+
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                SfPre = dfDiv["Shape Factor"][dfDiv["Division Time"] == -15].iloc[0]
+                oriPre_tcj = dfDiv["Orientation tcj"][
+                    dfDiv["Division Time"] == -15
+                ].iloc[0]
+                SfPre_tcj = dfDiv["Shape Factor tcj"][
+                    dfDiv["Division Time"] == -15
+                ].iloc[0]
+                x = int(dfFileShape["X"][dfFileShape["Label"] == label].iloc[0])
+                y = int(dfFileShape["Y"][dfFileShape["Label"] == label].iloc[0])
+                t0 = int(
+                    dfFileShape["Anaphase Time"][dfFileShape["Label"] == label].iloc[0]
+                )
+
+                times = [t0, int(t0 + 1), int(t0 + 2), int(t0 + 3)]
+
+                timeVid = []
+                for t in times:
+                    if t >= 0 and t <= T - 1:
+                        timeVid.append(t)
+
+                rr0, cc0, val = sm.draw.line_aa(
+                    int(551 - (y + 17 * np.sin(ori * np.pi / 180) + 20)),
+                    int(x + 17 * np.cos(ori * np.pi / 180) + 20),
+                    int(551 - (y - 17 * np.sin(ori * np.pi / 180) + 20)),
+                    int(x - 17 * np.cos(ori * np.pi / 180) + 20),
+                )
+                rr1, cc1, val = sm.draw.line_aa(
+                    int(551 - (y + 17 * np.sin(oriPre * np.pi / 180) + 20)),
+                    int(x + 17 * np.cos(oriPre * np.pi / 180) + 20),
+                    int(551 - (y - 17 * np.sin(oriPre * np.pi / 180) + 20)),
+                    int(x - 17 * np.cos(oriPre * np.pi / 180) + 20),
+                )
+
+                andDiff = angleDiff(ori, oriPre)
+                blue = 255 * gaussian(andDiff, 0, 45)
+                red = 255 * gaussian(andDiff, 90, 45)
+                green = 155 * gaussian(andDiff, 45, 10)
+                blue, red, green = (
+                    np.array([blue, red, green]) * 255 / np.max([blue, red, green])
+                )
+                for t in timeVid:
+                    divisions[t][rr0, cc0, 0] = 255
+                    divisions[t][rr1, cc1, 0] = red
+                    divisions[t][rr0, cc0, 1] = 255
+                    divisions[t][rr1, cc1, 1] = green
+                    divisions[t][rr0, cc0, 2] = 255
+                    divisions[t][rr1, cc1, 2] = blue
+
+                rr0, cc0, val = sm.draw.line_aa(
+                    int(551 - (y + 17 * np.sin(ori * np.pi / 180) + 20)),
+                    int(x + 17 * np.cos(ori * np.pi / 180) + 20),
+                    int(551 - (y - 17 * np.sin(ori * np.pi / 180) + 20)),
+                    int(x - 17 * np.cos(ori * np.pi / 180) + 20),
+                )
+                rr1, cc1, val = sm.draw.line_aa(
+                    int(551 - (y + 14 * np.sin(oriPre_tcj * np.pi / 180) + 20)),
+                    int(x + 14 * np.cos(oriPre_tcj * np.pi / 180) + 20),
+                    int(551 - (y - 14 * np.sin(oriPre_tcj * np.pi / 180) + 20)),
+                    int(x - 14 * np.cos(oriPre_tcj * np.pi / 180) + 20),
+                )
+
+                andDiff = angleDiff(ori, oriPre_tcj)
+                blue = 255 * gaussian(andDiff, 0, 45)
+                red = 255 * gaussian(andDiff, 90, 45)
+                green = 155 * gaussian(andDiff, 45, 10)
+                blue, red, green = (
+                    np.array([blue, red, green]) * 255 / np.max([blue, red, green])
+                )
+                for t in timeVid:
+                    divisions_tcj[t][rr0, cc0, 0] = 255
+                    divisions_tcj[t][rr1, cc1, 0] = red
+                    divisions_tcj[t][rr0, cc0, 1] = 255
+                    divisions_tcj[t][rr1, cc1, 1] = green
+                    divisions_tcj[t][rr0, cc0, 2] = 255
+                    divisions_tcj[t][rr1, cc1, 2] = blue
+
+                x_tcj = int(np.mean(np.array(tcjs)[:, 0]))
+                y_tcj = int(np.mean(np.array(tcjs)[:, 1]))
+                rr1, cc1, val = sm.draw.line_aa(
+                    int(551 - (y_tcj + 14 * np.sin(oriPre_tcj * np.pi / 180) + 20)),
+                    int(x_tcj + 14 * np.cos(oriPre_tcj * np.pi / 180) + 20),
+                    int(551 - (y_tcj - 14 * np.sin(oriPre_tcj * np.pi / 180) + 20)),
+                    int(x_tcj - 14 * np.cos(oriPre_tcj * np.pi / 180) + 20),
+                )
+                divisions_tcj[t15][rr1, cc1, 0] = 255
+                divisions_tcj[t15][rr1, cc1, 1] = 255
+                divisions_tcj[t15][rr1, cc1, 2] = 255
+                for tcj in tcjs:
+                    rr2, cc2 = sm.draw.disk(
+                        [551 - (int(tcj[1]) + 20), int(tcj[0]) + 20], 2
+                    )
+                    divisions_tcj[t15][rr2, cc2, 1] = 255
+
+        divisions = divisions[:, 20:532, 20:532]
+
+        mask = np.all((divisions - np.zeros(3)) == 0, axis=3)
+
+        divisions[:, :, :, 0][mask] = gray[mask]
+        divisions[:, :, :, 1][mask] = gray[mask]
+        divisions[:, :, :, 2][mask] = gray[mask]
+
+        divisions = np.asarray(divisions, "uint8")
+        tifffile.imwrite(f"results/orientationShape{filename}.tif", divisions)
+
+        divisions_tcj = divisions_tcj[:, 20:532, 20:532]
+
+        mask = np.all((divisions_tcj - np.zeros(3)) == 0, axis=3)
+
+        divisions_tcj[:, :, :, 0][mask] = gray[mask]
+        divisions_tcj[:, :, :, 1][mask] = gray[mask]
+        divisions_tcj[:, :, :, 2][mask] = gray[mask]
+
+        divisions_tcj = np.asarray(divisions_tcj, "uint8")
+        tifffile.imwrite(f"results/orientationShape_tcj{filename}.tif", divisions_tcj)
 
 if False:
     _df = []
