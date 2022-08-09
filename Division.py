@@ -25,14 +25,12 @@ import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
 import xml.etree.ElementTree as et
-from pySTARMA import starma_model
-from pySTARMA import stacf_stpacf
 import matplotlib.colors as colors
 
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 15})
+plt.rcParams.update({"font.size": 12})
 
 # -------------------
 
@@ -374,8 +372,9 @@ if False:
 
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
-    labels = ["WoundS", "WoundL", "Unwound"]
-    legend = ["small wound", "large wound", "unwounded"]
+    labels = ["Unwound", "WoundS", "WoundL"]
+    legend = ["Unwounded", "Small wound", "Large wound"]
+    colour = ["gold", "m", "limegreen"]
     dat_dd = []
     total = 0
     i = 0
@@ -421,10 +420,10 @@ if True:
                 std.append(_std * 10000)
                 time.append((2 * (i - 1)) + t * timeStep + timeStep / 2)
 
-        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
+        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o", c=colour[i])
         i += 1
 
-    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($10000\mu m^{-4}$)")
+    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
     ax.title.set_text(f"Division density with time")
     ax.set_ylim([0, 8])
     ax.legend(loc="upper left", fontsize=11)
@@ -656,7 +655,7 @@ if False:
 
 
 # Change in divison density with distance from wound edge and time
-if False:
+if True:
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -740,8 +739,22 @@ if False:
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(f"Change in division density {fileTitle}")
+    ax.set(xlabel="Time (mins)", ylabel=r"Distance from wound $(\mu m)$")
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Change in division density "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Change in division density " + r"$\bf{" + str(fileTitle) + "}$"
+        )
 
     fig.savefig(
         f"results/Change in Division density heatmap {fileType}",

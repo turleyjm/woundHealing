@@ -343,7 +343,7 @@ if False:
 
 
 # orientation of parent dividing cells
-if False:
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -368,21 +368,23 @@ if False:
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
         for label in labels:
-            ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
             dfDiv = df[df["Label"] == label]
-            oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
-            diff.append(angleDiff(ori, oriPre))
-            sf.append(dfDiv["Shape Factor"][dfDiv["Division Time"] == -15].iloc[0])
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                diff.append(angleDiff(ori, oriPre))
+                sf.append(dfDiv["Shape Factor"][dfDiv["Division Time"] == -15].iloc[0])
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
     ax[0].hist(diff, 9)
     ax[0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
-    ax[0].set_ylim([0, 230])
+    ax[0].set_ylim([0, 200])
 
     ax[1].scatter(diff, sf)
     ax[1].set(xlabel=r"Difference in Orientaiton", ylabel=r"$S_f$")
-    ax[1].set_ylim([0, 1.05])
+    ax[1].set_ylim([0, 1])
     # ax[1].title.set_text(r"$\delta S_f$ during division")
 
     fig.savefig(
@@ -418,21 +420,25 @@ if False:
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
         for label in labels:
-            ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
             dfDiv = df[df["Label"] == label]
-            oriPre = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -15].iloc[0]
-            diff.append(angleDiff(ori, oriPre))
-            sf.append(dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0])
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -15].iloc[0]
+                diff.append(angleDiff(ori, oriPre))
+                sf.append(
+                    dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
+                )
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
     ax[0].hist(diff, 9)
     ax[0].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
-    ax[0].set_ylim([0, 230])
+    ax[0].set_ylim([0, 200])
 
     ax[1].scatter(diff, sf)
     ax[1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"$S_f$ tcj")
-    ax[1].set_ylim([0, 1.05])
+    ax[1].set_ylim([0, 1])
     # ax[1].title.set_text(r"$\delta S_f$ during division")
 
     fig.savefig(
@@ -461,37 +467,41 @@ if True:
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
         for label in labels:
-            ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
             dfDiv = df[df["Label"] == label]
-            oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
-            oriPre_tcj = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -15].iloc[0]
-            sf = dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
-            if angleDiff(oriPre, oriPre_tcj) > 15:
-                oriDiff.append(angleDiff(ori, oriPre))
-                oriDiff_tcj.append(angleDiff(ori, oriPre_tcj))
-                if sf < 0.3:
-                    oriDiff_sf.append(angleDiff(ori, oriPre))
-                    oriDiff_tcj_sf.append(angleDiff(ori, oriPre_tcj))
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                oriPre_tcj = dfDiv["Orientation tcj"][
+                    dfDiv["Division Time"] == -15
+                ].iloc[0]
+                sf = dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
+                if angleDiff(oriPre, oriPre_tcj) > 15:
+                    oriDiff.append(angleDiff(ori, oriPre))
+                    oriDiff_tcj.append(angleDiff(ori, oriPre_tcj))
+                    if sf < 0.3:
+                        oriDiff_sf.append(angleDiff(ori, oriPre))
+                        oriDiff_tcj_sf.append(angleDiff(ori, oriPre_tcj))
 
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
 
     ax[0, 0].hist(oriDiff, 9)
     ax[0, 0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
-    ax[0, 0].set_ylim([0, 40])
+    ax[0, 0].set_ylim([0, 35])
 
     ax[0, 1].hist(oriDiff_tcj, 9)
     ax[0, 1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
-    ax[0, 1].set_ylim([0, 40])
+    ax[0, 1].set_ylim([0, 35])
 
     ax[1, 0].hist(oriDiff_sf, 9)
     ax[1, 0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
     ax[1, 0].title.set_text("Lower shape factor")
-    ax[1, 0].set_ylim([0, 40])
+    ax[1, 0].set_ylim([0, 35])
 
     ax[1, 1].hist(oriDiff_tcj_sf, 9)
     ax[1, 1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
     ax[1, 1].title.set_text("Lower shape factor")
-    ax[1, 1].set_ylim([0, 40])
+    ax[1, 1].set_ylim([0, 35])
     # ax[1].title.set_text(r"$\delta S_f$ during division")
 
     fig.savefig(

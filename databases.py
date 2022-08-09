@@ -26,8 +26,6 @@ import tifffile
 from skimage.draw import circle_perimeter
 from scipy import optimize
 import xml.etree.ElementTree as et
-from pySTARMA import starma_model
-from pySTARMA import stacf_stpacf
 import matplotlib.colors as colors
 
 import cellProperties as cell
@@ -188,7 +186,7 @@ T = 93
 
 # Cell Behaviers
 
-if False:
+if True:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -249,7 +247,6 @@ if False:
                 ori_w = (ori - theta) % 180
                 if ori_w > 90:
                     ori_w = 180 - ori_w
-                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
                 _df.append(
                     {
                         "Filename": filename,
@@ -568,7 +565,7 @@ if False:
 
 
 # Cells Divsions and Shape changes
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []

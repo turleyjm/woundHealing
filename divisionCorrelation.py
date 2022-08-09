@@ -393,7 +393,7 @@ if True:
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time (min)")
-    ax.set_ylabel(r"$R (\mu m)$")
+    ax.set_ylabel(r"Radius $(\mu m)$")
     ax.title.set_text(f"Division density correlation")
 
     fig.savefig(

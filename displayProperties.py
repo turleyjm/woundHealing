@@ -103,7 +103,7 @@ def gaussian(x, mu, sig):
 
 
 # orientation to wound
-if False:
+if True:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -263,7 +263,7 @@ if False:
 
 
 # orientation to of division TCJs
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
