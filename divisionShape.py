@@ -343,7 +343,7 @@ if False:
 
 
 # orientation of parent dividing cells
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -451,7 +451,7 @@ if True:
 
 
 # compare orientation of parent q and q_tcj dividing cells
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -506,6 +506,140 @@ if True:
 
     fig.savefig(
         f"results/Orientation division diff when shape ori disagree {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# compare orientation of parent q and q_tcj dividing cells
+if True:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+
+    oriShapeDiff = []
+    oriTissueDiff = []
+    shapeTissueDiff = []
+    dQ1 = []
+    area = []
+    time = []
+    oriShapeDiffAll = []
+    oriTissueDiffAll = []
+    shapeTissueDiffAll = []
+    dQ1All = []
+    areaAll = []
+    timeAll = []
+    for filename in filenames:
+        dfTissue = dfShape[dfShape["Filename"] == filename]
+        Q = np.mean(dfTissue["q"])
+        theta0 = (0.5 * np.arctan2(Q[1, 0], Q[0, 0])) * 180 / np.pi
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                if angleDiff(oriPre, ori) > 45:
+                    oriShapeDiff.append(angleDiff(oriPre, ori))
+                    oriTissueDiff.append(angleDiff(theta0, ori))
+                    shapeTissueDiff.append(angleDiff(theta0, oriPre))
+                    dQ1.append(
+                        (
+                            cell.qTensor(
+                                dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0]
+                            )
+                            - Q
+                        )[0, 0]
+                    )
+                    area.append(
+                        dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0].area
+                        * scale ** 2
+                    )
+                    time.append(
+                        dfDiv["Time"][dfDiv["Division Time"] == -15].iloc[0] * 2
+                    )
+                else:
+                    oriShapeDiffAll.append(angleDiff(oriPre, ori))
+                    oriTissueDiffAll.append(angleDiff(theta0, ori))
+                    shapeTissueDiffAll.append(angleDiff(theta0, oriPre))
+                    dQ1All.append(
+                        (
+                            cell.qTensor(
+                                dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0]
+                            )
+                            - Q
+                        )[0, 0]
+                    )
+                    areaAll.append(
+                        dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0].area
+                        * scale ** 2
+                    )
+                    timeAll.append(
+                        dfDiv["Time"][dfDiv["Division Time"] == -15].iloc[0] * 2
+                    )
+
+    fig, ax = plt.subplots(2, 6, figsize=(30, 10))
+
+    ax[0, 0].hist(oriShapeDiff, 5)
+    ax[0, 0].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
+    ax[0, 0].set_ylim([0, 180])
+    ax[0, 0].set_xlim([0, 90])
+
+    ax[0, 1].hist(oriTissueDiff, 9)
+    ax[0, 1].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
+    ax[0, 1].set_ylim([0, 75])
+
+    ax[0, 2].hist(shapeTissueDiff, 9)
+    ax[0, 2].set(xlabel=r"Difference shapeOri and tissue", ylabel=r"number")
+    ax[0, 2].set_ylim([0, 75])
+
+    ax[0, 3].hist(dQ1, 9)
+    ax[0, 3].set(xlabel=r"$\delta Q^1$ of poor predictions", ylabel=r"number")
+    ax[0, 3].set_xlim([-0.08, 0.08])
+    ax[0, 3].axvline(np.median(dQ1), c="r", label="median")
+
+    ax[0, 4].hist(area, 9)
+    ax[0, 4].set(xlabel=r"Area of poor predictions", ylabel=r"number")
+    ax[0, 4].set_xlim([0, 60])
+
+    ax[0, 5].hist(time, 9)
+    ax[0, 5].set(xlabel=r"time of poor predictions", ylabel=r"number")
+    ax[0, 5].set_xlim([0, 90])
+
+    ax[1, 0].hist(oriShapeDiffAll, 5)
+    ax[1, 0].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
+    ax[1, 0].set_ylim([0, 180])
+    ax[1, 0].set_xlim([0, 90])
+
+    ax[1, 1].hist(oriTissueDiffAll, 9)
+    ax[1, 1].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
+    ax[1, 1].set_ylim([0, 180])
+
+    ax[1, 2].hist(shapeTissueDiffAll, 9)
+    ax[1, 2].set(xlabel=r"Difference shapeOri and tissue", ylabel=r"number")
+    ax[1, 2].set_ylim([0, 180])
+
+    ax[1, 3].hist(dQ1All, 9)
+    ax[1, 3].set(xlabel=r"$\delta Q^1$ of good predictions", ylabel=r"number")
+    ax[1, 3].set_xlim([-0.08, 0.08])
+    ax[1, 3].axvline(np.median(dQ1All), c="r", label="median")
+
+    ax[1, 4].hist(areaAll, 9)
+    ax[1, 4].set(xlabel=r"Area of good predictions", ylabel=r"number")
+    ax[1, 4].set_xlim([0, 60])
+
+    ax[1, 5].hist(timeAll, 9)
+    ax[1, 5].set(xlabel=r"time of good predictions", ylabel=r"number")
+    ax[1, 5].set_xlim([0, 90])
+
+    fig.savefig(
+        f"results/poor predictions and tissue orientation {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -855,6 +989,240 @@ if False:
 
     fig.savefig(
         f"results/change in Q division relative to wound {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# orientation of daughter cells relative to wound
+if True:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    time = list(np.linspace(-15, 10, 26))
+    dq = [[] for col in range(len(time))]
+    dq_p = [[] for col in range(len(time))]
+    dq_inv = [[] for col in range(len(time))]
+    dq_inv_p = [[] for col in range(len(time))]
+
+    for filename in filenames:
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        Q = np.mean(dfShape["q"][dfShape["Filename"] == filename])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+        R = util.rotation_matrix(-theta0)
+
+        dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                if angleDiff(oriPre, ori) > 45:
+
+                    polygon = dfDiv["Polygon"][dfDiv["Division Time"] == time[0]].iloc[
+                        0
+                    ]
+                    q0 = np.matmul(
+                        R, np.matmul(cell.qTensor(polygon), np.matrix.transpose(R))
+                    )
+                    for t in time:
+                        if (
+                            dfDiv["Type"][dfDiv["Division Time"] == t].iloc[0]
+                            == "parent"
+                        ):
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[0]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq_p[time.index(t)].append(q - q0)
+                            dq_inv_p[time.index(t)].append(q - q0)
+                        else:
+                            T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
+                            colour1 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[
+                                0
+                            ]
+                            colour2 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[
+                                1
+                            ]
+                            mask = np.zeros([512, 512])
+                            mask[np.all((tracks[int(T)] - colour1) == 0, axis=2)] = 1
+                            mask[np.all((tracks[int(T)] - colour2) == 0, axis=2)] = 1
+                            q = np.matmul(
+                                R, np.matmul(maskQ(mask)[0], np.matrix.transpose(R))
+                            )
+                            dq_p[time.index(t)].append(q - q0)
+
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[0]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq_inv_p[time.index(t)].append(q - q0)
+
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[1]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq_inv_p[time.index(t)].append(q - q0)
+                else:
+
+                    polygon = dfDiv["Polygon"][dfDiv["Division Time"] == time[0]].iloc[
+                        0
+                    ]
+                    q0 = np.matmul(
+                        R, np.matmul(cell.qTensor(polygon), np.matrix.transpose(R))
+                    )
+                    for t in time:
+                        if (
+                            dfDiv["Type"][dfDiv["Division Time"] == t].iloc[0]
+                            == "parent"
+                        ):
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[0]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq[time.index(t)].append(q - q0)
+                            dq_inv[time.index(t)].append(q - q0)
+                        else:
+                            T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
+                            colour1 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[
+                                0
+                            ]
+                            colour2 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[
+                                1
+                            ]
+                            mask = np.zeros([512, 512])
+                            mask[np.all((tracks[int(T)] - colour1) == 0, axis=2)] = 1
+                            mask[np.all((tracks[int(T)] - colour2) == 0, axis=2)] = 1
+                            q = np.matmul(
+                                R, np.matmul(maskQ(mask)[0], np.matrix.transpose(R))
+                            )
+                            dq[time.index(t)].append(q - q0)
+
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[0]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq_inv[time.index(t)].append(q - q0)
+
+                            polygon = dfDiv["Polygon"][
+                                dfDiv["Division Time"] == t
+                            ].iloc[1]
+                            q = np.matmul(
+                                R,
+                                np.matmul(
+                                    cell.qTensor(polygon), np.matrix.transpose(R)
+                                ),
+                            )
+                            dq_inv[time.index(t)].append(q - q0)
+
+    dQ = []
+    dQstd = []
+    dQ_p = []
+    dQstd_p = []
+
+    dQ_inv = []
+    dQstd_inv = []
+    dQ_inv_p = []
+    dQstd_inv_p = []
+    for i in range(len(dq)):
+        dQ.append(np.mean(dq[i], axis=0))
+        dQstd.append(np.std(dq[i], axis=0))
+        dQ_p.append(np.mean(dq_p[i], axis=0))
+        dQstd_p.append(np.std(dq_p[i], axis=0))
+
+        dQ_inv.append(np.mean(dq_inv[i], axis=0))
+        dQstd_inv.append(np.std(dq_inv[i], axis=0))
+        dQ_inv_p.append(np.mean(dq_inv_p[i], axis=0))
+        dQstd_inv_p.append(np.std(dq_inv_p[i], axis=0))
+
+    dQ = np.array(dQ)
+    dQstd = np.array(dQstd)
+    dQ_p = np.array(dQ_p)
+    dQstd_p = np.array(dQstd_p)
+
+    dQ_inv = np.array(dQ_inv)
+    dQstd_inv = np.array(dQstd_inv)
+    dQ_inv_p = np.array(dQ_inv_p)
+    dQstd_inv_p = np.array(dQstd_inv_p)
+    time = 2 * np.array(time)
+
+    fig, ax = plt.subplots(2, 4, figsize=(24, 16))
+
+    ax[0, 0].errorbar(time, dQ[:, 0, 0], dQstd[:, 0, 0])
+    ax[0, 0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
+    ax[0, 0].title.set_text(r"collective $\delta Q_1$ during division")
+    ax[0, 0].set_ylim([-0.07, 0.07])
+
+    ax[0, 1].errorbar(time, dQ[:, 1, 0], dQstd[:, 1, 0])
+    ax[0, 1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
+    ax[0, 1].title.set_text(r"collective $\delta Q_2$ during division")
+    ax[0, 1].set_ylim([-0.07, 0.07])
+
+    ax[0, 2].errorbar(time, dQ_inv[:, 0, 0], dQstd_inv[:, 0, 0])
+    ax[0, 2].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
+    ax[0, 2].title.set_text(r"individual $\delta Q_1$ during division")
+    ax[0, 2].set_ylim([-0.07, 0.07])
+
+    ax[0, 3].errorbar(time, dQ_inv[:, 1, 0], dQstd_inv[:, 1, 0])
+    ax[0, 3].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
+    ax[0, 3].title.set_text(r"individual $\delta Q_2$ during division")
+    ax[0, 3].set_ylim([-0.07, 0.07])
+
+    ax[1, 0].errorbar(time, dQ_p[:, 0, 0], dQstd_p[:, 0, 0])
+    ax[1, 0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
+    ax[1, 0].title.set_text(r"collective $\delta Q_1$ during division poor predictions")
+    ax[1, 0].set_ylim([-0.07, 0.07])
+
+    ax[1, 1].errorbar(time, dQ_p[:, 1, 0], dQstd_p[:, 1, 0])
+    ax[1, 1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
+    ax[1, 1].title.set_text(r"collective $\delta Q_2$ during division poor predictions")
+    ax[1, 1].set_ylim([-0.07, 0.07])
+
+    ax[1, 2].errorbar(time, dQ_inv_p[:, 0, 0], dQstd_inv_p[:, 0, 0])
+    ax[1, 2].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
+    ax[1, 2].title.set_text(r"individual $\delta Q_1$ during division poor predictions")
+    ax[1, 2].set_ylim([-0.07, 0.07])
+
+    ax[1, 3].errorbar(time, dQ_inv_p[:, 1, 0], dQstd_inv_p[:, 1, 0])
+    ax[1, 3].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
+    ax[1, 3].title.set_text(r"individual $\delta Q_2$ during division poor predictions")
+    ax[1, 3].set_ylim([-0.07, 0.07])
+
+    fig.savefig(
+        f"results/change in Q division relative to wound poor pred {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

@@ -278,7 +278,7 @@ if False:
 
 
 # Divison orientation with respect to a wound over distance from wound t-tests
-if False:
+if True:
     alpha = 0.05
     dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound.pkl")
     dfDivisionsS = pd.read_pickle(f"databases/dfDivisionsWoundS.pkl")
@@ -371,9 +371,9 @@ if False:
 
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
 
-    ax.errorbar(rad - 1, mu, yerr=std, label=f"Unwounded", c="gold")
-    ax.errorbar(rad, muS, yerr=stdS, label=f"Small wound", c="m")
-    ax.errorbar(rad + 1, muL, yerr=stdL, label=f"Large wound", c="limegreen")
+    ax.errorbar(rad - 1, mu, yerr=std, label=f"Unwounded", marker="o")
+    ax.errorbar(rad, muS, yerr=stdS, label=f"Small wound", marker="o")
+    ax.errorbar(rad + 1, muL, yerr=stdL, label=f"Large wound", marker="o")
     ax.set_ylim([0, 90])
     ax.set_xlim([0, 60])
 

@@ -374,7 +374,6 @@ if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     labels = ["Unwound", "WoundS", "WoundL"]
     legend = ["Unwounded", "Small wound", "Large wound"]
-    colour = ["gold", "m", "limegreen"]
     dat_dd = []
     total = 0
     i = 0
@@ -420,7 +419,7 @@ if True:
                 std.append(_std * 10000)
                 time.append((2 * (i - 1)) + t * timeStep + timeStep / 2)
 
-        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o", c=colour[i])
+        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
         i += 1
 
     ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
