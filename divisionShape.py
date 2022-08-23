@@ -513,7 +513,7 @@ if False:
     plt.close("all")
 
 # compare orientation of parent q and q_tcj dividing cells
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -610,7 +610,7 @@ if True:
 
     ax[0, 5].hist(time, 9)
     ax[0, 5].set(xlabel=r"time of poor predictions", ylabel=r"number")
-    ax[0, 5].set_xlim([0, 90])
+    ax[0, 5].set_xlim([0, 180])
 
     ax[1, 0].hist(oriShapeDiffAll, 5)
     ax[1, 0].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
@@ -636,7 +636,7 @@ if True:
 
     ax[1, 5].hist(timeAll, 9)
     ax[1, 5].set(xlabel=r"time of good predictions", ylabel=r"number")
-    ax[1, 5].set_xlim([0, 90])
+    ax[1, 5].set_xlim([0, 180])
 
     fig.savefig(
         f"results/poor predictions and tissue orientation {fileType}",
@@ -996,8 +996,8 @@ if False:
     plt.close("all")
 
 
-# orientation of daughter cells relative to wound
-if True:
+# orientation of daughter cells relative to tissue
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1222,7 +1222,228 @@ if True:
     ax[1, 3].set_ylim([-0.07, 0.07])
 
     fig.savefig(
-        f"results/change in Q division relative to wound poor pred {fileType}",
+        f"results/change in Q division relative to tissue poor pred {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# orientation of daughter cells relative to tissue
+if False:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    time = list(np.linspace(-15, 10, 26))
+    _df = []
+
+    for filename in filenames:
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        Q = np.mean(dfShape["q"][dfShape["Filename"] == filename])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+        R = util.rotation_matrix(-theta0)
+
+        dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            if tcjs != False:
+                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+
+                polygon = dfDiv["Polygon"][dfDiv["Division Time"] == time[0]].iloc[0]
+                q0 = np.matmul(
+                    R, np.matmul(cell.qTensor(polygon), np.matrix.transpose(R))
+                )
+                t = 10
+
+                T = dfDiv["Time"][dfDiv["Division Time"] == t].iloc[0]
+                colour1 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[0]
+                colour2 = dfDiv["Colour"][dfDiv["Division Time"] == t].iloc[1]
+                mask = np.zeros([512, 512])
+                mask[np.all((tracks[int(T)] - colour1) == 0, axis=2)] = 1
+                mask[np.all((tracks[int(T)] - colour2) == 0, axis=2)] = 1
+                q = np.matmul(R, np.matmul(maskQ(mask)[0], np.matrix.transpose(R)))
+                dq_con = q - q0
+
+                polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[0]
+                q = np.matmul(
+                    R,
+                    np.matmul(cell.qTensor(polygon), np.matrix.transpose(R)),
+                )
+                dq_inv1 = q - q0
+
+                polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[1]
+                q = np.matmul(
+                    R,
+                    np.matmul(cell.qTensor(polygon), np.matrix.transpose(R)),
+                )
+                dq_inv2 = q - q0
+                if ori > 90:
+                    ori = 180 - ori
+                    dq_con[1, 0] = -dq_con[1, 0]
+                    dq_con[0, 1] = -dq_con[0, 1]
+                    dq_inv1[1, 0] = -dq_inv1[1, 0]
+                    dq_inv1[0, 1] = -dq_inv1[0, 1]
+                    dq_inv2[1, 0] = -dq_inv2[1, 0]
+                    dq_inv2[0, 1] = -dq_inv2[0, 1]
+
+                _df.append(
+                    {
+                        "Filename": filename,
+                        "Label": label,
+                        "Orientation": ori,
+                        "dq_con": dq_con,
+                        "dq_inv1": dq_inv1,
+                        "dq_inv2": dq_inv2,
+                    }
+                )
+
+    df = pd.DataFrame(_df)
+
+    thetas = np.linspace(0, 80, 9)
+    dQ1_con = []
+    dQ2_con = []
+    dQ1_inv = []
+    dQ2_inv = []
+
+    dQ1std_con = []
+    dQ2std_con = []
+    dQ1std_inv = []
+    dQ2std_inv = []
+    for theta in thetas:
+        df1 = df[df["Orientation"] > theta]
+        df2 = df1[df1["Orientation"] < theta + 10]
+        dQ1_con.append(np.mean(df2["dq_con"], axis=0)[0, 0])
+        dQ2_con.append(np.mean(df2["dq_con"], axis=0)[1, 0])
+        dQ1_inv.append(
+            np.mean(list(df2["dq_inv1"]) + list(df2["dq_inv2"]), axis=0)[0, 0]
+        )
+        dQ2_inv.append(
+            np.mean(list(df2["dq_inv1"]) + list(df2["dq_inv2"]), axis=0)[1, 0]
+        )
+
+        dQ1std_con.append(np.std(list(df2["dq_con"]), axis=0)[0, 0])
+        dQ2std_con.append(np.std(list(df2["dq_con"]), axis=0)[1, 0])
+        dQ1std_inv.append(
+            np.std(list(df2["dq_inv1"]) + list(df2["dq_inv2"]), axis=0)[0, 0]
+        )
+        dQ2std_inv.append(
+            np.std(list(df2["dq_inv1"]) + list(df2["dq_inv2"]), axis=0)[1, 0]
+        )
+
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+
+    ax[0, 0].errorbar(thetas + 5, dQ1_con, dQ1std_con)
+    ax[0, 0].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^1$")
+    ax[0, 0].title.set_text(r"collective $\delta Q_1$ after division")
+    ax[0, 0].set_ylim([-0.08, 0.08])
+
+    ax[0, 1].errorbar(thetas + 5, dQ2_con, dQ2std_con)
+    ax[0, 1].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^2$")
+    ax[0, 1].title.set_text(r"collective $\delta Q_2$ after division")
+    ax[0, 1].set_ylim([-0.08, 0.08])
+
+    ax[1, 0].errorbar(thetas + 5, dQ1_inv, dQ1std_inv)
+    ax[1, 0].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^1$")
+    ax[1, 0].title.set_text(r"individual $\delta Q_1$ after division")
+    ax[1, 0].set_ylim([-0.08, 0.08])
+
+    ax[1, 1].errorbar(thetas + 5, dQ2_inv, dQ2std_inv)
+    ax[1, 1].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^2$")
+    ax[1, 1].title.set_text(r"individual $\delta Q_2$ after division")
+    ax[1, 1].set_ylim([-0.08, 0.08])
+
+    fig.savefig(
+        f"results/deltaQ after division with theta {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# change in orientation after division
+if True:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    _df = []
+
+    for filename in filenames:
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+        Q = np.mean(dfShape["q"][dfShape["Filename"] == filename])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+        R = util.rotation_matrix(-theta0)
+
+        dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+            t = 10
+
+            polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[0]
+            x0, y0 = cell.centroid(polygon)
+            polygon = dfDiv["Polygon"][dfDiv["Division Time"] == t].iloc[1]
+            x1, y1 = cell.centroid(polygon)
+            phi = (np.arctan2(y0 - y1, x0 - x1) * 180 / np.pi) % 180
+
+            if ori > 90:
+                ori = 180 - ori
+            if phi > 90:
+                phi = 180 - phi
+
+            _df.append(
+                {
+                    "Filename": filename,
+                    "Label": label,
+                    "Orientation": ori,
+                    "Dauhter Orienation": phi,
+                    "Change Towards Tissue": ori - phi,
+                }
+            )
+
+    df = pd.DataFrame(_df)
+
+    thetas = np.linspace(0, 80, 9)
+    deltaOri = []
+    deltaOristd = []
+    for theta in thetas:
+        df1 = df[df["Orientation"] > theta]
+        df2 = df1[df1["Orientation"] < theta + 10]
+        deltaOri.append(np.mean(df2["Change Towards Tissue"]))
+        deltaOristd.append(np.std(df2["Change Towards Tissue"]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+
+    ax[0].hist(
+        df["Change Towards Tissue"],
+    )
+    ax[0].set(xlabel=r"Division Orientation Change Towards Tissue")
+    ax[0].title.set_text(r"Change in orientation Towards Tissue")
+    ax[0].set_xlim([-90, 90])
+    ax[0].axvline(np.mean(df["Change Towards Tissue"]), color="r")
+
+    ax[1].errorbar(thetas + 5, deltaOri, deltaOristd)
+    ax[1].set(
+        xlabel=r"Mitosis Division Orientation",
+        ylabel=r"Division Orientation Change Towards Tissue",
+    )
+    ax[1].title.set_text(r"Change in orientation Towards Tissue with theta")
+    ax[1].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

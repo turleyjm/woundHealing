@@ -211,6 +211,9 @@ if True:
                 if ori_w > 90:
                     ori_w = 180 - ori_w
 
+                if dfDivisions["Label"].iloc[i] == 183:
+                    print(0)
+
                 t0 = dfDivisions["T"].iloc[i]
                 ori = np.pi * dfDivisions["Orientation"].iloc[i] / 180
                 (x, y) = (dfDivisions["X"].iloc[i], dfDivisions["Y"].iloc[i])

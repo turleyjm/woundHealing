@@ -241,12 +241,14 @@ if True:
                 y = dfDivision["Y"].iloc[i] * scale
                 r = ((xc - x) ** 2 + (yc - y) ** 2) ** 0.5
                 ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
-                if ori > 90:
-                    ori = 180 - ori
                 theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
                 ori_w = (ori - theta) % 180
                 if ori_w > 90:
                     ori_w = 180 - ori_w
+                if ori > 90:
+                    ori = 180 - ori
+                if dfDivision["Label"].iloc[i] == 183:
+                    print(0)
                 _df.append(
                     {
                         "Filename": filename,
