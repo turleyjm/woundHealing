@@ -186,7 +186,7 @@ T = 93
 
 # Cell Behaviers
 
-if True:
+if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -266,7 +266,7 @@ if True:
     dfDivisions = pd.DataFrame(_df)
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -279,22 +279,23 @@ if False:
         df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
         mig = np.zeros(2)
 
-        for t in range(T):
+        for t in range(90):
             dft = df[df["T"] == t]
-            v = np.mean(dft["Velocity"]) * scale
-            v = np.matmul(R, v)
+            V = np.mean(dft["Velocity"]) * scale
+            V = np.matmul(R, V)
             _df.append(
                 {
                     "Filename": filename,
                     "T": t,
-                    "v": v,
+                    "V": V,
                 }
             )
 
             for i in range(len(dft)):
                 x = dft["X"].iloc[i] * scale
                 y = dft["Y"].iloc[i] * scale
-                dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - v
+                v = np.matmul(R, dft["Velocity"].iloc[i] * scale)
+                dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - V
                 [x, y] = np.matmul(R, np.array([x, y]))
 
                 _df2.append(
@@ -303,7 +304,10 @@ if False:
                         "T": t,
                         "X": x - mig[0],
                         "Y": y - mig[1],
+                        "V": V,
                         "dv": dv,
+                        "v": v,
+                        "s": (v[0] ** 2 + v[1] ** 2) ** 0.5,
                     }
                 )
             mig += v
