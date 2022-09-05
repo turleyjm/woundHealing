@@ -420,6 +420,7 @@ if True:
         label = dfR["label"][dfR["z"] == np.min(dfR["z"])].iloc[0]
 
         df2 = dfNuclei[dfNuclei["label"] == label]
+        elong = True
 
         if len(df2) == 10:
             for j in range(10):
@@ -437,6 +438,12 @@ if True:
                 #     imgLabel,
                 # )
                 x, y = df2["x"].iloc[j], df2["y"].iloc[j]
+
+                z = df2["z"].iloc[j]
+                dft = dfNuclei[dfNuclei["t"] == i * 11 + j]
+                dfOther = dft[dft["label"] != label]
+                heightDiff = np.mean(dfOther["z"]) - z
+
                 shapeLabel = imgLabel[int(y), int(x)]
                 if shapeLabel != 0:
                     # convert to row-col
@@ -447,29 +454,57 @@ if True:
                     poly = sm.measure.approximate_polygon(contour, tolerance=1)
                     try:
                         polygon = Polygon(poly)
-                        if j == 9:
-                            a = 0
-                        _df.append(
-                            {
-                                "Filename": filename,
-                                "Div Label": df["Label"].iloc[i],
-                                "Div Orientation": df["Orientation"].iloc[i] % 180,
-                                "Track Label": label,
-                                "X": x,
-                                "Y": y,
-                                "Z": df2["z"].iloc[j],
-                                "T": df2["t"].iloc[j],
-                                "Polygon": polygon,
-                                "Area": cell.area(polygon) * scale ** 2,
-                                "Shape Orientation": (
-                                    cell.orientation(polygon) * 180 / np.pi - 90
-                                )
-                                % 180,
-                                "Shape Factor": cell.shapeFactor(polygon),
-                                "q": cell.qTensor(polygon),
-                                "Time Before Division": j - 10,
-                            }
-                        )
+                        if j != 9:
+                            if cell.shapeFactor(polygon) < 0.5:
+                                if j > 4:
+                                    elong = False
+                            _df.append(
+                                {
+                                    "Filename": filename,
+                                    "Div Label": df["Label"].iloc[i],
+                                    "Div Orientation": df["Orientation"].iloc[i] % 180,
+                                    "Track Label": label,
+                                    "X": x,
+                                    "Y": y,
+                                    "Z": df2["z"].iloc[j],
+                                    "T": df2["t"].iloc[j],
+                                    "Height Difference": heightDiff * 0.75,
+                                    "Polygon": polygon,
+                                    "Area": cell.area(polygon) * scale ** 2,
+                                    "Shape Orientation": (
+                                        cell.orientation(polygon) * 180 / np.pi - 90
+                                    )
+                                    % 180,
+                                    "Shape Factor": cell.shapeFactor(polygon),
+                                    "q": cell.qTensor(polygon),
+                                    "Time Before Division": j - 10,
+                                }
+                            )
+                        else:
+                            _df.append(
+                                {
+                                    "Filename": filename,
+                                    "Div Label": df["Label"].iloc[i],
+                                    "Div Orientation": df["Orientation"].iloc[i] % 180,
+                                    "Track Label": label,
+                                    "X": x,
+                                    "Y": y,
+                                    "Z": df2["z"].iloc[j],
+                                    "T": df2["t"].iloc[j],
+                                    "Height Difference": heightDiff * 0.75,
+                                    "Polygon": polygon,
+                                    "Area": cell.area(polygon) * scale ** 2,
+                                    "Shape Orientation": (
+                                        cell.orientation(polygon) * 180 / np.pi - 90
+                                    )
+                                    % 180,
+                                    "Shape Factor": cell.shapeFactor(polygon),
+                                    "q": cell.qTensor(polygon),
+                                    "Time Before Division": j - 10,
+                                    "Elongated": elong,
+                                }
+                            )
+
                     except:
                         print(i * 11 + j)
                         continue
@@ -478,7 +513,7 @@ if True:
 
     dfDivNucleus.to_pickle(f"dat/{filename}/dfDivNucleus{filename}.pkl")
 
-if True:
+if False:
     filename = "Unwound18h13"
     dfDivNucleus = pd.read_pickle(f"dat/{filename}/dfDivNucleus{filename}.pkl")
 
@@ -537,7 +572,7 @@ if True:
     plt.close("all")
 
 
-if True:
+if False:
     filename = "Unwound18h13"
     dfDivNucleus = pd.read_pickle(f"dat/{filename}/dfDivNucleus{filename}.pkl")
 
@@ -577,6 +612,46 @@ if True:
 
     fig.savefig(
         f"results/Nuclei alining with division orientation {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+if True:
+    filename = "Unwound18h13"
+    dfDivNucleus = pd.read_pickle(f"dat/{filename}/dfDivNucleus{filename}.pkl")
+
+    dH = []
+    dH_std = []
+    time = []
+    for t in range(10):
+        dH.append(
+            np.mean(
+                dfDivNucleus["Height Difference"][
+                    dfDivNucleus["Time Before Division"] == -10 + t
+                ]
+            )
+        )
+        dH_std.append(
+            np.std(
+                dfDivNucleus["Height Difference"][
+                    dfDivNucleus["Time Before Division"] == -10 + t
+                ]
+            )
+        )
+        time.append((-10 + t) * 2)
+
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    ax.errorbar(time, dH, dH_std)
+    ax.set(xlabel=r"Time before anaphase (mins)", ylabel=r"Height difference $(\mu m)$")
+    ax.title.set_text(r"Nuclei rise in tissue before anaphase")
+    # ax.set_ylim([0, 1])
+    ax.set_xlim([-21, 0])
+
+    fig.savefig(
+        f"results/Nuclei height change before anaphase {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

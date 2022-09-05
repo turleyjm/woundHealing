@@ -1397,6 +1397,8 @@ if True:
             x1, y1 = cell.centroid(polygon)
             phi = (np.arctan2(y0 - y1, x0 - x1) * 180 / np.pi) % 180
 
+            ori = ori - theta0
+            phi = phi - theta0
             if ori > 90:
                 ori = 180 - ori
             if phi > 90:
@@ -1407,7 +1409,7 @@ if True:
                     "Filename": filename,
                     "Label": label,
                     "Orientation": ori,
-                    "Dauhter Orienation": phi,
+                    "Shape Orientation": phi,
                     "Change Towards Tissue": ori - phi,
                 }
             )
@@ -1423,23 +1425,39 @@ if True:
         deltaOri.append(np.mean(df2["Change Towards Tissue"]))
         deltaOristd.append(np.std(df2["Change Towards Tissue"]))
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
 
-    ax[0].hist(
+    ax[0, 0].hist(
+        df["Orientation"],
+    )
+    ax[0, 0].axvline(np.mean(df["Orientation"]), color="r")
+    ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Tissue")
+    ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
+    ax[0, 0].set_ylim([0, 100])
+
+    ax[0, 1].hist(
+        df["Shape Orientation"],
+    )
+    ax[0, 1].axvline(np.mean(df["Shape Orientation"]), color="r")
+    ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Tissue")
+    ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
+    ax[0, 1].set_ylim([0, 100])
+
+    ax[1, 0].hist(
         df["Change Towards Tissue"],
     )
-    ax[0].set(xlabel=r"Division Orientation Change Towards Tissue")
-    ax[0].title.set_text(r"Change in orientation Towards Tissue")
-    ax[0].set_xlim([-90, 90])
-    ax[0].axvline(np.mean(df["Change Towards Tissue"]), color="r")
+    ax[1, 0].set(xlabel=r"Division Orientation Change Towards Tissue")
+    ax[1, 0].title.set_text(r"Change in orientation Towards Tissue")
+    ax[1, 0].set_xlim([-90, 90])
+    ax[1, 0].axvline(np.mean(df["Change Towards Tissue"]), color="r")
 
-    ax[1].errorbar(thetas + 5, deltaOri, deltaOristd)
-    ax[1].set(
+    ax[1, 1].errorbar(thetas + 5, deltaOri, deltaOristd)
+    ax[1, 1].set(
         xlabel=r"Mitosis Division Orientation",
         ylabel=r"Division Orientation Change Towards Tissue",
     )
-    ax[1].title.set_text(r"Change in orientation Towards Tissue with theta")
-    ax[1].set_ylim([-40, 40])
+    ax[1, 1].title.set_text(r"Change in orientation Towards Tissue with theta")
+    ax[1, 1].set_ylim([-40, 40])
 
     fig.tight_layout()
     fig.savefig(

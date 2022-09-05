@@ -7,6 +7,7 @@ import cv2
 import matplotlib
 import matplotlib.lines as lines
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
 import pandas as pd
 import random
@@ -40,7 +41,7 @@ scale = 123.26 / 512
 
 
 # typical cell length
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     A = []
     for t in range(T):
@@ -60,7 +61,7 @@ if True:
 
 
 # mean sf
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     sf = []
     sfstd = []
@@ -308,6 +309,63 @@ if False:
 
     fig.savefig(
         f"results/mean rho {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+# Q_0 vs Area
+if True:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    area = np.array(dfShape["Area"])
+    q_0 = (
+        np.stack(np.array(dfShape.loc[:, "dq"]), axis=0)[:, 0, 0] ** 2
+        + np.stack(np.array(dfShape.loc[:, "dq"]), axis=0)[:, 0, 1] ** 2
+    ) ** 0.5
+
+    # set grid size
+    grid = 30
+    heatmap = np.zeros([grid, grid])
+    q_0Max = max(q_0)
+    areaMax = max(area)
+
+    # for each spot pulls out there coords
+    for i in range(len(q_0)):
+        heatmap[
+            int((grid - 1) * (q_0[i] / q_0Max)), int((grid - 1) * (area[i] / areaMax))
+        ] += 1
+
+    fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+    plt.subplots_adjust(wspace=0.28)
+    ax[0].hist(area, bins=30)
+    ax[0].set_yscale("log")
+    ax[0].set(xlabel=r"Area $(\mu m^2)$", ylabel=r"log freq")
+    ax[0].title.set_text(r"Distribution of Cell Area")
+
+    ax[1].hist(q_0, bins=30)
+    ax[1].set_yscale("log")
+    ax[1].set(xlabel=r"$q_0$", ylabel=r"log freq")
+    ax[1].title.set_text(r"Distribution of Cell $q_0$")
+
+    dx, dy = q_0Max / grid, areaMax / grid
+    x, y = np.mgrid[0:q_0Max:dx, 0:areaMax:dy]
+
+    # make heatmap
+    c = ax[2].pcolor(
+        x,
+        y,
+        heatmap,
+        norm=colors.LogNorm(),
+        cmap="Reds",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set(xlabel=r"Area $(\mu m^2)$", ylabel=r"$q_0$")
+    ax[2].title.set_text(r"Correlation of $q_0$ and area")
+
+    fig.savefig(
+        f"results/Q_0 and area correlation {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
