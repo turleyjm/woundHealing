@@ -43,10 +43,10 @@ def weighted_avg_and_std(values, weight, axis=0):
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 160
+T = 84
 timeStep = 4
-R = 100
-rStep = 20
+R = 80
+rStep = 10
 
 
 if False:
@@ -203,7 +203,7 @@ if False:
 
 
 # Q1 with distance from wound edge and time
-if False:
+if True:
     q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
@@ -270,19 +270,30 @@ if False:
 
     Q1[meanArea < 500] = np.nan
 
+    typeName = util.getFileTitle(fileType)
+
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     c = ax.pcolor(
         t,
         r,
         Q1,
-        vmin=-0.025,
-        vmax=0.025,
+        vmin=-0.022,
+        vmax=0.022,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
-    ax.title.set_text(r"$\delta Q^{(1)}$" + f" distance and time {fileType}")
+    ax.title.set_text(
+        r"$\delta Q^{(1)}$"
+        + f" distance and time "
+        + r"$\bf{"
+        + str(typeName.split()[0])
+        + "}$ "
+        + r"$\bf{"
+        + str(typeName.split()[1])
+        + "}$"
+    )
 
     fig.savefig(
         f"results/Q1 heatmap {fileType}",
@@ -293,7 +304,7 @@ if False:
     plt.close("all")
 
 
-if True:
+if False:
     fig, ax = plt.subplots(2, 2, figsize=(14, 14))
     fileType = "WoundS"
     filenames = util.getFilesOfType(fileType)

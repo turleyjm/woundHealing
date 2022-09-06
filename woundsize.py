@@ -107,11 +107,11 @@ if False:
     plt.close("all")
 
 if True:
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-    labels = ["Small Wound", "Large Wound"]
-
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    labels = ["WoundS18h", "WoundS18h", "WoundL18h"]
+    i = 0
     for fileType in labels:
-        filenames = util.getFilesOfType(fileType)
+        filenames = util.getFilesType(fileType)[0]
         _df = []
         Area0 = []
 
@@ -142,12 +142,16 @@ if True:
                     A.append(np.mean(df["Area"][df["Time"] == t]))
                     std.append(np.std(df["Area"][df["Time"] == t]))
 
-        plt.errorbar(Time, A, yerr=std, marker="o", label=f"{fileType}")
+        if i > 0:
+            typeName = util.getFileTitle(fileType)
+            plt.errorbar(Time, A, yerr=std, marker="o", label=f"{typeName}")
+        else:
+            plt.errorbar(Time, A, yerr=std, marker="o")
+        i += 1
 
     plt.xlabel("Time (mins)")
     plt.ylabel(r" Mean Area ($\mu m ^2$)")
     plt.title(f"Mean area of wound")
-    plt.rcParams.update({"font.size": 12})
     plt.legend()
     fig.savefig(
         f"results/Mean Wound Area",

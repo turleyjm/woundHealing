@@ -29,17 +29,22 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
+# fileType = "Unwound18h"
+# fileType = "WoundL18h"
+fileType = "WoundS18h"
+# fileType = "UnwoundCa"
+# fileType = "WoundLCa"
+# fileType = "WoundSCa"
+# fileType = "UnwoundJNK"
+# fileType = "WoundLJNK"
+# fileType = "WoundSJNK"
+# fileType = "Unwoundrpr"
+# fileType = "WoundLrpr"
+# fileType = "WoundSrpr"
+# fileType = "All"
 
-def getFiles():
-    f = open("pythonText.txt", "r")
-    filenames = f.read()
-    filenames = filenames.split(", ")
-    return filenames
 
-
-def getFilesType():
-    f = open("pythonText.txt", "r")
-    fileType = f.read()
+def getFilesType(fileType=fileType):
 
     if fileType == "All":
         cwd = os.getcwd()
@@ -50,12 +55,21 @@ def getFilesType():
 
         if ".DS_Store" in filenames:
             filenames.remove(".DS_Store")
-
-        if "confocalRawLocation.txt" in filenames:
-            filenames.remove("confocalRawLocation.txt")
-
+        if "woundDetails.xls" in filenames:
+            filenames.remove("woundDetails.xls")
         if "woundDetails.xlsx" in filenames:
             filenames.remove("woundDetails.xlsx")
+        if "dat_pred" in filenames:
+            filenames.remove("dat_pred")
+        if "confocalRawLocation.txt" in filenames:
+            filenames.remove("confocalRawLocation.txt")
+        if "confocalRawLocation.txt" in filenames:
+            filenames.remove("confocalRawLocationCa.txt")
+        if "confocalRawLocation.txt" in filenames:
+            filenames.remove("confocalRawLocationJNK.txt")
+        if "confocalRawLocation.txt" in filenames:
+            filenames.remove("confocalRawLocation_rpr.txt")
+
     else:
         cwd = os.getcwd()
         Fullfilenames = os.listdir(cwd + "/dat")
@@ -69,28 +83,35 @@ def getFilesType():
     return filenames, fileType
 
 
-def getFilesOfType(fileType):
-
-    cwd = os.getcwd()
-    Fullfilenames = os.listdir(cwd + "/dat")
-    filenames = []
-    for filename in Fullfilenames:
-        if fileType in filename:
-            filenames.append(filename)
-
-    filenames.sort()
-
-    return filenames
-
-
 def getFileTitle(fileType):
 
-    if fileType == "WoundL":
+    if fileType == "WoundL18h":
         fileTitle = "large wound"
-    elif fileType == "WoundS":
+    elif fileType == "WoundS18h":
         fileTitle = "small wound"
-    elif fileType == "Unwound":
+    elif fileType == "Unwound18h":
         fileTitle = "unwounded"
+
+    elif fileType == "WoundLCa":
+        fileTitle = "large wound Ca KD"
+    elif fileType == "WoundSCa":
+        fileTitle = "small wound Ca KD"
+    elif fileType == "UnwoundCa":
+        fileTitle = "unwounded Ca KD"
+
+    elif fileType == "WoundLJNK":
+        fileTitle = "large wound JNK KD"
+    elif fileType == "WoundSJNK":
+        fileTitle = "small wound JNK KD"
+    elif fileType == "UnwoundJNK":
+        fileTitle = "unwounded JNK KD"
+
+    elif fileType == "WoundLrpr":
+        fileTitle = "large wound rpr"
+    elif fileType == "WoundSrpr":
+        fileTitle = "small wound rpr"
+    elif fileType == "Unwoundrpr":
+        fileTitle = "unwounded rpr"
 
     return fileTitle
 

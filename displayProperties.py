@@ -103,7 +103,7 @@ def gaussian(x, mu, sig):
 
 
 # orientation to wound
-if True:
+if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         dfDivisions = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -580,3 +580,68 @@ if False:
 
     prepDeep3 = np.asarray(prepDeep3, "uint8")
     tifffile.imwrite(f"results/deepLearning{filename}.tif", prepDeep3)
+
+
+# Director field
+if True:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        directorNorm = np.zeros([T, 552, 552, 3])
+        director = np.zeros([T, 552, 552, 3])
+
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+
+        for i in range(len(dfShape)):
+            x = dfShape["Centroid"].iloc[i][0]
+            y = dfShape["Centroid"].iloc[i][1]
+            t = dfShape["Time"].iloc[i]
+            q = dfShape["q"].iloc[i]
+            ori = np.arctan2(q[0, 1], q[0, 0]) / 2
+            q_0 = (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5
+            if q_0 > 0.4:
+                q_0 = 0.4
+
+            rr0, cc0, val = sm.draw.line_aa(
+                int(551 - (y + 60 * q_0 * np.sin(ori) + 20)),
+                int(x + 60 * q_0 * np.cos(ori) + 20),
+                int(551 - (y - 60 * q_0 * np.sin(ori) + 20)),
+                int(x - 60 * q_0 * np.cos(ori) + 20),
+            )
+            director[t][rr0, cc0, 0] = 255
+
+            rr0, cc0, val = sm.draw.line_aa(
+                int(551 - (y + 6 * np.sin(ori) + 20)),
+                int(x + 8 * np.cos(ori) + 20),
+                int(551 - (y - 6 * np.sin(ori) + 20)),
+                int(x - 6 * np.cos(ori) + 20),
+            )
+            directorNorm[t][rr0, cc0, 0] = 255
+
+        director = director[:, 20:532, 20:532]
+
+        mask = np.all((director - np.zeros(3)) == 0, axis=3)
+
+        director[:, :, :, 0][mask] = gray[mask]
+        director[:, :, :, 1][mask] = gray[mask]
+        director[:, :, :, 2][mask] = gray[mask]
+
+        director = np.asarray(director, "uint8")
+        tifffile.imwrite(f"results/director{filename}.tif", director)
+
+        directorNorm = directorNorm[:, 20:532, 20:532]
+
+        mask = np.all((directorNorm - np.zeros(3)) == 0, axis=3)
+
+        directorNorm[:, :, :, 0][mask] = gray[mask]
+        directorNorm[:, :, :, 1][mask] = gray[mask]
+        directorNorm[:, :, :, 2][mask] = gray[mask]
+
+        directorNorm = np.asarray(directorNorm, "uint8")
+        tifffile.imwrite(f"results/directorNorm{filename}.tif", directorNorm)
