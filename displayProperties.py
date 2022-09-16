@@ -14,6 +14,7 @@ from shapely.geometry import Polygon
 from colour import Color
 from PIL import ImageColor
 from PIL import Image
+from skimage.morphology import square, erosion
 
 plt.rcParams.update({"font.size": 20})
 
@@ -87,7 +88,9 @@ if False:
         divisions = divisions[:, 20:532, 20:532]
 
         divisions = np.asarray(divisions, "uint8")
-        tifffile.imwrite(f"results/divisionsDisplay{filename}.tif", divisions)
+        tifffile.imwrite(
+            f"results/displayProperties/divisionsDisplay{filename}.tif", divisions
+        )
 
 
 def rgb2gray(rgb):
@@ -187,7 +190,7 @@ if False:
             ].reset_index()
             for t in range(T):
                 mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
                 )
                 xc = int(255 + mig[0] / scale)
                 yc = int(255 + mig[1] / scale)
@@ -199,7 +202,7 @@ if False:
             for i in range(len(dfDivisions)):
                 t = dfDivisions["T"].iloc[i]
                 mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
                 )
                 xc = 255 + mig[0] / scale
                 yc = 255 + mig[1] / scale
@@ -210,9 +213,6 @@ if False:
                 ori_w = (ori - theta) % 180
                 if ori_w > 90:
                     ori_w = 180 - ori_w
-
-                if dfDivisions["Label"].iloc[i] == 183:
-                    print(0)
 
                 t0 = dfDivisions["T"].iloc[i]
                 ori = np.pi * dfDivisions["Orientation"].iloc[i] / 180
@@ -262,8 +262,9 @@ if False:
         divisions[:, :, :, 2][mask] = gray[mask]
 
         divisions = np.asarray(divisions, "uint8")
-        tifffile.imwrite(f"results/orientationWound{filename}.tif", divisions)
-
+        tifffile.imwrite(
+            f"results/displayProperties/orientationWound{filename}.tif", divisions
+        )
 
 # orientation to of division TCJs
 if False:
@@ -412,45 +413,12 @@ if False:
         divisions_tcj[:, :, :, 2][mask] = gray[mask]
 
         divisions_tcj = np.asarray(divisions_tcj, "uint8")
-        tifffile.imwrite(f"results/orientationShape_tcj{filename}.tif", divisions_tcj)
+        tifffile.imwrite(
+            f"results/displayProperties/orientationShape_tcj{filename}.tif",
+            divisions_tcj,
+        )
 
-if False:
-    _df = []
-
-    df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
-    Q = np.mean(df["q"])
-    theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
-    R = util.rotation_matrix(-theta0)
-
-    df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
-    mig = np.zeros(2)
-
-    for t in range(T):
-        dft = df[df["T"] == t]
-        v = np.mean(dft["Velocity"]) * scale
-        v = np.matmul(R, v)
-
-        for i in range(len(dft)):
-            x = dft["X"].iloc[i] * scale
-            y = dft["Y"].iloc[i] * scale
-            dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - v
-            [x, y] = np.matmul(R, np.array([x, y]))
-
-            _df.append(
-                {
-                    "Filename": filename,
-                    "T": t,
-                    "X": x - mig[0],
-                    "Y": y - mig[1],
-                    "dv": dv,
-                }
-            )
-        mig += v
-
-    dfVelocity = pd.DataFrame(_df)
-    dfVelocity.to_pickle(f"databases/dfVelocity{filename}.pkl")
-
-
+# course grain velocity feild
 if False:
     grid = 12
 
@@ -506,7 +474,7 @@ if False:
         img_array.append(img)
 
     out = cv2.VideoWriter(
-        f"results/Velocity field {filename}.mp4",
+        f"results/displayProperties/Velocity field {filename}.mp4",
         cv2.VideoWriter_fourcc(*"DIVX"),
         3,
         size,
@@ -519,7 +487,7 @@ if False:
 
     shutil.rmtree("results/video")
 
-
+# heatmap shape factor
 if False:
 
     binary = sm.io.imread(f"dat/{filename}/binary1{filename}.tif").astype(int)
@@ -556,13 +524,13 @@ if False:
     fig.suptitle(f"")
     # plt.title(f"Heat map of {function_title}")
     fig.savefig(
-        f"results/heatmap {filename} {t}.png",
+        f"results/displayProperties/heatmap {filename} {t}.png",
         dpi=300,
         transparent=True,
     )
     plt.close()
 
-
+# Deep learning 3 frame
 if False:
 
     focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
@@ -579,11 +547,10 @@ if False:
         prepDeep3[i, :, :, 1] = ecadFocus[i]
 
     prepDeep3 = np.asarray(prepDeep3, "uint8")
-    tifffile.imwrite(f"results/deepLearning{filename}.tif", prepDeep3)
+    tifffile.imwrite(f"results/displayProperties/deepLearning{filename}.tif", prepDeep3)
 
-
-# Director field
-if True:
+# Director Q field
+if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
 
@@ -618,7 +585,7 @@ if True:
 
             rr0, cc0, val = sm.draw.line_aa(
                 int(551 - (y + 6 * np.sin(ori) + 20)),
-                int(x + 8 * np.cos(ori) + 20),
+                int(x + 6 * np.cos(ori) + 20),
                 int(551 - (y - 6 * np.sin(ori) + 20)),
                 int(x - 6 * np.cos(ori) + 20),
             )
@@ -633,7 +600,7 @@ if True:
         director[:, :, :, 2][mask] = gray[mask]
 
         director = np.asarray(director, "uint8")
-        tifffile.imwrite(f"results/director{filename}.tif", director)
+        tifffile.imwrite(f"results/displayProperties/director{filename}.tif", director)
 
         directorNorm = directorNorm[:, 20:532, 20:532]
 
@@ -644,4 +611,106 @@ if True:
         directorNorm[:, :, :, 2][mask] = gray[mask]
 
         directorNorm = np.asarray(directorNorm, "uint8")
-        tifffile.imwrite(f"results/directorNorm{filename}.tif", directorNorm)
+        tifffile.imwrite(
+            f"results/displayProperties/directorNorm{filename}.tif", directorNorm
+        )
+
+# Velocity field
+if False:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        velocity = np.zeros([T, 552, 552, 3])
+        velocityNorm = np.zeros([T, 552, 552, 3])
+
+        dfVelocity = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
+
+        for i in range(len(dfVelocity)):
+            x = dfVelocity["X"].iloc[i]
+            y = dfVelocity["Y"].iloc[i]
+            t = int(dfVelocity["T"].iloc[i])
+            v = dfVelocity["Velocity"].iloc[i]
+            ori = np.arctan2(v[1], v[0])
+            v_0 = (v[0] ** 2 + v[1] ** 2) ** 0.5
+
+            rr0, cc0, val = sm.draw.line_aa(
+                int(531 - (y + 2 * v_0 * np.sin(ori))),
+                int(x + 2 * v_0 * np.cos(ori) + 20),
+                int(531 - y),
+                int(x + 20),
+            )
+            rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 2)
+            velocity[t][rr0, cc0, 0] = 255
+            velocity[t][rr1, cc1, 2] = 255
+
+            rr0, cc0, val = sm.draw.line_aa(
+                int(531 - (y + 10 * np.sin(ori))),
+                int(x + 10 * np.cos(ori) + 20),
+                int(531 - y),
+                int(x + 20),
+            )
+            velocityNorm[t][rr0, cc0, 0] = 255
+            velocityNorm[t][rr1, cc1, 2] = 255
+
+        velocity = velocity[:, 20:532, 20:532]
+
+        mask = np.all((velocity - np.zeros(3)) == 0, axis=3)
+
+        velocity[:, :, :, 0][mask] = gray[mask]
+        velocity[:, :, :, 1][mask] = gray[mask]
+        velocity[:, :, :, 2][mask] = gray[mask]
+
+        velocity = np.asarray(velocity, "uint8")
+        tifffile.imwrite(f"results/displayProperties/velocity{filename}.tif", velocity)
+
+        velocityNorm = velocityNorm[:, 20:532, 20:532]
+
+        mask = np.all((velocityNorm - np.zeros(3)) == 0, axis=3)
+
+        velocityNorm[:, :, :, 0][mask] = gray[mask]
+        velocityNorm[:, :, :, 1][mask] = gray[mask]
+        velocityNorm[:, :, :, 2][mask] = gray[mask]
+
+        velocityNorm = np.asarray(velocityNorm, "uint8")
+        tifffile.imwrite(
+            f"results/displayProperties/velocityNorm{filename}.tif", velocityNorm
+        )
+
+# T1s display
+if True:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        T1s = sm.io.imread(f"dat/{filename}/T1s{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        T1display = np.zeros([T, 5, X, Y])
+
+        T1display[:, 1] = gray
+        redMask = T1s[:, :, :, 0]
+        greenMask = T1s[:, :, :, 1]
+        for t in range(T):
+            redMask[t] = erosion(redMask[t], square(3))
+            greenMask[t] = erosion(greenMask[t], square(3))
+
+        T1display[:, 0][redMask == 255] = 255
+        T1display[:, 1][greenMask == 255] = 255
+        T1display[:, 0][greenMask == 255] = 255
+
+        T1display = np.asarray(T1display, "uint8")
+        tifffile.imwrite(
+            f"results/displayProperties/T1sdisplay{filename}.tif",
+            T1display,
+            imagej=True,
+            metadata={"axes": "TCYX"},
+        )

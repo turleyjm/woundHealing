@@ -192,12 +192,15 @@ if True:
         t,
         r,
         V1,
-        vmin=-1,
-        vmax=1,
+        vmin=-0.2,
+        vmax=0.2,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+    ax.set(
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Distance from wound edge $(\mu m)$",
+    )
     ax.title.set_text(
         r"$\delta v_1$"
         + f" distance and time "

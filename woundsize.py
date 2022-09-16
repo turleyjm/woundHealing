@@ -149,8 +149,8 @@ if True:
             plt.errorbar(Time, A, yerr=std, marker="o")
         i += 1
 
-    plt.xlabel("Time (mins)")
-    plt.ylabel(r" Mean Area ($\mu m ^2$)")
+    plt.xlabel("Time after wounding (mins)")
+    plt.ylabel(r"Area ($\mu m ^2$)")
     plt.title(f"Mean area of wound")
     plt.legend()
     fig.savefig(

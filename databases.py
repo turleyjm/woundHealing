@@ -185,87 +185,6 @@ scale = 123.26 / 512
 T = 93
 
 # Cell Behaviers
-
-if False:
-    _df = []
-    for filename in filenames:
-        dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
-        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
-        Q = np.mean(dfShape["q"])
-        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
-
-        t0 = util.findStartTime(filename)
-        if "Wound" in filename:
-            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-            for i in range(len(dfDivision)):
-                t = dfDivision["T"].iloc[i]
-                (x_w, y_w) = dfWound["Position"].iloc[t]
-                x = dfDivision["X"].iloc[i]
-                y = dfDivision["Y"].iloc[i]
-                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
-                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
-                ori_w = (ori - theta) % 180
-                if ori > 90:
-                    ori = 180 - ori
-                if ori_w > 90:
-                    ori_w = 180 - ori_w
-                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
-                r = dist[t, 512 - y, x]
-                _df.append(
-                    {
-                        "Filename": filename,
-                        "Label": dfDivision["Label"].iloc[i],
-                        "T": int(t0 + t * 2),  # frames are taken every 2 minutes
-                        "X": x * scale,
-                        "Y": y * scale,
-                        "R": r * scale,
-                        "Theta": theta % 360,
-                        "Orientation": ori,
-                        "Orientation Wound": ori_w,
-                    }
-                )
-        else:
-            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
-            dfFilename = dfVelocityMean[
-                dfVelocityMean["Filename"] == filename
-            ].reset_index()
-            for i in range(len(dfDivision)):
-                t = dfDivision["T"].iloc[i]
-                mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
-                )
-                xc = 256 * scale + mig[0]
-                yc = 256 * scale + mig[1]
-                x = dfDivision["X"].iloc[i] * scale
-                y = dfDivision["Y"].iloc[i] * scale
-                r = ((xc - x) ** 2 + (yc - y) ** 2) ** 0.5
-                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
-                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
-                ori_w = (ori - theta) % 180
-                if ori_w > 90:
-                    ori_w = 180 - ori_w
-                if ori > 90:
-                    ori = 180 - ori
-                if dfDivision["Label"].iloc[i] == 183:
-                    print(0)
-                _df.append(
-                    {
-                        "Filename": filename,
-                        "Label": dfDivision["Label"].iloc[i],
-                        "T": int(t0 + t * 2),  # frames are taken every t2 minutes
-                        "X": x,
-                        "Y": y,
-                        "R": r,
-                        "Theta": theta % 360,
-                        "Orientation": ori,
-                        "Orientation Wound": ori_w,
-                    }
-                )
-
-    dfDivisions = pd.DataFrame(_df)
-    dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
-
 if True:
     _df2 = []
     _df = []
@@ -318,7 +237,88 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 
-if False:
+if True:
+    _df = []
+    for filename in filenames:
+        dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
+        dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        Q = np.mean(dfShape["q"])
+        theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
+
+        t0 = util.findStartTime(filename)
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+            for i in range(len(dfDivision)):
+                t = dfDivision["T"].iloc[i]
+                (x_w, y_w) = dfWound["Position"].iloc[t]
+                x = dfDivision["X"].iloc[i]
+                y = dfDivision["Y"].iloc[i]
+                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
+                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori > 90:
+                    ori = 180 - ori
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+                theta = (np.arctan2(y - y_w, x - x_w) - theta0) * 180 / np.pi
+                r = dist[t, 512 - y, x]
+                _df.append(
+                    {
+                        "Filename": filename,
+                        "Label": dfDivision["Label"].iloc[i],
+                        "T": int(t0 + t * 2),  # frames are taken every 2 minutes
+                        "X": x * scale,
+                        "Y": y * scale,
+                        "R": r * scale,
+                        "Theta": theta % 360,
+                        "Orientation": ori,
+                        "Orientation Wound": ori_w,
+                    }
+                )
+        else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+            for i in range(len(dfDivision)):
+                t = dfDivision["T"].iloc[i]
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
+                )
+                xc = 256 * scale + mig[0]
+                yc = 256 * scale + mig[1]
+                x = dfDivision["X"].iloc[i] * scale
+                y = dfDivision["Y"].iloc[i] * scale
+                r = ((xc - x) ** 2 + (yc - y) ** 2) ** 0.5
+                ori = (dfDivision["Orientation"].iloc[i] - theta0 * 180 / np.pi) % 180
+                theta = (np.arctan2(y - yc, x - xc) - theta0) * 180 / np.pi
+                ori_w = (ori - theta) % 180
+                if ori_w > 90:
+                    ori_w = 180 - ori_w
+                if ori > 90:
+                    ori = 180 - ori
+                if dfDivision["Label"].iloc[i] == 183:
+                    print(0)
+                _df.append(
+                    {
+                        "Filename": filename,
+                        "Label": dfDivision["Label"].iloc[i],
+                        "T": int(t0 + t * 2),  # frames are taken every t2 minutes
+                        "X": x,
+                        "Y": y,
+                        "R": r,
+                        "Theta": theta % 360,
+                        "Orientation": ori,
+                        "Orientation Wound": ori_w,
+                    }
+                )
+
+    dfDivisions = pd.DataFrame(_df)
+    dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
+
+
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -365,7 +365,8 @@ if False:
                     }
                 )
 
-            mig += np.array(dfFilename["v"][dfFilename["T"] == t])[0]
+            if t < 90:
+                mig += np.array(dfFilename["V"][dfFilename["T"] == t])[0]
 
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
@@ -373,7 +374,7 @@ if False:
 
 # Cell Behaviers relative to wound
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -440,7 +441,7 @@ if False:
                 Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
                 P = np.matmul(R, np.mean(dft["Polar"]))
                 mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
                 )
                 xw = 256 + mig[0] / scale
                 yw = 256 + mig[1] / scale
@@ -484,7 +485,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -533,7 +534,7 @@ if False:
             for t in range(T):
                 dft = df[df["T"] == t]
                 mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "v"]), axis=0), axis=0
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
                 )
                 xw = 256 + mig[0] / scale
                 yw = 256 + mig[1] / scale
@@ -571,7 +572,7 @@ if False:
 
 
 # Cells Divsions and Shape changes
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -956,7 +957,7 @@ if False:
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
 
 
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 

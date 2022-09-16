@@ -372,13 +372,13 @@ if False:
 
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
-    labels = ["Unwound", "WoundS", "WoundL"]
+    labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     legend = ["Unwounded", "Small wound", "Large wound"]
     dat_dd = []
     total = 0
     i = 0
     for fileType in labels:
-        filenames = util.getFilesOfType(fileType)
+        filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep)])
         area = np.zeros([len(filenames), int(T / timeStep)])
         dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -419,10 +419,15 @@ if True:
                 std.append(_std * 10000)
                 time.append((2 * (i - 1)) + t * timeStep + timeStep / 2)
 
-        ax.errorbar(time, dd, yerr=std, label=f"{legend[i]}", marker="o")
+        ax.errorbar(
+            time, dd, yerr=std, label=f"{util.getFileTitle(fileType)}", marker="o"
+        )
         i += 1
 
-    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.set(
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Divison density ($10000\mu m^{-2}$)",
+    )
     ax.title.set_text(f"Division density with time")
     ax.set_ylim([0, 8])
     ax.legend(loc="upper left", fontsize=11)
@@ -738,7 +743,7 @@ if True:
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (mins)", ylabel=r"Distance from wound $(\mu m)$")
+    ax.set(xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$")
     if "Wound" in fileType:
         ax.title.set_text(
             f"Change in division density "

@@ -283,7 +283,10 @@ if True:
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+    ax.set(
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Distance from wound edge $(\mu m)$",
+    )
     ax.title.set_text(
         r"$\delta Q^{(1)}$"
         + f" distance and time "
