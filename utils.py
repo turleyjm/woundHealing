@@ -29,9 +29,10 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
-# fileType = "Unwound18h"
+fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
+# fileType = "WoundXL18h"
 # fileType = "UnwoundCa"
 # fileType = "WoundLCa"
 # fileType = "WoundSCa"
@@ -41,7 +42,7 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "Unwoundrpr"
 # fileType = "WoundLrpr"
 # fileType = "WoundSrpr"
-fileType = "All"
+# fileType = "All"
 
 
 def getFilesType(fileType=fileType):

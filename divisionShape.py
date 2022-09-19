@@ -167,55 +167,39 @@ def getSecondColour(track, colour):
     return colourD
 
 
+def maskQ(mask):
+    S = np.zeros([2, 2])
+    X, Y = mask.shape
+    x = np.zeros([X, Y])
+    y = np.zeros([X, Y])
+    x += np.arange(X)
+    y += (Y - 1 - np.arange(Y)).reshape(Y, 1)
+    A = np.sum(mask)
+    Cx = np.sum(x * mask) / A
+    Cy = np.sum(y * mask) / A
+    xx = (x - Cx) ** 2
+    yy = (y - Cy) ** 2
+    xy = (x - Cx) * (y - Cy)
+    S[0, 0] = -np.sum(yy * mask) / A ** 2
+    S[1, 0] = S[0, 1] = np.sum(xy * mask) / A ** 2
+    S[1, 1] = -np.sum(xx * mask) / A ** 2
+    TrS = S[0, 0] + S[1, 1]
+    I = np.zeros(shape=(2, 2))
+    I[0, 0] = 1
+    I[1, 1] = 1
+    q = S - TrS * I / 2
+
+    return q, Cx, Cy
+
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 
 
-# display division tracks
-if False:
-    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
-    for filename in filenames:
-        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
-        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
-        dfFile = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
-        df = dfFile[dfFile["Type"] == "parent"]
-
-        (T, X, Y, rgb) = focus.shape
-
-        for i in range(len(df)):
-
-            colour = df["Colour"].iloc[i]
-            t = df["Time"].iloc[i]
-            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 255
-
-        df = dfFile[dfFile["Type"] == "daughter1"]
-
-        for i in range(len(df)):
-
-            colour = df["Colour"].iloc[i]
-            t = df["Time"].iloc[i]
-            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 200
-            focus[t, :, :, 0][np.all((tracks[t] - colour) == 0, axis=2)] += 150
-            focus[t, :, :, 0][focus[t, :, :, 0] > 255] = 255
-
-        df = dfFile[dfFile["Type"] == "daughter2"]
-
-        for i in range(len(df)):
-
-            colour = df["Colour"].iloc[i]
-            t = df["Time"].iloc[i]
-            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 200
-            focus[t, :, :, 1][np.all((tracks[t] - colour) == 0, axis=2)] += 150
-            focus[t, :, :, 1][focus[t, :, :, 1] > 255] = 255
-
-        focus = np.asarray(focus, "uint8")
-        tifffile.imwrite(f"results/divisionsTracksDisplay{filename}test.tif", focus)
-
-
 # area of parent dividing cells
-if False:
+if True:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -277,9 +261,8 @@ if False:
     )
     plt.close("all")
 
-
 # shape of parent dividing cells
-if False:
+if True:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -341,9 +324,134 @@ if False:
     )
     plt.close("all")
 
+# Area of daughter cells
+if True:
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    T = np.max(dfShape["T"])
+    time = list(
+        np.linspace(
+            np.min(dfDivisionTrack["Division Time"]),
+            np.max(dfDivisionTrack["Division Time"]),
+            int(
+                np.max(dfDivisionTrack["Division Time"])
+                - np.min(dfDivisionTrack["Division Time"])
+                + 1
+            ),
+        )
+    )
+    area = [[] for col in range(len(time))]
+    dArea = [[] for col in range(len(time))]
+    for filename in filenames:
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        dfFileShape = dfShape[dfShape["Filename"] == filename]
+        areaT = []
+        for t in range(T):
+            areaT.append(np.mean(dfFileShape["Area"][dfFileShape["T"] == t]))
 
-# orientation of parent dividing cells
-if False:
+        for i in range(len(df)):
+
+            t = df["Time"].iloc[i]
+            if t < T:
+                divTime = df["Division Time"].iloc[i]
+                index = time.index(divTime)
+                area[index].append(df["Area"].iloc[i] * scale ** 2)
+                dArea[index].append(df["Area"].iloc[i] * scale ** 2 - areaT[t])
+
+    std = []
+    dAreastd = []
+    for i in range(len(area)):
+        std.append(np.std(area[i]))
+        area[i] = np.mean(area[i])
+        dAreastd.append(np.std(dArea[i]))
+        dArea[i] = np.mean(dArea[i])
+    time = 2 * np.array(time)
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].errorbar(time, area, std)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$A$ $(\mu m^2$)")
+    ax[0].title.set_text(r"$A$ after division")
+    ax[0].set_ylim([-10, 55])
+
+    ax[1].errorbar(time, dArea, dAreastd)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta A$ $(\mu m^2$)")
+    ax[1].title.set_text(r"$\delta A$ after division")
+    ax[1].set_ylim([-10, 55])
+
+    fig.savefig(
+        f"results/Area Daughter Cell {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# shape of daughter cells
+if True:
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    T = np.max(dfShape["T"])
+    time = list(
+        np.linspace(
+            np.min(dfDivisionTrack["Division Time"]),
+            np.max(dfDivisionTrack["Division Time"]),
+            int(
+                np.max(dfDivisionTrack["Division Time"])
+                - np.min(dfDivisionTrack["Division Time"])
+                + 1
+            ),
+        )
+    )
+    sf = [[] for col in range(len(time))]
+    dsf = [[] for col in range(len(time))]
+    for filename in filenames:
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        dfFileShape = dfShape[dfShape["Filename"] == filename]
+        sfT = []
+        for t in range(T):
+            sfT.append(np.mean(dfFileShape["Shape Factor"][dfFileShape["T"] == t]))
+
+        for i in range(len(df)):
+
+            t = df["Time"].iloc[i]
+            if t < T:
+                divTime = df["Division Time"].iloc[i]
+                index = time.index(divTime)
+                sf[index].append(df["Shape Factor"].iloc[i])
+                dsf[index].append(df["Shape Factor"].iloc[i] - sfT[t])
+
+    std = []
+    dsfstd = []
+    for i in range(len(sf)):
+        std.append(np.std(sf[i]))
+        sf[i] = np.mean(sf[i])
+        dsfstd.append(np.std(dsf[i]))
+        dsf[i] = np.mean(dsf[i])
+    time = 2 * np.array(time)
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].errorbar(time, sf, std)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$S_f$")
+    ax[0].title.set_text(r"$S_f$ during division")
+    # ax[0].set_ylim([-5, 55])
+
+    ax[1].errorbar(time, dsf, dsfstd)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta S_f$")
+    ax[1].title.set_text(r"$\delta S_f$ during division")
+    # ax[1].set_ylim([-5, 55])
+
+    fig.savefig(
+        f"results/Shape factor Daughter Cell {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# difference in orientation of division and cell shape (whole shape/tcj shape)
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -379,13 +487,12 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
     ax[0].hist(diff, 9)
-    ax[0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
-    ax[0].set_ylim([0, 200])
+    ax[0].set(xlabel=r"Difference in Orientation", ylabel=r"number")
+    ax[0].set_ylim([0, 270])
 
     ax[1].scatter(diff, sf)
-    ax[1].set(xlabel=r"Difference in Orientaiton", ylabel=r"$S_f$")
+    ax[1].set(xlabel=r"Difference in Orientation", ylabel=r"$S_f$")
     ax[1].set_ylim([0, 1])
-    # ax[1].title.set_text(r"$\delta S_f$ during division")
 
     fig.savefig(
         f"results/Orientation division {fileType}",
@@ -433,13 +540,12 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 
     ax[0].hist(diff, 9)
-    ax[0].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
-    ax[0].set_ylim([0, 200])
+    ax[0].set(xlabel=r"Difference in Orientation tcj", ylabel=r"number")
+    ax[0].set_ylim([0, 270])
 
     ax[1].scatter(diff, sf)
-    ax[1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"$S_f$ tcj")
+    ax[1].set(xlabel=r"Difference in Orientation tcj", ylabel=r"$S_f$ tcj")
     ax[1].set_ylim([0, 1])
-    # ax[1].title.set_text(r"$\delta S_f$ during division")
 
     fig.savefig(
         f"results/Orientation tcj division {fileType}",
@@ -449,9 +555,8 @@ if False:
     )
     plt.close("all")
 
-
-# compare orientation of parent q and q_tcj dividing cells
-if False:
+# |\theta_{tcj} - \theta_{s}| > 15 compare different in orientation
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -459,8 +564,10 @@ if False:
 
     oriDiff = []
     oriDiff_tcj = []
-    oriDiff_sf = []
-    oriDiff_tcj_sf = []
+    oriDiff_sfL = []
+    oriDiff_tcj_sfL = []
+    oriDiff_sfH = []
+    oriDiff_tcj_sfH = []
     for filename in filenames:
         dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
         dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
@@ -479,30 +586,44 @@ if False:
                 if angleDiff(oriPre, oriPre_tcj) > 15:
                     oriDiff.append(angleDiff(ori, oriPre))
                     oriDiff_tcj.append(angleDiff(ori, oriPre_tcj))
-                    if sf < 0.3:
-                        oriDiff_sf.append(angleDiff(ori, oriPre))
-                        oriDiff_tcj_sf.append(angleDiff(ori, oriPre_tcj))
+                    if sf < 0.2:
+                        oriDiff_sfL.append(angleDiff(ori, oriPre))
+                        oriDiff_tcj_sfL.append(angleDiff(ori, oriPre_tcj))
+                    else:
+                        oriDiff_sfH.append(angleDiff(ori, oriPre))
+                        oriDiff_tcj_sfH.append(angleDiff(ori, oriPre_tcj))
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 3, figsize=(15, 10))
 
     ax[0, 0].hist(oriDiff, 9)
-    ax[0, 0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
+    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
     ax[0, 0].set_ylim([0, 35])
 
-    ax[0, 1].hist(oriDiff_tcj, 9)
-    ax[0, 1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
-    ax[0, 1].set_ylim([0, 35])
-
-    ax[1, 0].hist(oriDiff_sf, 9)
-    ax[1, 0].set(xlabel=r"Difference in Orientaiton", ylabel=r"number")
-    ax[1, 0].title.set_text("Lower shape factor")
+    ax[1, 0].hist(oriDiff_tcj, 9)
+    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
     ax[1, 0].set_ylim([0, 35])
 
-    ax[1, 1].hist(oriDiff_tcj_sf, 9)
-    ax[1, 1].set(xlabel=r"Difference in Orientaiton tcj", ylabel=r"number")
-    ax[1, 1].title.set_text("Lower shape factor")
+    ax[0, 1].hist(oriDiff_sfL, 9)
+    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
+    ax[0, 1].set_ylim([0, 35])
+
+    ax[1, 1].hist(oriDiff_tcj_sfL, 9)
+    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
     ax[1, 1].set_ylim([0, 35])
-    # ax[1].title.set_text(r"$\delta S_f$ during division")
+
+    ax[0, 2].hist(oriDiff_sfH, 9)
+    ax[0, 2].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
+    ax[0, 2].set_ylim([0, 35])
+
+    ax[1, 2].hist(oriDiff_tcj_sfH, 9)
+    ax[1, 2].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
+    ax[1, 2].set_ylim([0, 35])
 
     fig.savefig(
         f"results/Orientation division diff when shape ori disagree {fileType}",
@@ -512,8 +633,8 @@ if False:
     )
     plt.close("all")
 
-# compare orientation of parent q and q_tcj dividing cells
-if False:
+# compare properties of good and poor predictions
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -587,17 +708,17 @@ if False:
     fig, ax = plt.subplots(2, 6, figsize=(30, 10))
 
     ax[0, 0].hist(oriShapeDiff, 5)
-    ax[0, 0].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
-    ax[0, 0].set_ylim([0, 180])
+    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 0].set_ylim([0, 220])
     ax[0, 0].set_xlim([0, 90])
 
     ax[0, 1].hist(oriTissueDiff, 9)
-    ax[0, 1].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
-    ax[0, 1].set_ylim([0, 75])
+    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{w}|$", ylabel=r"number")
+    ax[0, 1].set_ylim([0, 110])
 
     ax[0, 2].hist(shapeTissueDiff, 9)
-    ax[0, 2].set(xlabel=r"Difference shapeOri and tissue", ylabel=r"number")
-    ax[0, 2].set_ylim([0, 75])
+    ax[0, 2].set(xlabel=r"$|\theta_{s} - \theta_{w}|$", ylabel=r"number")
+    ax[0, 2].set_ylim([0, 110])
 
     ax[0, 3].hist(dQ1, 9)
     ax[0, 3].set(xlabel=r"$\delta Q^1$ of poor predictions", ylabel=r"number")
@@ -613,17 +734,17 @@ if False:
     ax[0, 5].set_xlim([0, 180])
 
     ax[1, 0].hist(oriShapeDiffAll, 5)
-    ax[1, 0].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
-    ax[1, 0].set_ylim([0, 180])
+    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[1, 0].set_ylim([0, 220])
     ax[1, 0].set_xlim([0, 90])
 
     ax[1, 1].hist(oriTissueDiffAll, 9)
-    ax[1, 1].set(xlabel=r"Difference divOri and tissue", ylabel=r"number")
-    ax[1, 1].set_ylim([0, 180])
+    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{w}|$", ylabel=r"number")
+    ax[1, 1].set_ylim([0, 160])
 
     ax[1, 2].hist(shapeTissueDiffAll, 9)
-    ax[1, 2].set(xlabel=r"Difference shapeOri and tissue", ylabel=r"number")
-    ax[1, 2].set_ylim([0, 180])
+    ax[1, 2].set(xlabel=r"$|\theta_{s} - \theta_{w}|$", ylabel=r"number")
+    ax[1, 2].set_ylim([0, 160])
 
     ax[1, 3].hist(dQ1All, 9)
     ax[1, 3].set(xlabel=r"$\delta Q^1$ of good predictions", ylabel=r"number")
@@ -646,162 +767,8 @@ if False:
     )
     plt.close("all")
 
-
-# Area of daughter cells
-if False:
-    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
-    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    T = np.max(dfShape["T"])
-    time = list(
-        np.linspace(
-            np.min(dfDivisionTrack["Division Time"]),
-            np.max(dfDivisionTrack["Division Time"]),
-            int(
-                np.max(dfDivisionTrack["Division Time"])
-                - np.min(dfDivisionTrack["Division Time"])
-                + 1
-            ),
-        )
-    )
-    area = [[] for col in range(len(time))]
-    dArea = [[] for col in range(len(time))]
-    for filename in filenames:
-        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
-        dfFileShape = dfShape[dfShape["Filename"] == filename]
-        areaT = []
-        for t in range(T):
-            areaT.append(np.mean(dfFileShape["Area"][dfFileShape["T"] == t]))
-
-        for i in range(len(df)):
-
-            t = df["Time"].iloc[i]
-            if t < T:
-                divTime = df["Division Time"].iloc[i]
-                index = time.index(divTime)
-                area[index].append(df["Area"].iloc[i] * scale ** 2)
-                dArea[index].append(df["Area"].iloc[i] * scale ** 2 - areaT[t])
-
-    std = []
-    dAreastd = []
-    for i in range(len(area)):
-        std.append(np.std(area[i]))
-        area[i] = np.mean(area[i])
-        dAreastd.append(np.std(dArea[i]))
-        dArea[i] = np.mean(dArea[i])
-    time = 2 * np.array(time)
-
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, area, std)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$A$ $(\mu m^2$)")
-    ax[0].title.set_text(r"$A$ after division")
-    ax[0].set_ylim([-10, 55])
-
-    ax[1].errorbar(time, dArea, dAreastd)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta A$ $(\mu m^2$)")
-    ax[1].title.set_text(r"$\delta A$ after division")
-    ax[1].set_ylim([-10, 55])
-
-    fig.savefig(
-        f"results/Area Daughter Cell {fileType}",
-        dpi=300,
-        transparent=True,
-        bbox_inches="tight",
-    )
-    plt.close("all")
-
-
-# shape of daughter cells
-if False:
-    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
-    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    T = np.max(dfShape["T"])
-    time = list(
-        np.linspace(
-            np.min(dfDivisionTrack["Division Time"]),
-            np.max(dfDivisionTrack["Division Time"]),
-            int(
-                np.max(dfDivisionTrack["Division Time"])
-                - np.min(dfDivisionTrack["Division Time"])
-                + 1
-            ),
-        )
-    )
-    sf = [[] for col in range(len(time))]
-    dsf = [[] for col in range(len(time))]
-    for filename in filenames:
-        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
-        dfFileShape = dfShape[dfShape["Filename"] == filename]
-        sfT = []
-        for t in range(T):
-            sfT.append(np.mean(dfFileShape["Shape Factor"][dfFileShape["T"] == t]))
-
-        for i in range(len(df)):
-
-            t = df["Time"].iloc[i]
-            if t < T:
-                divTime = df["Division Time"].iloc[i]
-                index = time.index(divTime)
-                sf[index].append(df["Shape Factor"].iloc[i])
-                dsf[index].append(df["Shape Factor"].iloc[i] - sfT[t])
-
-    std = []
-    dsfstd = []
-    for i in range(len(sf)):
-        std.append(np.std(sf[i]))
-        sf[i] = np.mean(sf[i])
-        dsfstd.append(np.std(dsf[i]))
-        dsf[i] = np.mean(dsf[i])
-    time = 2 * np.array(time)
-
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, sf, std)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$S_f$")
-    ax[0].title.set_text(r"$S_f$ during division")
-    # ax[0].set_ylim([-5, 55])
-
-    ax[1].errorbar(time, dsf, dsfstd)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta S_f$")
-    ax[1].title.set_text(r"$\delta S_f$ during division")
-    # ax[1].set_ylim([-5, 55])
-
-    fig.savefig(
-        f"results/Shape factor Daughter Cell {fileType}",
-        dpi=300,
-        transparent=True,
-        bbox_inches="tight",
-    )
-    plt.close("all")
-
-
-def maskQ(mask):
-    S = np.zeros([2, 2])
-    X, Y = mask.shape
-    x = np.zeros([X, Y])
-    y = np.zeros([X, Y])
-    x += np.arange(X)
-    y += (Y - 1 - np.arange(Y)).reshape(Y, 1)
-    A = np.sum(mask)
-    Cx = np.sum(x * mask) / A
-    Cy = np.sum(y * mask) / A
-    xx = (x - Cx) ** 2
-    yy = (y - Cy) ** 2
-    xy = (x - Cx) * (y - Cy)
-    S[0, 0] = -np.sum(yy * mask) / A ** 2
-    S[1, 0] = S[0, 1] = np.sum(xy * mask) / A ** 2
-    S[1, 1] = -np.sum(xx * mask) / A ** 2
-    TrS = S[0, 0] + S[1, 1]
-    I = np.zeros(shape=(2, 2))
-    I[0, 0] = 1
-    I[1, 1] = 1
-    q = S - TrS * I / 2
-
-    return q, Cx, Cy
-
-
-# orientation of daughter cells relative to tissue
-if False:
+# orientation of combined daughter cells relative to tissue
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -863,6 +830,7 @@ if False:
     ax[1].title.set_text(r"$\delta Q_2$ during division")
     ax[1].set_ylim([-0.07, 0.07])
 
+    plt.subplots_adjust(wspace=0.28)
     fig.savefig(
         f"results/change in Q division relative to tissue {fileType}",
         dpi=300,
@@ -871,9 +839,8 @@ if False:
     )
     plt.close("all")
 
-
-# orientation of daughter cells relative to wound
-if False:
+# orientation of combined daughter cells relative to wound
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     time = list(np.linspace(-10, 10, 21))
@@ -905,7 +872,7 @@ if False:
                 (xc, yc) = dfWound["Position"].iloc[T]
             else:
                 mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0), axis=0
+                    np.stack(np.array(dfFilename.loc[:T, "V"]), axis=0), axis=0
                 )
                 xc = 256 * scale - mig[0]
                 yc = 256 * scale - mig[1]
@@ -926,7 +893,7 @@ if False:
                             (xc, yc) = dfWound["Position"].iloc[T]
                         else:
                             mig = np.sum(
-                                np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0),
+                                np.stack(np.array(dfFilename.loc[:T, "V"]), axis=0),
                                 axis=0,
                             )
                             xc = 256 * scale - mig[0]
@@ -946,7 +913,7 @@ if False:
                             (xc, yc) = dfWound["Position"].iloc[T]
                         else:
                             mig = np.sum(
-                                np.stack(np.array(dfFilename.loc[:T, "v"]), axis=0),
+                                np.stack(np.array(dfFilename.loc[:T, "V"]), axis=0),
                                 axis=0,
                             )
                             xc = 256 * scale - mig[0]
@@ -987,6 +954,7 @@ if False:
     ax[1].title.set_text(r"$\delta Q_2$ during division")
     ax[1].set_ylim([-0.07, 0.07])
 
+    plt.subplots_adjust(wspace=0.28)
     fig.savefig(
         f"results/change in Q division relative to wound {fileType}",
         dpi=300,
@@ -995,9 +963,8 @@ if False:
     )
     plt.close("all")
 
-
-# orientation of daughter cells relative to tissue
-if False:
+# orientation of daughter cells relative to tissue both of combined and individual also looking at poor predictions
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1183,12 +1150,12 @@ if False:
 
     ax[0, 0].errorbar(time, dQ[:, 0, 0], dQstd[:, 0, 0])
     ax[0, 0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
-    ax[0, 0].title.set_text(r"collective $\delta Q_1$ during division")
+    ax[0, 0].title.set_text(r"combined $\delta Q_1$ during division")
     ax[0, 0].set_ylim([-0.07, 0.07])
 
     ax[0, 1].errorbar(time, dQ[:, 1, 0], dQstd[:, 1, 0])
     ax[0, 1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
-    ax[0, 1].title.set_text(r"collective $\delta Q_2$ during division")
+    ax[0, 1].title.set_text(r"combined $\delta Q_2$ during division")
     ax[0, 1].set_ylim([-0.07, 0.07])
 
     ax[0, 2].errorbar(time, dQ_inv[:, 0, 0], dQstd_inv[:, 0, 0])
@@ -1203,12 +1170,12 @@ if False:
 
     ax[1, 0].errorbar(time, dQ_p[:, 0, 0], dQstd_p[:, 0, 0])
     ax[1, 0].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^1$")
-    ax[1, 0].title.set_text(r"collective $\delta Q_1$ during division poor predictions")
+    ax[1, 0].title.set_text(r"combined $\delta Q_1$ during division poor predictions")
     ax[1, 0].set_ylim([-0.07, 0.07])
 
     ax[1, 1].errorbar(time, dQ_p[:, 1, 0], dQstd_p[:, 1, 0])
     ax[1, 1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^2$")
-    ax[1, 1].title.set_text(r"collective $\delta Q_2$ during division poor predictions")
+    ax[1, 1].title.set_text(r"combined $\delta Q_2$ during division poor predictions")
     ax[1, 1].set_ylim([-0.07, 0.07])
 
     ax[1, 2].errorbar(time, dQ_inv_p[:, 0, 0], dQstd_inv_p[:, 0, 0])
@@ -1221,6 +1188,7 @@ if False:
     ax[1, 3].title.set_text(r"individual $\delta Q_2$ during division poor predictions")
     ax[1, 3].set_ylim([-0.07, 0.07])
 
+    plt.subplots_adjust(wspace=0.28)
     fig.savefig(
         f"results/change in Q division relative to tissue poor pred {fileType}",
         dpi=300,
@@ -1229,9 +1197,8 @@ if False:
     )
     plt.close("all")
 
-
-# orientation of daughter cells relative to tissue
-if False:
+# delta Q of daughter cells with division orientation relative to tissue
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1340,25 +1307,34 @@ if False:
     fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
     ax[0, 0].errorbar(thetas + 5, dQ1_con, dQ1std_con)
-    ax[0, 0].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^1$")
-    ax[0, 0].title.set_text(r"collective $\delta Q_1$ after division")
+    ax[0, 0].set(
+        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^1$"
+    )
+    ax[0, 0].title.set_text(r"combined $\delta Q_1$ after division")
     ax[0, 0].set_ylim([-0.08, 0.08])
 
     ax[0, 1].errorbar(thetas + 5, dQ2_con, dQ2std_con)
-    ax[0, 1].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^2$")
-    ax[0, 1].title.set_text(r"collective $\delta Q_2$ after division")
+    ax[0, 1].set(
+        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^2$"
+    )
+    ax[0, 1].title.set_text(r"combined $\delta Q_2$ after division")
     ax[0, 1].set_ylim([-0.08, 0.08])
 
     ax[1, 0].errorbar(thetas + 5, dQ1_inv, dQ1std_inv)
-    ax[1, 0].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^1$")
+    ax[1, 0].set(
+        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^1$"
+    )
     ax[1, 0].title.set_text(r"individual $\delta Q_1$ after division")
     ax[1, 0].set_ylim([-0.08, 0.08])
 
     ax[1, 1].errorbar(thetas + 5, dQ2_inv, dQ2std_inv)
-    ax[1, 1].set(xlabel=r"Division Orientation", ylabel=r"$\delta Q^2$")
+    ax[1, 1].set(
+        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^2$"
+    )
     ax[1, 1].title.set_text(r"individual $\delta Q_2$ after division")
     ax[1, 1].set_ylim([-0.08, 0.08])
 
+    plt.subplots_adjust(hspace=0.3, wspace=0.3)
     fig.savefig(
         f"results/deltaQ after division with theta {fileType}",
         dpi=300,
@@ -1367,8 +1343,7 @@ if False:
     )
     plt.close("all")
 
-
-# change in orientation after division
+# shift in orientation after division relative to tissue
 if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
@@ -1433,7 +1408,7 @@ if True:
     ax[0, 0].axvline(np.mean(df["Orientation"]), color="r")
     ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Tissue")
     ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
-    ax[0, 0].set_ylim([0, 100])
+    ax[0, 0].set_ylim([0, 130])
 
     ax[0, 1].hist(
         df["Shape Orientation"],
@@ -1441,7 +1416,7 @@ if True:
     ax[0, 1].axvline(np.mean(df["Shape Orientation"]), color="r")
     ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Tissue")
     ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
-    ax[0, 1].set_ylim([0, 100])
+    ax[0, 1].set_ylim([0, 130])
 
     ax[1, 0].hist(
         df["Change Towards Tissue"],

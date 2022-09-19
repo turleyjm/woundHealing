@@ -184,8 +184,8 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 93
 
-# Cell Behaviers
-if True:
+# Nucleus velocity relative to tissue
+if False:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -236,8 +236,8 @@ if True:
     dfVelocity = pd.DataFrame(_df2)
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
-
-if True:
+# Cell division relative to tissue and wound
+if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -317,7 +317,7 @@ if True:
     dfDivisions = pd.DataFrame(_df)
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
-
+# Cell Shape relative to tissue
 if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
@@ -362,6 +362,7 @@ if True:
                         "Area": A,
                         "dp": dp,
                         "Polar": p,
+                        "Shape Factor": dft["Shape Factor"].iloc[i],
                     }
                 )
 
@@ -371,10 +372,8 @@ if True:
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
-
-# Cell Behaviers relative to wound
-
-if True:
+# Cell Shape relative to wound
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -484,8 +483,8 @@ if True:
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
-
-if True:
+# Nucleus velocity relative to wound
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -570,9 +569,8 @@ if True:
     dfVelocity = pd.DataFrame(_df2)
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
-
 # Cells Divsions and Shape changes
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -955,44 +953,3 @@ if True:
     dfDivisionShape.to_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.DataFrame(_dfTrack)
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
-
-
-if True:
-    _df2 = []
-    for filename in filenames:
-
-        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
-        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-        t0 = util.findStartTime(filename)
-        df = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
-
-        for t in range(T):
-            dft = df[df["T"] == t]
-            xw, yw = dfWound["Position"].iloc[t]
-            V = np.mean(dft["Velocity"])
-
-            for i in range(len(dft)):
-                x = dft["X"].iloc[i]
-                y = dft["Y"].iloc[i]
-                r = dist[t, int(x), int(y)]
-                phi = np.arctan2(y - yw, x - xw)
-                R = util.rotation_matrix(-phi)
-
-                v = np.matmul(R, dft["Velocity"].iloc[i]) / 2
-                dv = np.matmul(R, dft["Velocity"].iloc[i] - V) / 2
-
-                _df2.append(
-                    {
-                        "Filename": filename,
-                        "T": int(2 * t + t0),  # frames are taken every 2 minutes
-                        "X": x * scale,
-                        "Y": y * scale,
-                        "R": r * scale,
-                        "Phi": phi,
-                        "v": -v * scale,
-                        "dv": -dv * scale,
-                    }
-                )
-
-    dfVelocity = pd.DataFrame(_df2)
-    dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")

@@ -34,6 +34,18 @@ def angleDiff(theta, phi):
     return abs(diff)
 
 
+def rgb2gray(rgb):
+
+    r, g, b = rgb[:, :, :, 0], rgb[:, :, :, 1], rgb[:, :, :, 2]
+    gray = 0.4 * r + 0.5870 * g + 0.1140 * b
+
+    return gray
+
+
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
+
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
@@ -41,7 +53,7 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 8
 
-
+# Display divisons
 if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
@@ -91,19 +103,6 @@ if False:
         tifffile.imwrite(
             f"results/displayProperties/divisionsDisplay{filename}.tif", divisions
         )
-
-
-def rgb2gray(rgb):
-
-    r, g, b = rgb[:, :, :, 0], rgb[:, :, :, 1], rgb[:, :, :, 2]
-    gray = 0.4 * r + 0.5870 * g + 0.1140 * b
-
-    return gray
-
-
-def gaussian(x, mu, sig):
-    return np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
-
 
 # orientation to wound
 if False:
@@ -683,29 +682,27 @@ if False:
         )
 
 # T1s display
-if True:
+if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         T1s = sm.io.imread(f"dat/{filename}/T1s{filename}.tif").astype(int)
 
         (T, X, Y, rgb) = focus.shape
-        gray = rgb2gray(focus)
-        gray = gray * (255 / np.max(gray))
         # gray = np.asarray(gray, "uint8")
         # tifffile.imwrite(f"results/gray{filename}.tif", gray)
 
         T1display = np.zeros([T, 5, X, Y])
 
-        T1display[:, 1] = gray
+        T1display[:, 1] = focus[:, :, :, 1]
         redMask = T1s[:, :, :, 0]
         greenMask = T1s[:, :, :, 1]
         for t in range(T):
             redMask[t] = erosion(redMask[t], square(3))
             greenMask[t] = erosion(greenMask[t], square(3))
 
-        T1display[:, 0][redMask == 255] = 255
-        T1display[:, 1][greenMask == 255] = 255
-        T1display[:, 0][greenMask == 255] = 255
+        T1display[:, 0][redMask == 255] = 255 * 0.6
+        T1display[:, 1][greenMask == 255] = 255 * 0.6
+        T1display[:, 0][greenMask == 255] = 255 * 0.6
 
         T1display = np.asarray(T1display, "uint8")
         tifffile.imwrite(
@@ -713,4 +710,46 @@ if True:
             T1display,
             imagej=True,
             metadata={"axes": "TCYX"},
+        )
+
+# display division tracks
+if True:
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFile = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        df = dfFile[dfFile["Type"] == "parent"]
+
+        (T, X, Y, rgb) = focus.shape
+
+        for i in range(len(df)):
+
+            colour = df["Colour"].iloc[i]
+            t = df["Time"].iloc[i]
+            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 255
+
+        df = dfFile[dfFile["Type"] == "daughter1"]
+
+        for i in range(len(df)):
+
+            colour = df["Colour"].iloc[i]
+            t = df["Time"].iloc[i]
+            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 200
+            focus[t, :, :, 0][np.all((tracks[t] - colour) == 0, axis=2)] += 150
+            focus[t, :, :, 0][focus[t, :, :, 0] > 255] = 255
+
+        df = dfFile[dfFile["Type"] == "daughter2"]
+
+        for i in range(len(df)):
+
+            colour = df["Colour"].iloc[i]
+            t = df["Time"].iloc[i]
+            focus[t, :, :, 2][np.all((tracks[t] - colour) == 0, axis=2)] = 200
+            focus[t, :, :, 1][np.all((tracks[t] - colour) == 0, axis=2)] += 150
+            focus[t, :, :, 1][focus[t, :, :, 1] > 255] = 255
+
+        focus = np.asarray(focus, "uint8")
+        tifffile.imwrite(
+            f"results/displayProperties/divisionsTracks{filename}.tif", focus
         )
