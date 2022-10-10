@@ -713,7 +713,7 @@ if False:
         )
 
 # display division tracks
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)

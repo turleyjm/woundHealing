@@ -39,7 +39,6 @@ scale = 123.26 / 512
 
 # -------------------
 
-
 # typical cell length
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -58,7 +57,6 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
 
 # mean sf
 if False:
@@ -97,7 +95,8 @@ if False:
     )
     plt.close("all")
 
-if False:
+# Q1 tensor
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
     Q1std = []
@@ -109,7 +108,7 @@ if False:
     ax[0].errorbar(2 * np.array(range(T)), Q1, yerr=Q1std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
     ax[0].title.set_text(r"Mean of $Q^{(1)}$")
-    ax[0].set_ylim([-0.03, 0.05])
+    ax[0].set_ylim([-0.025, 0.06])
 
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
@@ -121,8 +120,9 @@ if False:
 
     ax[1].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
     ax[1].title.set_text(r"Mean of $Q^{(1)}$ indivial videos")
-    ax[1].set_ylim([-0.03, 0.05])
+    ax[1].set_ylim([-0.025, 0.06])
 
+    plt.subplots_adjust(wspace=0.3)
     fig.savefig(
         f"results/mean Q1 {fileType}",
         dpi=300,
@@ -131,6 +131,7 @@ if False:
     )
     plt.close("all")
 
+# Q2 tensor
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q2 = []
@@ -166,7 +167,7 @@ if False:
     )
     plt.close("all")
 
-
+# mean Q2 over Q1
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
@@ -208,7 +209,7 @@ if False:
     )
     plt.close("all")
 
-
+# mean P1
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     P1 = []
@@ -245,7 +246,7 @@ if False:
     )
     plt.close("all")
 
-
+# mean P2
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     P2 = []
@@ -282,7 +283,7 @@ if False:
     )
     plt.close("all")
 
-
+# mean rho
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     rho = []
@@ -315,9 +316,8 @@ if False:
     )
     plt.close("all")
 
-
 # Q_0 vs Area
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     area = np.array(dfShape["Area"])
     q_0 = (

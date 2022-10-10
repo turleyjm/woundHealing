@@ -199,7 +199,7 @@ scale = 123.26 / 512
 
 
 # area of parent dividing cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -262,7 +262,7 @@ if True:
     plt.close("all")
 
 # shape of parent dividing cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -325,7 +325,7 @@ if True:
     plt.close("all")
 
 # Area of daughter cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -388,7 +388,7 @@ if True:
     plt.close("all")
 
 # shape of daughter cells
-if True:
+if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -451,7 +451,7 @@ if True:
     plt.close("all")
 
 # difference in orientation of division and cell shape (whole shape/tcj shape)
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -556,7 +556,7 @@ if True:
     plt.close("all")
 
 # |\theta_{tcj} - \theta_{s}| > 15 compare different in orientation
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -634,7 +634,7 @@ if True:
     plt.close("all")
 
 # compare properties of good and poor predictions
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -768,7 +768,7 @@ if True:
     plt.close("all")
 
 # orientation of combined daughter cells relative to tissue
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -840,7 +840,7 @@ if True:
     plt.close("all")
 
 # orientation of combined daughter cells relative to wound
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     time = list(np.linspace(-10, 10, 21))
@@ -964,7 +964,7 @@ if True:
     plt.close("all")
 
 # orientation of daughter cells relative to tissue both of combined and individual also looking at poor predictions
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1198,7 +1198,7 @@ if True:
     plt.close("all")
 
 # delta Q of daughter cells with division orientation relative to tissue
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1344,7 +1344,7 @@ if True:
     plt.close("all")
 
 # shift in orientation after division relative to tissue
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1436,9 +1436,266 @@ if True:
 
     fig.tight_layout()
     fig.savefig(
-        f"results/change in ori after division {fileType}",
+        f"results/change in ori after division relative to tissue {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
     )
     plt.close("all")
+
+# shift in orientation after division relative to wound
+if False:
+    dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    _df = []
+
+    for filename in filenames:
+        dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
+        dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
+
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+
+        else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+
+        dfFileShape = dfFileShape[dfFileShape["Daughter length"] > 10]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 3]
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        labels = list(dfFileShape["Label"])
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int) * scale
+        )
+        t0 = util.findStartTime(filename)
+
+        for label in labels:
+            dfDiv = df[df["Label"] == label]
+            ori = dfDivision["Orientation"][dfDivision["Label"] == label].iloc[0] % 180
+            t = dfDiv["Time"][dfDiv["Division Time"] == 0].iloc[0]
+            x = dfDivision["X"][dfDivision["Label"] == label].iloc[0]
+            y = dfDivision["Y"][dfDivision["Label"] == label].iloc[0]
+            if "Wound" in filename:
+                (xc, yc) = dfWound["Position"].iloc[t]
+            else:
+                (xc, yc) = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
+                )
+            psi = np.arctan2(y - yc, x - xc) * 180 / np.pi
+            ori = (ori - psi) % 180
+
+            dfDiv = df[df["Label"] == label]
+            T = 10
+            polygon = dfDiv["Polygon"][dfDiv["Division Time"] == T].iloc[0]
+            x0, y0 = cell.centroid(polygon)
+            polygon = dfDiv["Polygon"][dfDiv["Division Time"] == T].iloc[1]
+            x1, y1 = cell.centroid(polygon)
+            phi = (np.arctan2(y0 - y1, x0 - x1) * 180 / np.pi) % 180
+            xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
+            psi = np.arctan2(ym - yc, xm - xc) * 180 / np.pi
+            phi = (phi - psi) % 180
+            r = dist[t, int(512 - ym), int(xm)]
+
+            if ori > 90:
+                ori = 180 - ori
+            if phi > 90:
+                phi = 180 - phi
+
+            _df.append(
+                {
+                    "Filename": filename,
+                    "Label": label,
+                    "T": int(t0 + t * 2),
+                    "R": r,
+                    "Nuclei Orientation": ori,
+                    "Daughter Orientation": phi,
+                    "Change Towards Wound": ori - phi,
+                }
+            )
+
+    df = pd.DataFrame(_df)
+
+    thetas = np.linspace(0, 80, 9)
+    deltaOri = []
+    deltaOristd = []
+    for theta in thetas:
+        df1 = df[df["Nuclei Orientation"] > theta]
+        df2 = df1[df1["Nuclei Orientation"] < theta + 10]
+        deltaOri.append(np.mean(df2["Change Towards Wound"]))
+        deltaOristd.append(np.std(df2["Change Towards Wound"]))
+
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+
+    ax[0, 0].hist(
+        df["Nuclei Orientation"],
+    )
+    ax[0, 0].axvline(np.mean(df["Nuclei Orientation"]), color="r")
+    ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Wound")
+    ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
+    if "Wound" in filename:
+        ax[0, 0].set_ylim([0, 50])
+    else:
+        ax[0, 0].set_ylim([0, 130])
+
+    ax[0, 1].hist(
+        df["Daughter Orientation"],
+    )
+    ax[0, 1].axvline(np.mean(df["Daughter Orientation"]), color="r")
+    ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Wound")
+    ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
+    if "Wound" in filename:
+        ax[0, 1].set_ylim([0, 50])
+    else:
+        ax[0, 1].set_ylim([0, 130])
+
+    ax[1, 0].hist(
+        df["Change Towards Wound"],
+    )
+    ax[1, 0].set(xlabel=r"Division Orientation Change Towards Wound")
+    ax[1, 0].title.set_text(r"Change in orientation Towards Wound")
+    ax[1, 0].set_xlim([-90, 90])
+    ax[1, 0].axvline(np.mean(df["Change Towards Wound"]), color="r")
+
+    ax[1, 1].errorbar(thetas + 5, deltaOri, deltaOristd)
+    ax[1, 1].set(
+        xlabel=r"Mitosis Division Orientation",
+        ylabel=r"Division Orientation Change Towards Wound",
+    )
+    ax[1, 1].title.set_text(r"Change in orientation Towards Wound with theta")
+    ax[1, 1].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division relative to wound {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    # during wound closer
+
+    thetas = np.linspace(0, 80, 9)
+    deltaOri = []
+    deltaOristd = []
+    for theta in thetas:
+        df1 = df[df["T"] < 45]
+        df2 = df1[df1["Nuclei Orientation"] > theta]
+        df3 = df2[df2["Nuclei Orientation"] < theta + 10]
+        deltaOri.append(np.mean(df3["Change Towards Wound"]))
+        deltaOristd.append(np.std(df3["Change Towards Wound"]))
+
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+
+    ax[0, 0].hist(
+        df["Nuclei Orientation"][df["T"] < 45],
+    )
+    ax[0, 0].axvline(np.mean(df["Nuclei Orientation"][df["T"] < 45]), color="r")
+    ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Wound")
+    ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
+    if "Wound" in filename:
+        ax[0, 0].set_ylim([0, 50])
+    else:
+        ax[0, 0].set_ylim([0, 130])
+
+    ax[0, 1].hist(
+        df["Daughter Orientation"][df["T"] < 45],
+    )
+    ax[0, 1].axvline(np.mean(df["Daughter Orientation"][df["T"] < 45]), color="r")
+    ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Wound")
+    ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
+    if "Wound" in filename:
+        ax[0, 1].set_ylim([0, 50])
+    else:
+        ax[0, 1].set_ylim([0, 130])
+
+    ax[1, 0].hist(
+        df["Change Towards Wound"][df["T"] < 45],
+    )
+    ax[1, 0].set(xlabel=r"Division Orientation Change Towards Wound")
+    ax[1, 0].title.set_text(r"Change in orientation Towards Wound")
+    ax[1, 0].set_xlim([-90, 90])
+    ax[1, 0].axvline(np.mean(df["Change Towards Wound"][df["T"] < 45]), color="r")
+
+    ax[1, 1].errorbar(thetas + 5, deltaOri, deltaOristd)
+    ax[1, 1].set(
+        xlabel=r"Mitosis Division Orientation",
+        ylabel=r"Division Orientation Change Towards Wound",
+    )
+    ax[1, 1].title.set_text(r"Change in orientation Towards Wound with theta")
+    ax[1, 1].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division relative to wound {fileType} during wound closer",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    # close to wound
+
+    thetas = np.linspace(0, 80, 9)
+    deltaOri = []
+    deltaOristd = []
+    for theta in thetas:
+        df1 = df[df["R"] < 45]
+        df2 = df1[df1["Nuclei Orientation"] > theta]
+        df3 = df2[df2["Nuclei Orientation"] < theta + 10]
+        deltaOri.append(np.mean(df3["Change Towards Wound"]))
+        deltaOristd.append(np.std(df3["Change Towards Wound"]))
+
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+
+    ax[0, 0].hist(
+        df["Nuclei Orientation"][df["R"] < 45],
+    )
+    ax[0, 0].axvline(np.mean(df["Nuclei Orientation"][df["R"] < 45]), color="r")
+    ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Wound")
+    ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
+    if "Wound" in filename:
+        ax[0, 0].set_ylim([0, 50])
+    else:
+        ax[0, 0].set_ylim([0, 130])
+
+    ax[0, 1].hist(
+        df["Daughter Orientation"][df["R"] < 45],
+    )
+    ax[0, 1].axvline(np.mean(df["Daughter Orientation"][df["R"] < 45]), color="r")
+    ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Wound")
+    ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
+    if "Wound" in filename:
+        ax[0, 1].set_ylim([0, 50])
+    else:
+        ax[0, 1].set_ylim([0, 130])
+
+    ax[1, 0].hist(
+        df["Change Towards Wound"][df["R"] < 45],
+    )
+    ax[1, 0].set(xlabel=r"Division Orientation Change Towards Wound")
+    ax[1, 0].title.set_text(r"Change in orientation Towards Wound")
+    ax[1, 0].set_xlim([-90, 90])
+    ax[1, 0].axvline(np.mean(df["Change Towards Wound"][df["R"] < 45]), color="r")
+
+    ax[1, 1].errorbar(thetas + 5, deltaOri, deltaOristd)
+    ax[1, 1].set(
+        xlabel=r"Mitosis Division Orientation",
+        ylabel=r"Division Orientation Change Towards Wound",
+    )
+    ax[1, 1].title.set_text(r"Change in orientation Towards Wound with theta")
+    ax[1, 1].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division relative to wound {fileType} close to wound",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+

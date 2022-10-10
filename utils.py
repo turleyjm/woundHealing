@@ -29,19 +29,26 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
-fileType = "Unwound18h"
+# fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
-# fileType = "WoundXL18h"
-# fileType = "UnwoundCa"
-# fileType = "WoundLCa"
-# fileType = "WoundSCa"
+fileType = "WoundXL18h"
+
 # fileType = "UnwoundJNK"
 # fileType = "WoundLJNK"
 # fileType = "WoundSJNK"
+# fileType = "WoundXLJNK"
+
+# fileType = "UnwoundCa"
+# fileType = "UnwoundCa"
+# fileType = "WoundLCa"
+# fileType = "WoundSCa"
+
+# fileType = "Unwoundrpr"
 # fileType = "Unwoundrpr"
 # fileType = "WoundLrpr"
 # fileType = "WoundSrpr"
+
 # fileType = "All"
 
 
@@ -90,6 +97,8 @@ def getFileTitle(fileType):
         fileTitle = "large wound"
     elif fileType == "WoundS18h":
         fileTitle = "small wound"
+    elif fileType == "WoundXL18h":
+        fileTitle = "XL wound"
     elif fileType == "Unwound18h":
         fileTitle = "unwounded"
 
@@ -97,6 +106,8 @@ def getFileTitle(fileType):
         fileTitle = "large wound Ca KD"
     elif fileType == "WoundSCa":
         fileTitle = "small wound Ca KD"
+    elif fileType == "WoundXLCa":
+        fileTitle = "XL wound Ca KD"
     elif fileType == "UnwoundCa":
         fileTitle = "unwounded Ca KD"
 
@@ -104,6 +115,8 @@ def getFileTitle(fileType):
         fileTitle = "large wound JNK KD"
     elif fileType == "WoundSJNK":
         fileTitle = "small wound JNK KD"
+    elif fileType == "WoundXLJNK":
+        fileTitle = "XL wound JNK KD"
     elif fileType == "UnwoundJNK":
         fileTitle = "unwounded JNK KD"
 
@@ -111,6 +124,8 @@ def getFileTitle(fileType):
         fileTitle = "large wound rpr"
     elif fileType == "WoundSrpr":
         fileTitle = "small wound rpr"
+    elif fileType == "WoundXLrpr":
+        fileTitle = "XL wound rpr"
     elif fileType == "Unwoundrpr":
         fileTitle = "unwounded rpr"
 

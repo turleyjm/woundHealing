@@ -298,8 +298,6 @@ if False:
                     ori_w = 180 - ori_w
                 if ori > 90:
                     ori = 180 - ori
-                if dfDivision["Label"].iloc[i] == 183:
-                    print(0)
                 _df.append(
                     {
                         "Filename": filename,
@@ -318,7 +316,7 @@ if False:
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
 # Cell Shape relative to tissue
-if True:
+if False:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -484,7 +482,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 # Nucleus velocity relative to wound
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -517,8 +515,8 @@ if False:
                             "Y": y * scale,
                             "R": r * scale,
                             "Phi": phi,
-                            "v": -v,
-                            "dv": -dv,
+                            "v": -v * scale,
+                            "dv": -dv * scale,
                         }
                     )
         else:

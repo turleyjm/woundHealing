@@ -73,7 +73,6 @@ def star(p):
 
 # -------------------
 
-
 # Divison orientation with respect to tissue over time
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -109,7 +108,6 @@ if False:
     )
     plt.close("all")
 
-
 # Divison orientation with respect to tissue
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -126,7 +124,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
 
 # Divison orientation with respect to a wound over time
 if False:
@@ -163,7 +160,6 @@ if False:
     )
     plt.close("all")
 
-
 # Divison orientation with respect to a wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -180,7 +176,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
 
 # Divison orientation with respect to a wound over distance from wound
 if False:

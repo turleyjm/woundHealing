@@ -48,7 +48,7 @@ timeStep = 4
 R = 80
 rStep = 10
 
-
+# Velocity Close to the Wound Edge
 if False:
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
     time = []
@@ -111,9 +111,8 @@ if False:
     )
     plt.close("all")
 
-
 # v with distance from wound edge and time
-if True:
+if False:
     v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
@@ -192,8 +191,8 @@ if True:
         t,
         r,
         V1,
-        vmin=-0.2,
-        vmax=0.2,
+        vmin=-0.3,
+        vmax=0.3,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
@@ -220,7 +219,7 @@ if True:
     )
     plt.close("all")
 
-
+# Compare rescale Speed Towards Wound
 if False:
 
     fig, ax = plt.subplots(2, 2, figsize=(14, 14))
@@ -342,3 +341,109 @@ if False:
         dpi=300,
     )
     plt.close("all")
+
+# run all v with distance from wound edge and time
+if True:
+    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "WoundXL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+        v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            dfFile = dfVelocity[dfVelocity["Filename"] == filename]
+            if "Wound" in filename:
+                t0 = util.findStartTime(filename)
+            else:
+                t0 = 0
+            t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+            for r in range(v1.shape[2]):
+                for t in range(v1.shape[1]):
+                    df1 = dfFile[dfFile["T"] > timeStep * t]
+                    df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                    df3 = df2[df2["R"] > rStep * r]
+                    df = df3[df3["R"] <= rStep * (r + 1)]
+                    if len(df) > 0:
+                        v1[k, t, r] = np.mean(df["dv"], axis=0)[0]
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+                / 255
+            )
+            dist = (
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+                * scale
+            )
+
+            for r in range(area.shape[2]):
+                for t in range(area.shape[1]):
+                    t1 = int(timeStep / 2 * t - t0 / 2)
+                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                    if t1 < 0:
+                        t1 = 0
+                    if t2 < 0:
+                        t2 = 0
+                    area[k, t, r] = (
+                        np.sum(
+                            inPlane[t1:t2][
+                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                            ]
+                        )
+                        * scale ** 2
+                    )
+
+        V1 = np.zeros([int(T / timeStep), int(R / rStep)])
+        std = np.zeros([int(T / timeStep), int(R / rStep)])
+        meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                _V1 = v1[:, t, r][v1[:, t, r] != 0]
+                _area = area[:, t, r][v1[:, t, r] != 0]
+                if len(_area) > 0:
+                    if np.sum(_area) > 0:
+                        _dd, _std = weighted_avg_and_std(_V1, _area)
+                        V1[t, r] = _dd
+                        std[t, r] = _std
+                        meanArea[t, r] = np.mean(_area)
+                    else:
+                        V1[t, r] = np.nan
+                        std[t, r] = np.nan
+                else:
+                    V1[t, r] = np.nan
+                    std[t, r] = np.nan
+
+        V1[meanArea < 500] = np.nan
+
+        typeName = util.getFileTitle(fileType)
+
+        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+        c = ax.pcolor(
+            t,
+            r,
+            V1,
+            vmin=-0.3,
+            vmax=0.3,
+            cmap="RdBu_r",
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set(
+            xlabel="Time after wounding (mins)",
+            ylabel=r"Distance from wound edge $(\mu m)$",
+        )
+        ax.title.set_text(
+                r"$\delta v_1$"
+                + f" distance and time {typeName}"
+            )
+
+        fig.savefig(
+            f"results/v heatmap {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+

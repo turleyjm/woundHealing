@@ -35,6 +35,7 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 93
 
+#Mean Wound Area
 if False:
     fig = plt.figure(1, figsize=(9, 8))
     sf = []
@@ -106,7 +107,8 @@ if False:
     )
     plt.close("all")
 
-if True:
+# Compare Mean Wound Area
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     labels = ["WoundS18h", "WoundS18h", "WoundL18h"]
     i = 0
@@ -235,7 +237,7 @@ if False:
     plt.close("all")
 
 # Normalise by start size
-if True:
+if False:
     T = 93
     fig = plt.figure(1, figsize=(5, 5))
     sf = []
@@ -311,6 +313,7 @@ if True:
         dpi=300,
     )
     plt.close("all")
+
 
 if False:
     fig = plt.figure(1, figsize=(9, 8))
@@ -424,6 +427,7 @@ if False:
 
 
 if False:
+
     for filename in filenames:
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         vid = sm.io.imread(f"dat/{filename}/ecadFocus{filename}.tif").astype(int)
@@ -473,5 +477,60 @@ if False:
             f"results/Radial Wound {filename}",
             dpi=300,
             transparent=True,
+        )
+        plt.close("all")
+
+# run all Mean Wound Area
+if True:
+    fileTypes = ["WoundS18h", "WoundL18h", "WoundXL18h", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+        
+        fig = plt.figure(1, figsize=(9, 8))
+        sf = []
+        endTime = []
+        divisions = []
+        R = [[] for col in range(T)]
+        _df = []
+        for filename in filenames:
+            t0 = util.findStartTime(filename)
+
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            sf.append(dfWound["Shape Factor"].iloc[0])
+            time = np.array(dfWound["Time"])
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+
+            tf = sum(area > 0)
+            endTime.append(tf)
+            for t in range(T):
+                if pd.isnull(area[t]):
+                    area[t] = 0
+
+            for t in range(T):
+                if area[t] > area[0] * 0.2:
+                    R[t].append(area[t])
+                    _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+
+
+        df = pd.DataFrame(_df)
+        A = []
+        Time = []
+        std = []
+        T = set(df["Time"])
+        N = len(filenames)
+        for t in T:
+            if len(df[df["Time"] == t]) > N / 3:
+                Time.append(t)
+                A.append(np.mean(df["Area"][df["Time"] == t]))
+                std.append(np.std(df["Area"][df["Time"] == t]))
+
+        fig = plt.figure(1, figsize=(9, 8))
+        plt.errorbar(Time, A, yerr=std)
+        plt.xlabel("Time")
+        plt.ylabel(r" Mean Area ($\mu m ^2$)")
+        plt.title(f"Mean Area {fileType}")
+        fig.savefig(
+            f"results/Mean Wound Area {fileType}",
+            bbox_inches="tight",
         )
         plt.close("all")

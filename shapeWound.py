@@ -48,7 +48,7 @@ timeStep = 4
 R = 80
 rStep = 10
 
-
+# dQ1 Close to the Wound Edge 
 if False:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     time = []
@@ -110,7 +110,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
 
 # Density with distance from wound edge and time
 if False:
@@ -201,9 +200,8 @@ if False:
     )
     plt.close("all")
 
-
 # Q1 with distance from wound edge and time
-if True:
+if False:
     q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
@@ -259,7 +257,7 @@ if True:
         for t in range(area.shape[1]):
             _Q1 = q1[:, t, r][q1[:, t, r] != 0]
             _area = area[:, t, r][q1[:, t, r] != 0]
-            if len(_area) > 0:
+            if (len(_area) > 0) & (np.sum(_area) > 0):
                 _dd, _std = weighted_avg_and_std(_Q1, _area)
                 Q1[t, r] = _dd
                 std[t, r] = _std
@@ -278,8 +276,8 @@ if True:
         t,
         r,
         Q1,
-        vmin=-0.022,
-        vmax=0.022,
+        vmin=-0.03,
+        vmax=0.03,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
@@ -306,8 +304,9 @@ if True:
     )
     plt.close("all")
 
-
+# Compare rescale Q1 relative to Wound
 if False:
+
     fig, ax = plt.subplots(2, 2, figsize=(14, 14))
     fileType = "WoundS"
     filenames = util.getFilesOfType(fileType)
@@ -426,3 +425,105 @@ if False:
         dpi=300,
     )
     plt.close("all")
+
+# run all Q1 with distance from wound edge and time
+if True:
+    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "WoundXL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+        q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            dfFile = dfShape[dfShape["Filename"] == filename]
+            if "Wound" in filename:
+                t0 = util.findStartTime(filename)
+            else:
+                t0 = 0
+            t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+            for r in range(q1.shape[2]):
+                for t in range(q1.shape[1]):
+                    df1 = dfFile[dfFile["T"] > timeStep * t]
+                    df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                    df3 = df2[df2["R"] > rStep * r]
+                    df = df3[df3["R"] <= rStep * (r + 1)]
+                    if len(df) > 0:
+                        q1[k, t, r] = np.mean(df["dq"], axis=0)[0, 0]
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+                / 255
+            )
+            dist = (
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+                * scale
+            )
+
+            for r in range(area.shape[2]):
+                for t in range(area.shape[1]):
+                    t1 = int(timeStep / 2 * t - t0 / 2)
+                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                    if t1 < 0:
+                        t1 = 0
+                    if t2 < 0:
+                        t2 = 0
+                    area[k, t, r] = (
+                        np.sum(
+                            inPlane[t1:t2][
+                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                            ]
+                        )
+                        * scale ** 2
+                    )
+
+        Q1 = np.zeros([int(T / timeStep), int(R / rStep)])
+        std = np.zeros([int(T / timeStep), int(R / rStep)])
+        meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                _Q1 = q1[:, t, r][q1[:, t, r] != 0]
+                _area = area[:, t, r][q1[:, t, r] != 0]
+                if (len(_area) > 0) & (np.sum(_area) > 0):
+                    _dd, _std = weighted_avg_and_std(_Q1, _area)
+                    Q1[t, r] = _dd
+                    std[t, r] = _std
+                    meanArea[t, r] = np.mean(_area)
+                else:
+                    Q1[t, r] = np.nan
+                    std[t, r] = np.nan
+
+        Q1[meanArea < 500] = np.nan
+
+        typeName = util.getFileTitle(fileType)
+
+        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+        c = ax.pcolor(
+            t,
+            r,
+            Q1,
+            vmin=-0.03,
+            vmax=0.03,
+            cmap="RdBu_r",
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set(
+            xlabel="Time after wounding (mins)",
+            ylabel=r"Distance from wound edge $(\mu m)$",
+        )
+        ax.title.set_text(
+            r"$\delta Q^{(1)}$"
+            + f" distance and time {typeName}"
+        )
+
+        fig.savefig(
+            f"results/Q1 heatmap {fileType}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
