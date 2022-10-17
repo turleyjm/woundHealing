@@ -481,11 +481,12 @@ if False:
         plt.close("all")
 
 # run all Mean Wound Area
-if True:
+if False:
     fileTypes = ["WoundS18h", "WoundL18h", "WoundXL18h", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
-        
+
+        T = 93
         fig = plt.figure(1, figsize=(9, 8))
         sf = []
         endTime = []
@@ -511,6 +512,20 @@ if True:
                     R[t].append(area[t])
                     _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
 
+            A = area[area > area[0] * 0.2]
+            # print(f"{filename} {area[0]}")
+
+            plt.plot(t0 + np.arange(0, len(A) * 2, 2), A)
+
+        plt.xlabel("Time")
+        plt.ylabel(r"Area ($\mu m ^2$)")
+        plt.title(f"Area {fileType}")
+        fig.savefig(
+            f"results/Wound Area {fileType}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
 
         df = pd.DataFrame(_df)
         A = []
@@ -534,3 +549,155 @@ if True:
             bbox_inches="tight",
         )
         plt.close("all")
+
+# run all compare Wt and KD
+if True:
+    fileTypes = ["WoundS18h", "WoundSJNK"]
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+
+        T = 93
+        R = [[] for col in range(T)]
+        _df = []
+        for filename in filenames:
+            t0 = util.findStartTime(filename)
+
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            time = np.array(dfWound["Time"])
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+
+            for t in range(T):
+                if pd.isnull(area[t]):
+                    area[t] = 0
+
+            for t in range(T):
+                if area[t] > area[0] * 0.2:
+                    R[t].append(area[t])
+                    _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+
+
+        df = pd.DataFrame(_df)
+        A = []
+        Time = []
+        std = []
+        T = set(df["Time"])
+        N = len(filenames)
+        for t in T:
+            if len(df[df["Time"] == t]) > N / 3:
+                Time.append(t)
+                A.append(np.mean(df["Area"][df["Time"] == t]))
+                std.append(np.std(df["Area"][df["Time"] == t]))
+
+        typeName = util.getFileTitle(fileType)
+        ax.errorbar(Time, A, yerr=std, label=f"{typeName}")
+
+    ax.set(xlabel="Time", ylabel=r"Mean Area ($\mu m ^2$)")
+    ax.title.set_text(f"Mean Area WoundS")
+    ax.legend()
+    fig.savefig(
+        f"results/Compare Mean Wound Area WoundS",
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fileTypes = ["WoundL18h", "WoundLJNK"]
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+
+        T = 93
+        R = [[] for col in range(T)]
+        _df = []
+        for filename in filenames:
+            t0 = util.findStartTime(filename)
+
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            time = np.array(dfWound["Time"])
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+
+            for t in range(T):
+                if pd.isnull(area[t]):
+                    area[t] = 0
+
+            for t in range(T):
+                if area[t] > area[0] * 0.2:
+                    R[t].append(area[t])
+                    _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+
+
+        df = pd.DataFrame(_df)
+        A = []
+        Time = []
+        std = []
+        T = set(df["Time"])
+        N = len(filenames)
+        for t in T:
+            if len(df[df["Time"] == t]) > N / 3:
+                Time.append(t)
+                A.append(np.mean(df["Area"][df["Time"] == t]))
+                std.append(np.std(df["Area"][df["Time"] == t]))
+
+        typeName = util.getFileTitle(fileType)
+        ax.errorbar(Time, A, yerr=std, label=f"{typeName}")
+
+    ax.set(xlabel="Time", ylabel=r"Mean Area ($\mu m ^2$)")
+    ax.title.set_text(f"Mean Area WoundL")
+    ax.legend()
+    fig.savefig(
+        f"results/Compare Mean Wound Area WoundL",
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fileTypes = ["WoundXL18h", "WoundXLJNK"]
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+
+        T = 93
+        R = [[] for col in range(T)]
+        _df = []
+        for filename in filenames:
+            t0 = util.findStartTime(filename)
+
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            time = np.array(dfWound["Time"])
+            area = np.array(dfWound["Area"]) * (scale) ** 2
+
+            for t in range(T):
+                if pd.isnull(area[t]):
+                    area[t] = 0
+
+            for t in range(T):
+                if area[t] > area[0] * 0.2:
+                    R[t].append(area[t])
+                    _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+
+
+        df = pd.DataFrame(_df)
+        A = []
+        Time = []
+        std = []
+        T = set(df["Time"])
+        N = len(filenames)
+        for t in T:
+            if len(df[df["Time"] == t]) > N / 3:
+                Time.append(t)
+                A.append(np.mean(df["Area"][df["Time"] == t]))
+                std.append(np.std(df["Area"][df["Time"] == t]))
+
+        typeName = util.getFileTitle(fileType)
+        ax.errorbar(Time, A, yerr=std, label=f"{typeName}")
+
+    ax.set(xlabel="Time", ylabel=r"Mean Area ($\mu m ^2$)")
+    ax.title.set_text(f"Mean Area WoundXL")
+    ax.legend()
+    fig.savefig(
+        f"results/Compare Mean Wound Area WoundXL",
+        bbox_inches="tight",
+    )
+    plt.close("all")

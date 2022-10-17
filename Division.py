@@ -1,3 +1,4 @@
+from locale import normalize
 import os
 import shutil
 from math import dist, floor, log10
@@ -621,7 +622,7 @@ if False:
                 dd[t, r] = np.nan
                 std[t, r] = np.nan
 
-    dd[sumArea < 8000] = np.nan
+    dd[sumArea < 600 * len(filenames)] = np.nan
     dd = dd * 10000
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
@@ -775,6 +776,105 @@ if False:
             dpi=300,
         )
         plt.close("all")
+
+# Divison density with distance from wound edge and time
+# distance norm with wound raduis
+if False:
+    count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+
+    A0 = []
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        A0.append(dfWound["Area"].iloc[0] * (scale) ** 2)
+    mu_r = (np.mean(A0)/np.pi)**0.5
+
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        A = dfWound["Area"].iloc[0] * (scale) ** 2
+        normalize = ((A/np.pi)**0.5)/mu_r
+        
+        t0 = util.findStartTime(filename)
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[2]):
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r * normalize]
+                df = df3[df3["R"] <= rStep * (r + 1) * normalize]
+                count[k, t, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale * normalize
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale ** 2
+                )
+
+    dd = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _area = area[:, t, r][area[:, t, r] > 800]
+            _count = count[:, t, r][area[:, t, r] > 800]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd[t, r] = _dd
+                std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
+            else:
+                dd[t, r] = np.nan
+                std[t, r] = np.nan
+
+    dd[sumArea < 600 * len(filenames)] = np.nan
+    dd = dd * 10000
+
+    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    c = ax.pcolor(
+        t,
+        r,
+        dd,
+        vmin=0,
+        vmax=6,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set(xlabel="Time (mins)", ylabel=r"normalized $R (\mu m)$")
+    ax.title.set_text(f"Division density {fileType}")
+
+    fig.savefig(
+        f"results/Division density heatmap distance normalized {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
 
 # Divison density with theta
 if False:

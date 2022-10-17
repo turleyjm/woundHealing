@@ -32,11 +32,11 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
-fileType = "WoundXL18h"
+# fileType = "WoundXL18h"
 
 # fileType = "UnwoundJNK"
 # fileType = "WoundLJNK"
-# fileType = "WoundSJNK"
+fileType = "WoundSJNK"
 # fileType = "WoundXLJNK"
 
 # fileType = "UnwoundCa"
@@ -402,3 +402,9 @@ def imgxyrc(img):
             imgrc[(Y - 1) - y, x] = img[x, y]
 
     return imgrc
+
+
+def Prewound(filename):
+    filenamePre = "Prew" + filename.split("W")[1]
+
+    return filenamePre
