@@ -948,7 +948,7 @@ if False:
 
 # run all Divison density with distance from wound edge and time
 if True:
-    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "WoundXL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK"]
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])

@@ -96,7 +96,7 @@ if False:
     plt.close("all")
 
 # Q1 tensor
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
     Q1std = []
@@ -371,3 +371,42 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
+
+# entropy
+if True:
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    ent = []
+    entStd = []
+    for t in range(T):
+        x = []
+        for filename in filenames:
+            q = np.stack(dfShape["q"][(dfShape["T"] == t) & (dfShape["Filename"] == filename)])
+            heatmap, xedges, yedges = np.histogram2d(
+                q[:,0,0], q[:,1,0], range=[[-0.3, 0.3], [-0.15, 0.15]], bins=(30,15)
+            )
+
+            prob = heatmap / q.shape[0]
+            prob[prob != 0]
+            p = prob[prob != 0]
+
+            entropy = p * np.log(p)
+            x.append(-sum(entropy))
+        ent.append(np.mean(x))
+        entStd.append(np.std(x))
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    ax.errorbar(2 * np.array(range(T)), ent, yerr=entStd)
+    ax.set(xlabel=r"Time", ylabel="Shannon entropy")
+    ax.title.set_text("Shannon entropy with time")
+    ax.set_ylim([2.5, 3.6])
+
+    plt.subplots_adjust(wspace=0.3)
+    fig.savefig(
+        f"results/Shannon entropy {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+

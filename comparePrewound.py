@@ -42,7 +42,7 @@ T = 8
 # -------------------
 
 # Q_0 for prewound and early unwounded
-if False:
+if True:
     _df = []
     fileType = "Unwound18h"
     filenames, fileType = util.getFilesType(fileType)
@@ -157,7 +157,7 @@ if False:
             {
                 "Type": "Unwound wt",
                 "Filename": filename,
-                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*10000/area,
+                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*5000/area,
             }
         )
 
@@ -174,7 +174,7 @@ if False:
                 {
                     "Type": "Prewound wt",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*10000/area,
+                    "Divsion density": len(df)*5000/area,
                 }
             )
     fileType = "WoundL18h"
@@ -190,7 +190,7 @@ if False:
                 {
                     "Type": "Prewound wt",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*10000/area,
+                    "Divsion density": len(df)*5000/area,
                 }
             )
         
@@ -205,7 +205,7 @@ if False:
             {
                 "Type": "Unwound JNK",
                 "Filename": filename,
-                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*10000/area,
+                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*5000/area,
             }
         )
 
@@ -222,7 +222,7 @@ if False:
                 {
                     "Type": "Prewound JNK",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*10000/area,
+                    "Divsion density": len(df)*5000/area,
                 }
             )
     fileType = "WoundLJNK"
@@ -238,7 +238,7 @@ if False:
                 {
                     "Type": "Prewound JNK",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*10000/area,
+                    "Divsion density": len(df)*5000/area,
                 }
             )
 

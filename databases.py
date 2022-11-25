@@ -314,7 +314,7 @@ if False:
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
 # Cell Shape relative to tissue
-if False:
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -329,8 +329,9 @@ if False:
 
         for t in range(T):
             dft = df[df["Time"] == t]
-            Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
-            P = np.matmul(R, np.mean(dft["Polar"]))
+            if len(dft)>0:
+                Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+                P = np.matmul(R, np.mean(dft["Polar"]))
 
             for i in range(len(dft)):
                 [x, y] = [
@@ -384,9 +385,10 @@ if False:
 
             for t in range(T):
                 dft = df[df["Time"] == t]
-                Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
-                P = np.matmul(R, np.mean(dft["Polar"]))
-                xw, yw = dfWound["Position"].iloc[t]
+                if len(dft)>0:
+                    Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+                    P = np.matmul(R, np.mean(dft["Polar"]))
+                    xw, yw = dfWound["Position"].iloc[t]
 
                 for i in range(len(dft)):
                     x = dft["Centroid"].iloc[i][0]
@@ -433,13 +435,14 @@ if False:
 
             for t in range(T):
                 dft = df[df["Time"] == t]
-                Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
-                P = np.matmul(R, np.mean(dft["Polar"]))
-                mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
-                )
-                xw = 256 + mig[0] / scale
-                yw = 256 + mig[1] / scale
+                if len(dft)>0:
+                    Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+                    P = np.matmul(R, np.mean(dft["Polar"]))
+                    mig = np.sum(
+                        np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
+                    )
+                    xw = 256 + mig[0] / scale
+                    yw = 256 + mig[1] / scale
 
                 for i in range(len(dft)):
                     x = dft["Centroid"].iloc[i][0]
@@ -492,8 +495,10 @@ if False:
 
             for t in range(T):
                 dft = df[df["T"] == t]
-                xw, yw = dfWound["Position"].iloc[t]
-                V = np.mean(dft["Velocity"])
+
+                if len(dft)>0:
+                    xw, yw = dfWound["Position"].iloc[t]
+                    V = np.mean(dft["Velocity"])
 
                 for i in range(len(dft)):
                     x = dft["X"].iloc[i]
@@ -528,12 +533,13 @@ if False:
 
             for t in range(T):
                 dft = df[df["T"] == t]
-                mig = np.sum(
-                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
-                )
-                xw = 256 + mig[0] / scale
-                yw = 256 + mig[1] / scale
-                V = np.mean(dft["Velocity"])
+                if len(dft)>0:
+                    mig = np.sum(
+                        np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
+                    )
+                    xw = 256 + mig[0] / scale
+                    yw = 256 + mig[1] / scale
+                    V = np.mean(dft["Velocity"])
 
                 for i in range(len(dft)):
                     x = dft["X"].iloc[i]
@@ -1116,5 +1122,5 @@ if False:
                 mig += np.array(dfFilename["V"][dfFilename["T"] == t])[0]
 
     dfShape = pd.DataFrame(_df2)
-    dfShape.to_pickle(f"databases/dfShape{Prewound(util.fileType)}.pkl")
+    dfShape.to_pickle(f"databases/dfShape{util.Prewound(util.fileType)}.pkl")
 
