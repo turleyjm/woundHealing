@@ -36,7 +36,7 @@ import cellProperties as cell
 import utils as util
 
 pd.options.mode.chained_assignment = None
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 18})
 
 # -------------------
 
@@ -1400,10 +1400,13 @@ if False:
         deltaOri.append(np.mean(df2["Change Towards Tissue"]))
         deltaOristd.append(np.std(df2["Change Towards Tissue"]))
 
+    deltaOri = np.array(deltaOri)
+    deltaOristd = np.array(deltaOristd)
+
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
 
     ax[0, 0].hist(
-        df["Orientation"],
+        df["Orientation"], 
     )
     ax[0, 0].axvline(np.mean(df["Orientation"]), color="r")
     ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Tissue")
@@ -1443,8 +1446,69 @@ if False:
     )
     plt.close("all")
 
+
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+
+    ax.hist(
+        df["Orientation"], alpha=0.4, label= "Mitosis orientation", color="g"
+    )
+    ax.axvline(np.mean(df["Orientation"]), color="g")
+    ax.hist(
+        df["Shape Orientation"], alpha=0.4, color="m", label= "Post shuffling orientation"
+    )
+    ax.axvline(np.mean(df["Shape Orientation"]), color="m")
+
+    ax.set(xlabel="Division orientation relative to wing", ylabel="Frequency")
+    fileTitle = util.getFileTitle(fileType)
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Shift in division orientation relative \n to wing in tissue with "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+        ax.set_ylim([0, 75])
+    else:
+        ax.title.set_text(
+            f"Shift in division orientation relative \n to wing in " + r"$\bf{" + str(fileTitle) + "}$ tissue"
+        )
+        ax.set_ylim([0, 145])
+
+    ax.legend(fontsize=12, loc='upper left')
+
+    # ax[1].hist(
+    #     df["Change Towards Tissue"],
+    # )
+    # ax[1].set(xlabel=r"Division Orientation Change Towards Tissue", ylabel="Frequency")
+    # ax[1].title.set_text(r"Change in orientation Towards Tissue")
+    # ax[1].set_xlim([-90, 90])
+    # ax[1].axvline(np.mean(df["Change Towards Tissue"]), color="r")
+
+    # ax[2].plot(thetas + 5, deltaOri, marker="o")
+    # ax[2].fill_between(thetas + 5, deltaOri- deltaOristd, deltaOri+ deltaOristd, alpha=0.2)
+    # ax[2].set(
+    #     xlabel=r"Mitosis Division Orientation",
+    #     ylabel=r"Division Orientation Change Towards Tissue",
+    # )
+    # ax[2].title.set_text(r"Change in orientation Towards Tissue with theta")
+    # ax[2].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division relative to tissue {fileType} figure",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
 # shift in orientation after division relative to wound
-if False:
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1528,6 +1592,9 @@ if False:
         deltaOri.append(np.mean(df2["Change Towards Wound"]))
         deltaOristd.append(np.std(df2["Change Towards Wound"]))
 
+    deltaOri = np.array(deltaOri)
+    deltaOristd = np.array(deltaOristd)
+
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
 
     ax[0, 0].hist(
@@ -1571,6 +1638,64 @@ if False:
     fig.tight_layout()
     fig.savefig(
         f"results/change in ori after division relative to wound {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+    ax.hist(
+        df["Nuclei Orientation"], alpha=0.4, label= "Mitosis orientation", color="g"
+    )
+    ax.axvline(np.mean(df["Nuclei Orientation"]), color="g")
+    ax.hist(
+        df["Daughter Orientation"], alpha=0.4, color="m", label= "Post shuffling orientation"
+    )
+    ax.axvline(np.mean(df["Daughter Orientation"]), color="m")
+
+    ax.set(xlabel="Division orientation relative \n to wound", ylabel="Frequency")
+    fileTitle = util.getFileTitle(fileType)
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Shift in division orientation \n relative to "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Shift in division orientation relative \n to wing in " + r"$\bf{" + str(fileTitle) + "}$"
+        )
+    ax.set_ylim([0, 63])
+    ax.legend(fontsize=12, loc='upper left')
+
+    # ax[1].hist(
+    #     df["Change Towards Wound"],
+    # )
+    # ax[1].set(xlabel=r"Division Orientation Change Towards Wound", ylabel="Frequency")
+    # ax[1].title.set_text(r"Change in orientation Towards Wound")
+    # ax[1].set_xlim([-90, 90])
+    # ax[1].axvline(np.mean(df["Change Towards Wound"]), color="r")
+
+    # ax[2].plot(thetas + 5, deltaOri, marker="o")
+    # ax[2].fill_between(thetas + 5, deltaOri- deltaOristd, deltaOri+ deltaOristd, alpha=0.2)
+    # ax[2].set(
+    #     xlabel=r"Mitosis Division Orientation",
+    #     ylabel=r"Division Orientation Change Towards Wound",
+    # )
+    # ax[2].title.set_text(r"Change in orientation Towards Wound with theta")
+    # ax[2].set_ylim([-40, 40])
+
+    fig.tight_layout()
+    fig.savefig(
+        f"results/change in ori after division relative to wound {fileType} figure",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

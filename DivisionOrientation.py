@@ -29,13 +29,13 @@ import xml.etree.ElementTree as et
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 12})
+plt.rcParams.update({"font.size": 18})
 
 # -------------------
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 180
+T = 160
 timeStep = 8
 R = 60
 rStep = 10
@@ -111,11 +111,30 @@ if False:
 # Divison orientation with respect to tissue
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    fileTitle = util.getFileTitle(fileType)
 
-    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-    ax.hist(dfDivisions["Orientation"])
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+
+    cm = plt.cm.get_cmap('RdBu_r')
+
+    n, bins, patches = ax.hist(dfDivisions["Orientation"], color="g")
+
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    ax.title.set_text(f"Divison orientation with respect to tissue {fileType}")
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Divison orientation with \n respect to wing "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Divison orientation with \n respect to wing " + r"$\bf{" + str(fileTitle) + "}$"
+        )
 
     fig.savefig(
         f"results/Divison orientation with respect to tissue {fileType}",
@@ -163,11 +182,33 @@ if False:
 # Divison orientation with respect to a wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    fileTitle = util.getFileTitle(fileType)
 
-    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-    ax.hist(dfDivisions["Orientation Wound"])
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    cm = plt.cm.get_cmap('RdBu_r')
+    n, bins, patches = ax.hist(dfDivisions["Orientation Wound"])
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    ax.title.set_text(f"Divison orientation with respect to a wound {fileType}")
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Divison orientation with \n respect to a "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+        bin_centers = 0.5 * (bins[:-1] + bins[1:])
+        col = bin_centers - min(bin_centers)
+        col /= max(col)
+
+        for c, p in zip(col, patches):
+            plt.setp(p, 'facecolor', cm(c))
+    else:
+        ax.title.set_text(
+            f"Divison orientation with \n respect to a " + r"$\bf{" + str(fileTitle) + "}$"
+        )
 
     fig.savefig(
         f"results/Divison orientation with respect to a wound {fileType}",
@@ -223,7 +264,6 @@ if False:
     )
     plt.close("all")
 
-
 # Divison orientation with respect to a wound over distance from wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -270,7 +310,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
 
 # Divison orientation with respect to a wound over distance from wound t-tests
 if False:
@@ -407,11 +446,10 @@ if False:
     )
     plt.close("all")
 
-
+T=160
 timeStep = 16
 R = 80
 rStep = 20
-
 
 # Divison orientation with distance from wound edge and time
 if False:
@@ -483,9 +521,8 @@ if False:
         )
         plt.close("all")
 
-
 # Divison orientation with direction from wound
-if True:
+if False:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fig, ax = plt.subplots(2, 4, figsize=(20, 10))
@@ -508,3 +545,5 @@ if True:
         dpi=300,
     )
     plt.close("all")
+
+

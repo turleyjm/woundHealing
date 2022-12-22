@@ -34,112 +34,442 @@ import utils as util
 pd.options.mode.chained_assignment = None
 plt.rcParams.update({"font.size": 14})
 
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
 T = 90
 scale = 123.26 / 512
 
-# -------------------
+def corRho_T(T, C):
+    return C / T
 
-# collect all correlations
+def corRho_R(R, C, D):
+    T = 2.5
+    return C / T * np.exp(-(R ** 2) / (4 * D * T))
 
+def expCos(R, C, D, w):
+    return C * np.exp(-D * R) * np.cos(w * R)
+
+def exp(R, C, D):
+    return C * np.exp(-D * R)
+
+def expStretched(R, C, D, alpha):
+    return C * np.exp(-D * R ** alpha)
+
+def explinear(R, C, D, m, c):
+    return C * np.exp(-D * R) + m * R + c
+
+def CorR0(t, C, a):
+    return C * upperGamma(0, a * t)
+
+def upperGamma(a, x):
+    if a == 0:
+        return -sc.expi(-x)
+    else:
+        return sc.gamma(a) * sc.gammaincc(a, x)
+
+def binomialGamma(j, a, t):
+    s = 0
+    for l in range(j):
+        s += (-a) ** (j - l) * (t) ** (-l) * upperGamma(l, a * t)
+    s += (t) ** (-j) * upperGamma(j, a * t)
+    return s
+
+def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
+    y, R, T = np.meshgrid(y, R, T, indexing="ij")
+    return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
+
+def Integral(R, b):
+    a = 0.014231800277153952
+    T = 2
+    C = 8.06377854e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+def Integral_P2(R, b):
+    a = 0.014231800277153952
+    T = 2
+    C = 2.89978933e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+def CorrdP1(R, T):
+    a = 0.014231800277153952
+    b = 0.02502418
+    C = 8.06377854e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+def CorrdP2(R, T):
+    a = 0.014231800277153952
+    b = 0.02502418
+    C = 2.89978933e-06
+    y = np.linspace(a, a * 100, 100000)
+    h = y[1] - y[0]
+    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
+
+# ------------------- divisons
+
+# 3d Scatter plot
 if False:
-    _df = []
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     for filename in filenames:
-        # dfCorMid_12 = pd.read_pickle(f"databases/dfCorMidway{filename}_1-2.pkl")
-        # dfCorMid_34 = pd.read_pickle(f"databases/dfCorMidway{filename}_3-4.pkl")
-        # dfCorMid_56 = pd.read_pickle(f"databases/dfCorMidway{filename}_5-6.pkl")
-        # dfCorMid_78 = pd.read_pickle(f"databases/dfCorMidway{filename}_7-8.pkl")
-        dfCorMid = pd.read_pickle(f"databases/dfCorMidway{filename}.pkl")
-        dfCorRho = pd.read_pickle(f"databases/dfCorRho{filename}.pkl")
-        dfCorRhoQ = pd.read_pickle(f"databases/dfCorRhoQ{filename}.pkl")
+        df = dfDivisions[dfDivisions["Filename"] == filename]
+        x = np.array(df["X"])
+        y = np.array(df["Y"])
+        t = np.array(df["T"])
+        fig = go.Figure(data=[go.Scatter3d(x=x, y=y, z=t, mode="markers")])
+        fig.show()
+        plt.close("all")
 
-        dRhodRho = np.nan_to_num(dfCorRho["dRhodRhoCorrelation"].iloc[0])
-        dRhodRho_std = np.nan_to_num(dfCorRho["dRhodRhoCorrelation_std"].iloc[0])
-        count_Rho = np.nan_to_num(dfCorRho["Count"].iloc[0])
+# Distributions of divisons in x and y
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    x = np.array(dfDivisions["X"])
+    y = np.array(dfDivisions["Y"])
 
-        dQ1dRho = np.nan_to_num(dfCorRhoQ["dRhodQ1Correlation"].iloc[0])
-        dQ1dRho_std = np.nan_to_num(dfCorRhoQ["dRhodQ1Correlation_std"].iloc[0])
-        dQ2dRho = np.nan_to_num(dfCorRhoQ["dRhodQ2Correlation"].iloc[0])
-        dQ2dRho_std = np.nan_to_num(dfCorRhoQ["dRhodQ2Correlation_std"].iloc[0])
-        count_RhoQ = np.nan_to_num(dfCorRhoQ["Count"].iloc[0])
+    fig, ax = plt.subplots(2, 1, figsize=(6, 6))
+    plt.subplots_adjust(wspace=0.3, hspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
 
-        # dQ1dQ1 = np.nan_to_num(dfCorMid_34["dQ1dQ1Correlation"].iloc[0])
-        # dQ1dQ1_std = np.nan_to_num(dfCorMid_34["dQ1dQ1Correlation_std"].iloc[0])
-        # dQ1dP1 = np.nan_to_num(dfCorMid_56["dP1dQ1Correlation"].iloc[0])
-        # dQ1dP1_std = np.nan_to_num(dfCorMid_56["dP1dQ1Correlation_std"].iloc[0])
+    ax[0].hist(x, bins=10)
+    ax[0].set(xlabel="x")
 
-        # dQ2dQ1 = np.nan_to_num(dfCorMid_56["dQ1dQ2Correlation"].iloc[0])
-        # dQ2dQ1_std = np.nan_to_num(dfCorMid_56["dQ1dQ2Correlation_std"].iloc[0])
-        # dQ2dQ2 = np.nan_to_num(dfCorMid_34["dQ2dQ2Correlation"].iloc[0])
-        # dQ2dQ2_std = np.nan_to_num(dfCorMid_34["dQ2dQ2Correlation_std"].iloc[0])
-        # dQ2dP1 = np.nan_to_num(dfCorMid_78["dP1dQ2Correlation"].iloc[0])
-        # dQ2dP1_std = np.nan_to_num(dfCorMid_78["dP1dQ2Correlation_std"].iloc[0])
-        # dQ2dP2 = np.nan_to_num(dfCorMid_78["dP2dQ2Correlation"].iloc[0])
-        # dQ2dP2_std = np.nan_to_num(dfCorMid_78["dP2dQ2Correlation_std"].iloc[0])
+    ax[1].hist(y, bins=10)
+    ax[1].set(xlabel="y")
 
-        # dP1dP1 = np.nan_to_num(dfCorMid_12["dP1dP1Correlation"].iloc[0])
-        # dP1dP1_std = np.nan_to_num(dfCorMid_12["dP1dP1Correlation_std"].iloc[0])
-        # dP2dP2 = np.nan_to_num(dfCorMid_12["dP2dP2Correlation"].iloc[0])
-        # dP2dP2_std = np.nan_to_num(dfCorMid_12["dP2dP2Correlation_std"].iloc[0])
+    fig.savefig(
+        f"results/xy distributions {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-        # count = np.nan_to_num(dfCorMid_56["Count"].iloc[0])
+# Orientation distributions
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    ori = np.array(dfDivisions["Orientation"])
 
-        dQ1dQ1 = np.nan_to_num(dfCorMid["dQ1dQ1Correlation"].iloc[0])
-        dQ1dQ1_std = np.nan_to_num(dfCorMid["dQ1dQ1Correlation_std"].iloc[0])
-        dQ1dP1 = np.nan_to_num(dfCorMid["dP1dQ1Correlation"].iloc[0])
-        dQ1dP1_std = np.nan_to_num(dfCorMid["dP1dQ1Correlation_std"].iloc[0])
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    plt.subplots_adjust(wspace=0.3, hspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
 
-        dQ2dQ1 = np.nan_to_num(dfCorMid["dQ1dQ2Correlation"].iloc[0])
-        dQ2dQ1_std = np.nan_to_num(dfCorMid["dQ1dQ2Correlation_std"].iloc[0])
-        dQ2dQ2 = np.nan_to_num(dfCorMid["dQ2dQ2Correlation"].iloc[0])
-        dQ2dQ2_std = np.nan_to_num(dfCorMid["dQ2dQ2Correlation_std"].iloc[0])
-        dQ2dP1 = np.nan_to_num(dfCorMid["dP1dQ2Correlation"].iloc[0])
-        dQ2dP1_std = np.nan_to_num(dfCorMid["dP1dQ2Correlation_std"].iloc[0])
-        dQ2dP2 = np.nan_to_num(dfCorMid["dP2dQ2Correlation"].iloc[0])
-        dQ2dP2_std = np.nan_to_num(dfCorMid["dP2dQ2Correlation_std"].iloc[0])
+    ax.hist(ori, bins=10)
+    ax.set(xlabel="Orientation")
 
-        dP1dP1 = np.nan_to_num(dfCorMid["dP1dP1Correlation"].iloc[0])
-        dP1dP1_std = np.nan_to_num(dfCorMid["dP1dP1Correlation_std"].iloc[0])
-        dP2dP2 = np.nan_to_num(dfCorMid["dP2dP2Correlation"].iloc[0])
-        dP2dP2_std = np.nan_to_num(dfCorMid["dP2dP2Correlation_std"].iloc[0])
+    fig.savefig(
+        f"results/ori distributions {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
 
-        count = np.nan_to_num(dfCorMid["Count"].iloc[0])
+# Orientation distributions by filename
+if False:
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for filename in filenames:
+        df = dfDivisions[dfDivisions["Filename"] == filename]
+        ori = np.array(df["Orientation"])
 
-        _df.append(
-            {
-                "Filename": filename,
-                "dRhodRho": dRhodRho,
-                "dRhodRho_std": dRhodRho_std,
-                "Count Rho": count_Rho,
-                "dQ1dRho": dQ1dRho,
-                "dQ1dRho_std": dQ1dRho_std,
-                "dQ2dRho": dQ2dRho,
-                "dQ2dRho_std": dQ2dRho_std,
-                "Count Rho Q": count_RhoQ,
-                "dQ1dQ1": dQ1dQ1,
-                "dQ1dQ1_std": dQ1dQ1_std,
-                "dQ1dP1": dQ1dP1,
-                "dQ1dP1_std": dQ1dP1_std,
-                "dQ2dQ1": dQ2dQ1,
-                "dQ2dQ1_std": dQ2dQ1_std,
-                "dQ2dQ2": dQ2dQ2,
-                "dQ2dQ2_std": dQ2dQ2_std,
-                "dQ2dP1": dQ2dP1,
-                "dQ2dP1_std": dQ2dP1_std,
-                "dQ2dP2": dQ2dP2,
-                "dQ2dP2_std": dQ2dP2_std,
-                "dP1dP1": dP1dP1,
-                "dP1dP1_std": dP1dP1_std,
-                "dP2dP2": dP2dP2,
-                "dP2dP2_std": dP2dP2_std,
-                "Count": count,
-            }
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        plt.subplots_adjust(wspace=0.3, hspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        ax.hist(ori, bins=10)
+        ax.set(xlabel="Orientation")
+
+        fig.savefig(
+            f"results/ori distributions {filename}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+# Division correlations figure
+if False:
+    df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
+    expectedXY = df["expectedXY"].iloc[0]
+    ExXExY = df["ExXExY"].iloc[0]
+    divCorr = df["divCorr"].iloc[0]
+    oriCorr = df["oriCorr"].iloc[0]
+    df = 0
+    maxCorr = np.max(expectedXY)
+
+    if False:
+        t, r = np.mgrid[10:110:10, 10:120:10]
+        fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+        plt.subplots_adjust(wspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        c = ax[0, 0].pcolor(t, r, expectedXY, cmap="Reds", vmin=0, vmax=maxCorr)
+        fig.colorbar(c, ax=ax[0, 0])
+        ax[0, 0].set_xlabel("Time (min)")
+        ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+        ax[0, 0].title.set_text(f"expectedXY")
+
+        c = ax[0, 1].pcolor(t, r, ExXExY, cmap="Reds", vmin=0, vmax=maxCorr)
+        fig.colorbar(c, ax=ax[0, 1])
+        ax[0, 1].set_xlabel("Time (min)")
+        ax[0, 1].set_ylabel(r"$R (\mu m)$")
+        ax[0, 1].title.set_text(f"ExXExY")
+
+        c = ax[1, 0].pcolor(
+            t,
+            r,
+            divCorr,
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+        )
+        fig.colorbar(c, ax=ax[1, 0])
+        ax[1, 0].set_xlabel("Time (min)")
+        ax[1, 0].set_ylabel(r"$R (\mu m)$")
+        ax[1, 0].title.set_text(f"Correlation")
+
+        c = ax[1, 1].pcolor(
+            t,
+            r,
+            oriCorr,
+            cmap="RdBu_r",
+            vmin=-1,
+            vmax=1,
+        )
+        fig.colorbar(c, ax=ax[1, 1])
+        ax[1, 1].set_xlabel("Time (min)")
+        ax[1, 1].set_ylabel(r"$R (\mu m)$")
+        ax[1, 1].title.set_text(f"Correlation Orientation")
+
+        fig.savefig(
+            f"results/Division Correlation {fileType}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+
+    t, r = np.mgrid[10:110:10, 10:120:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    maxCorr = np.max(divCorr[:10])
+    c = ax.pcolor(
+        t,
+        r,
+        divCorr[:10] * 10000 ** 2,
+        cmap="RdBu_r",
+        vmin=-3,
+        vmax=3,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time apart $t$ (min)")
+    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    fileTitle = util.getFileTitle(fileType) 
+
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Division density \n correlation "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Division density \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
         )
 
-    df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/dfCorrelations{fileType}.pkl")
+    fig.savefig(
+        f"results/Division Correlation figure {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+        
+
+    t, r = np.mgrid[10:110:10, 10:120:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    maxCorr = np.max(divCorr[:10])
+    c = ax.pcolor(
+        t,
+        r,
+        (divCorr[:10] - np.mean(divCorr[:10,7:10], axis=1).reshape((10,1))) * 10000 ** 2,
+        cmap="RdBu_r",
+        vmin=-3,
+        vmax=3,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time apart $t$ (min)")
+    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    fileTitle = util.getFileTitle(fileType) 
+
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Division density \n correlation "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Division density \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
+        )
+
+    fig.savefig(
+        f"results/Division Correlation figure remove long times {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+    t, r = np.mgrid[10:110:10, 10:120:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    c = ax.pcolor(
+        t,
+        r,
+        oriCorr[:10],
+        cmap="RdBu_r",
+        vmin=-1,
+        vmax=1,
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time apart $t$ (min)")
+    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    fileTitle = util.getFileTitle(fileType)
+    
+    if "Wound" in fileType:
+        ax.title.set_text(
+            f"Division orientation \n correlation "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[0])
+            + "}$"
+            + " "
+            + r"$\bf{"
+            + str(str(fileTitle).split(" ")[1])
+            + "}$"
+        )
+    else:
+        ax.title.set_text(
+            f"Division orientation \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
+        )
+
+    fig.savefig(
+        f"results/Division orientation figure {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+# Division orientation correlations by filename
+if False:
+    df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
+    thetaCorr = df["thetaCorr"].iloc[0]
+    df = 0
+    time = np.array(range(int(T / timeStep))) * timeStep
+    rad = np.array(range(int(R / rStep))) * rStep
+
+    t, r = np.mgrid[0:160:10, 0:110:10]
+
+    for m in range(len(filenames)):
+        oriCorr = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for i in range(len(time)):
+            for j in range(len(rad)):
+                oriCorr[i][j] = np.mean(thetaCorr[i][j][m])
+
+        fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+        plt.subplots_adjust(wspace=0.3)
+        plt.gcf().subplots_adjust(bottom=0.15)
+
+        c = ax.pcolor(
+            t,
+            r,
+            oriCorr,
+            cmap="RdBu_r",
+            vmin=-1,
+            vmax=1,
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set_xlabel("Time (min)")
+        ax.set_ylabel(r"$R (\mu m)$")
+        ax.title.set_text(f"Correlation Orientation {filenames[m]}")
+
+        fig.savefig(
+            f"results/Correlation Orientation {filenames[m]}",
+            dpi=300,
+            transparent=True,
+        )
+        plt.close("all")
+
+# Division-rho correlations figure
+if False:
+    df = pd.read_pickle(f"databases/divRhoCorr{fileType}.pkl")
+    expectedXY = df["expectedXY"].iloc[0]
+    ExXExY = df["ExXExY"].iloc[0]
+    divRhoCorr = df["divRhoCorr"].iloc[0]
+    df = 0
+    maxCorr = np.max(expectedXY)
+
+    t, r = np.mgrid[0:160:10, 0:110:10]
+    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    c = ax[0, 0].pcolor(t, r, expectedXY, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 0])
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].title.set_text(f"expectedXY")
+
+    c = ax[0, 1].pcolor(t, r, ExXExY, cmap="Reds", vmin=0, vmax=maxCorr)
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (min)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$")
+    ax[0, 1].title.set_text(f"ExXExY")
+
+    c = ax[1, 0].pcolor(
+        t,
+        r,
+        divRhoCorr,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (min)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$")
+    ax[1, 0].title.set_text(f"Correlation")
+
+    fig.savefig(
+        f"results/Division Rho Correlation {fileType}",
+        dpi=300,
+        transparent=True,
+    )
+    plt.close("all")
+
+
+# ------------------- Shape correlations
 
 # total comparisions
 if False:
@@ -149,14 +479,19 @@ if False:
     for i in range(len(dfCor)):
         total += np.sum(dfCor["Count Rho"].iloc[i])
         total += np.sum(dfCor["Count Rho Q"].iloc[i]) * 2
-        total += np.sum(dfCor["Count"].iloc[i]) * 8
+        total += np.sum(dfCor["dP1dP1Count"].iloc[i])
+        total += np.sum(dfCor["dP2dP2Count"].iloc[i])
+        total += np.sum(dfCor["dQ1dQ1Count"].iloc[i])
+        total += np.sum(dfCor["dQ1dP1Count"].iloc[i])
+        total += np.sum(dfCor["dQ2dQ1Count"].iloc[i])
+        total += np.sum(dfCor["dQ2dQ2Count"].iloc[i])
+        total += np.sum(dfCor["dQ2dP1Count"].iloc[i])
+        total += np.sum(dfCor["dQ2dP2Count"].iloc[i])
 
     numbers = "{:,}".format(int(total))
     print(numbers)
 
-
 # display all correlations
-
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -255,31 +590,45 @@ if False:
     dP1dP1 = np.zeros([len(filenames), T, R - 1])
     dP2dP2 = np.zeros([len(filenames), T, R - 1])
     for i in range(len(filenames)):
-        count = dfCor["Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
         dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ1dP1total = dfCor["dQ1dP1Count"].iloc[i][:, :-1, :-1]
         dQ1dP1[i] = np.sum(
-            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * dQ1dP1total, axis=2
+        ) / np.sum(dQ1dP1total, axis=2)
+
+        dQ2dQ1total = dfCor["dQ2dQ1Count"].iloc[i][:, :-1, :-1]
         dQ2dQ1[i] = np.sum(
-            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * dQ2dQ1total, axis=2
+        ) / np.sum(dQ2dQ1total, axis=2)
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
         dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ2dP1total = dfCor["dQ2dP1Count"].iloc[i][:, :-1, :-1]
         dQ2dP1[i] = np.sum(
-            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * dQ2dP1total, axis=2
+        ) / np.sum(dQ2dP1total, axis=2)
+
+        dQ2dP2total = dfCor["dQ2dP2Count"].iloc[i][:, :-1, :-1]
         dQ2dP2[i] = np.sum(
-            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * dQ2dP2total, axis=2
+        ) / np.sum(dQ2dP2total, axis=2)
+        
+        dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
         dP1dP1[i] = np.sum(
-            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
+        ) / np.sum(dP1dP1total, axis=2)
+
+        dP2dP2total = dfCor["dP2dP2Count"].iloc[i][:, :-1, :-1]
         dP2dP2[i] = np.sum(
-            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
+        ) / np.sum(dP2dP2total, axis=2)
 
     dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
     dQ1dP1 = np.mean(dQ1dP1, axis=0)
@@ -419,7 +768,6 @@ if False:
     )
     plt.close("all")
 
-
 # display all norm correlations
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
@@ -524,31 +872,45 @@ if False:
     dP1dP1 = np.zeros([len(filenames), T, R - 1])
     dP2dP2 = np.zeros([len(filenames), T, R - 1])
     for i in range(len(filenames)):
-        count = dfCor["Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
         dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ1dP1total = dfCor["dQ1dP1Count"].iloc[i][:, :-1, :-1]
         dQ1dP1[i] = np.sum(
-            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * dQ1dP1total, axis=2
+        ) / np.sum(dQ1dP1total, axis=2)
+
+        dQ2dQ1total = dfCor["dQ2dQ1Count"].iloc[i][:, :-1, :-1]
         dQ2dQ1[i] = np.sum(
-            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * dQ2dQ1total, axis=2
+        ) / np.sum(dQ2dQ1total, axis=2)
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
         dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ2dP1total = dfCor["dQ2dP1Count"].iloc[i][:, :-1, :-1]
         dQ2dP1[i] = np.sum(
-            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * dQ2dP1total, axis=2
+        ) / np.sum(dQ2dP1total, axis=2)
+
+        dQ2dP2total = dfCor["dQ2dP2Count"].iloc[i][:, :-1, :-1]
         dQ2dP2[i] = np.sum(
-            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * dQ2dP2total, axis=2
+        ) / np.sum(dQ2dP2total, axis=2)
+        
+        dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
         dP1dP1[i] = np.sum(
-            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
+        ) / np.sum(dP1dP1total, axis=2)
+
+        dP2dP2total = dfCor["dP2dP2Count"].iloc[i][:, :-1, :-1]
         dP2dP2[i] = np.sum(
-            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * count, axis=2
-        ) / np.sum(count, axis=2)
+            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
+        ) / np.sum(dP2dP2total, axis=2)
 
     dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
     dQ1dP1 = np.mean(dQ1dP1, axis=0)
@@ -690,16 +1052,6 @@ if False:
     )
     plt.close("all")
 
-
-def corRho_T(T, C):
-    return C / T
-
-
-def corRho_R(R, C, D):
-    T = 2.5
-    return C / T * np.exp(-(R ** 2) / (4 * D * T))
-
-
 # fit carves dRhodRho based on model
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
@@ -763,15 +1115,6 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
-
-def expCos(R, C, D, w):
-    return C * np.exp(-D * R) * np.cos(w * R)
-
-
-def exp(R, C, D):
-    return C * np.exp(-D * R)
-
 
 # fit carves dRhodRho
 if False:
@@ -861,11 +1204,6 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
-
-def expStretched(R, C, D, alpha):
-    return C * np.exp(-D * R ** alpha)
-
 
 # fit carves Polarisation
 if False:
@@ -988,13 +1326,8 @@ if False:
     )
     plt.close("all")
 
-
-def explinear(R, C, D, m, c):
-    return C * np.exp(-D * R) + m * R + c
-
-
 # fit carves Q
-if True:
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     plt.rcParams.update({"font.size": 12})
@@ -1005,13 +1338,15 @@ if True:
     dQ1dQ1 = np.zeros([len(filenames), T, R])
     dQ2dQ2 = np.zeros([len(filenames), T, R])
     for i in range(len(filenames)):
-        Count = dfCor["Count"].iloc[i][:, :, :-1]
-        dQ1dQ1[i] = np.sum(dfCor["dQ1dQ1"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
-            Count, axis=2
-        )
-        dQ2dQ2[i] = np.sum(dfCor["dQ2dQ2"].iloc[i][:, :, :-1] * Count, axis=2) / np.sum(
-            Count, axis=2
-        )
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
 
     dfCor = 0
 
@@ -1116,61 +1451,6 @@ if True:
     )
     plt.close("all")
 
-
-
-# ??
-if False:
-    dP1dP1Correlation = np.nan_to_num(dP1dP1Correlation)
-    dP2dP2Correlation = np.nan_to_num(dP2dP2Correlation)
-    dQ1dQ1Correlation = np.nan_to_num(dQ1dQ1Correlation)
-    dQ2dQ2Correlation = np.nan_to_num(dQ2dQ2Correlation)
-    dQ1dQ2Correlation = np.nan_to_num(dQ1dQ2Correlation)
-    dP1dQ1Correlation = np.nan_to_num(dP1dQ1Correlation)
-    dP1dQ2Correlation = np.nan_to_num(dP1dQ2Correlation)
-    dP2dQ2Correlation = np.nan_to_num(dP2dQ2Correlation)
-
-    dP1dP1CorrelationFilename = dP1dP1Correlation
-    dP2dP2CorrelationFilename = dP2dP2Correlation
-    dQ1dQ1CorrelationFilename = dQ1dQ1Correlation
-    dQ2dQ2CorrelationFilename = dQ2dQ2Correlation
-    dQ1dQ2CorrelationFilename = dQ1dQ2Correlation
-    dP1dQ1CorrelationFilename = dP1dQ1Correlation
-    dP1dQ2CorrelationFilename = dP1dQ2Correlation
-    dP2dQ2CorrelationFilename = dP2dQ2Correlation
-
-    dP1dP1Correlation = np.mean(dP1dP1Correlation, axis=3)
-    dP2dP2Correlation = np.mean(dP2dP2Correlation, axis=3)
-    dQ1dQ1Correlation = np.mean(dQ1dQ1Correlation, axis=3)
-    dQ2dQ2Correlation = np.mean(dQ2dQ2Correlation, axis=3)
-    dQ1dQ2Correlation = np.mean(dQ1dQ2Correlation, axis=3)
-    dP1dQ1Correlation = np.mean(dP1dQ1Correlation, axis=3)
-    dP1dQ2Correlation = np.mean(dP1dQ2Correlation, axis=3)
-    dP2dQ2Correlation = np.mean(dP2dQ2Correlation, axis=3)
-
-    _df.append(
-        {
-            "dP1dP1Correlation": dP1dP1Correlation,
-            "dP2dP2Correlation": dP2dP2Correlation,
-            "dQ1dQ1Correlation": dQ1dQ1Correlation,
-            "dQ2dQ2Correlation": dQ2dQ2Correlation,
-            "dQ1dQ2Correlation": dQ1dQ2Correlation,
-            "dP1dQ1Correlation": dP1dQ1Correlation,
-            "dP1dQ2Correlation": dP1dQ2Correlation,
-            "dP2dQ2Correlation": dP2dQ2Correlation,
-            "dP1dP1CorrelationFilename": dP1dP1CorrelationFilename,
-            "dP2dP2CorrelationFilename": dP2dP2CorrelationFilename,
-            "dQ1dQ1CorrelationFilename": dQ1dQ1CorrelationFilename,
-            "dQ2dQ2CorrelationFilename": dQ2dQ2CorrelationFilename,
-            "dQ1dQ2CorrelationFilename": dQ1dQ2CorrelationFilename,
-            "dP1dQ1CorrelationFilename": dP1dQ1CorrelationFilename,
-            "dP1dQ2CorrelationFilename": dP1dQ2CorrelationFilename,
-            "dP2dQ2CorrelationFilename": dP2dQ2CorrelationFilename,
-        }
-    )
-
-    dfCorrelation = pd.DataFrame(_df)
-    dfCorrelation.to_pickle(f"databases/dfCorrelation{fileType}.pkl")
-
 # display short range correlation
 if False:
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
@@ -1223,49 +1503,6 @@ if False:
         transparent=True,
     )
     plt.close("all")
-
-
-def CorR0(t, C, a):
-    return C * upperGamma(0, a * t)
-
-
-def upperGamma(a, x):
-    if a == 0:
-        return -sc.expi(-x)
-    else:
-        return sc.gamma(a) * sc.gammaincc(a, x)
-
-
-def binomialGamma(j, a, t):
-    s = 0
-    for l in range(j):
-        s += (-a) ** (j - l) * (t) ** (-l) * upperGamma(l, a * t)
-    s += (t) ** (-j) * upperGamma(j, a * t)
-    return s
-
-
-def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
-    y, R, T = np.meshgrid(y, R, T, indexing="ij")
-    return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
-
-
-def Integral(R, b):
-    a = 0.014231800277153952
-    T = 2
-    C = 8.06377854e-06
-    y = np.linspace(a, a * 100, 100000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
-
-
-def Integral_P2(R, b):
-    a = 0.014231800277153952
-    T = 2
-    C = 2.89978933e-06
-    y = np.linspace(a, a * 100, 100000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
-
 
 # deltaP1
 if False:
@@ -1322,7 +1559,6 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
 
 # deltaP2
 if False:
@@ -1388,7 +1624,7 @@ if False:
     )
     plt.close("all")
 
-
+# Integral over model function
 if False:
     a = 0.014231800277153952
     y = np.linspace(a, a * 100, 100000)
@@ -1408,6 +1644,7 @@ if False:
         )
         plt.close("all")
 
+# Integral function P correlation
 if False:
     a = 0.014231800277153952
     b = 0.005
@@ -1431,25 +1668,6 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
-
-def CorrdP1(R, T):
-    a = 0.014231800277153952
-    b = 0.02502418
-    C = 8.06377854e-06
-    y = np.linspace(a, a * 100, 100000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
-
-
-def CorrdP2(R, T):
-    a = 0.014231800277153952
-    b = 0.02502418
-    C = 2.89978933e-06
-    y = np.linspace(a, a * 100, 100000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
-
 
 # fit cavre for dP1
 if False:
@@ -1518,9 +1736,9 @@ if False:
     )
     plt.close("all")
 
-
 # fit cavre for dP2
 if False:
+
     dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
     deltaP2Correlation = dfCorrelation["deltaP2Correlation"].iloc[0]
 
@@ -1585,3 +1803,129 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
+
+
+# ------------------- Shape-rho correlations
+
+# Correlation Rho str
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+
+    deltarhoVar = df["deltarhoVar"].iloc[0]
+
+    t, r = np.mgrid[0:180:10, 0:80:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+    lims = np.max([np.max(rhoCorrelation), abs(np.min(rhoCorrelation))])
+
+    rhoCorrelation = rhoCorrelation - rhoCorrelation[-1]
+
+    c = ax.pcolor(
+        t,
+        r,
+        rhoCorrelation,
+        cmap="RdBu_r",
+        vmin=-lims,
+        vmax=lims,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time (min)")
+    ax.set_ylabel(r"$R (\mu m)$ ")
+    ax.title.set_text(r"Correlation of $\delta \rho$ str" + f" {fileType}")
+
+    fig.savefig(
+        f"results/Correlation Rho str {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# Correlation Rho
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+
+    deltarhoVar = df["deltarhoVar"].iloc[0]
+
+    t, r = np.mgrid[0:180:10, 0:80:10]
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+
+    lims = np.max([np.max(rhoCorrelation), abs(np.min(rhoCorrelation))])
+
+    c = ax.pcolor(
+        t,
+        r,
+        rhoCorrelation,
+        cmap="RdBu_r",
+        vmin=-lims,
+        vmax=lims,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax)
+    ax.set_xlabel("Time (min)")
+    ax.set_ylabel(r"$R (\mu m)$ ")
+    ax.title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+
+    fig.savefig(
+        f"results/Correlation Rho {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# Correlation rho in T and R
+if False:
+    df = pd.read_pickle(f"databases/dfCorRho{fileType}.pkl")
+    rhoCorrelation = df["rhoCorrelation"].iloc[0]
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, gridSize * (grid - 1), grid)
+
+    m = sp.optimize.curve_fit(
+        f=corRho_T,
+        xdata=T[1:],
+        ydata=rhoCorrelation[:, 0][1:],
+        p0=0.003,
+    )[0]
+
+    fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax[0].plot(T[1:], rhoCorrelation[:, 0][1:])
+    ax[0].plot(T[1:], corRho_T(T, m)[1:])
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([-0.00001, 0.0007])
+    ax[0].set_xlim([0, gridSizeT * timeGrid])
+    ax[0].title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+
+    m = sp.optimize.curve_fit(
+        f=corRho_R,
+        xdata=R,
+        ydata=rhoCorrelation[0],
+        p0=(0.003, 10),
+    )[0]
+
+    ax[1].plot(R, rhoCorrelation[0])
+    ax[1].plot(R, corRho_R(R, m[0], m[1]))
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([-0.00001, 0.0007])
+    ax[1].title.set_text(r"Correlation of $\delta \rho$" + f" {fileType}")
+    fig.savefig(
+        f"results/Correlation rho in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+
+
+
+
