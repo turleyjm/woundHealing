@@ -314,7 +314,7 @@ if False:
     )
     plt.close("all")
 
-
+# Wound Radius Mean
 if False:
     fig = plt.figure(1, figsize=(9, 8))
     plt.errorbar(time, R, yerr=err)
@@ -349,6 +349,7 @@ if False:
 
 #  ------------------- Radius around wound thats fully in frame
 
+# max distance from wound
 if False:
     rList = [[] for col in range(T)]
     for filename in filenames:
@@ -380,7 +381,7 @@ if False:
     )
     plt.close("all")
 
-
+# correlation shape factor and healing time
 if False:
     fig = plt.figure(1, figsize=(9, 8))
     plt.scatter(sf, endTime)
@@ -394,7 +395,7 @@ if False:
     )
     plt.close("all")
 
-
+# correlation healing time and mitosis
 if False:
     cor, a = pearsonr(endTime, divisions)
     fig = plt.figure(1, figsize=(9, 8))
@@ -410,7 +411,7 @@ if False:
     )
     plt.close("all")
 
-
+# end time
 if False:
     x = np.array(range(len(endTime))) + 1
     fig = plt.figure(1, figsize=(9, 8))
@@ -425,7 +426,7 @@ if False:
     )
     plt.close("all")
 
-
+# Radial Wound
 if False:
 
     for filename in filenames:
@@ -551,7 +552,7 @@ if False:
         plt.close("all")
 
 # run all compare Wt and KD
-if True:
+if False:
     fileTypes = ["WoundS18h", "WoundSJNK"]
 
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
