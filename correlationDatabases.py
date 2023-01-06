@@ -31,12 +31,12 @@ import utils as util
 print(datetime.now().strftime("%H:%M:%S"))
 plt.rcParams.update({"font.size": 8})
 
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
 T = 90
 scale = 123.26 / 512
-
 
 def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
 
@@ -388,7 +388,7 @@ if False:
     df.to_pickle(f"databases/divRhoCorr{fileType}.pkl")
 
 # space time cell-cell correlation
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 42
     timeGrid = 51
@@ -407,12 +407,12 @@ if False:
     # dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
     # dfShape["dq1dq2i"] = list(np.zeros([len(dfShape)]))
     # dfShape["dp1dq1i"] = list(np.zeros([len(dfShape)]))
-    # dfShape["dp1dq2i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dp2dq2i"] = list(np.zeros([len(dfShape)]))
+    dfShape["dp1dq2i"] = list(np.zeros([len(dfShape)]))
+    # dfShape["dp2dq2i"] = list(np.zeros([len(dfShape)]))
 
     for k in range(len(filenames)):
         filename = filenames[k]
-        path_to_file = f"databases/correlations/dfCorMidway{filename}_8.pkl"
+        path_to_file = f"databases/correlations/dfCorMidway{filename}_7.pkl"
         if False == exists(path_to_file):
             _df = []
             # dP1dP1Correlation = np.zeros([len(T), len(R), len(theta)])
@@ -421,24 +421,24 @@ if False:
             # dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
             # dQ1dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
             # dP1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
-            # dP1dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
-            dP2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dP1dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
+            # dP2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
             # dP1dP1Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dP2dP2Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dQ1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dQ2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dQ1dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dP1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            # dP1dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            dP2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dP1dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            # dP2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
             # dP1dP1total = np.zeros([len(T), len(R), len(theta)])
             # dP2dP2total = np.zeros([len(T), len(R), len(theta)])
             # dQ1dQ1total = np.zeros([len(T), len(R), len(theta)])
             # dQ2dQ2total = np.zeros([len(T), len(R), len(theta)])
             # dQ1dQ2total = np.zeros([len(T), len(R), len(theta)])
             # dP1dQ1total = np.zeros([len(T), len(R), len(theta)])
-            # dP1dQ2total = np.zeros([len(T), len(R), len(theta)])
-            dP2dQ2total = np.zeros([len(T), len(R), len(theta)])
+            dP1dQ2total = np.zeros([len(T), len(R), len(theta)])
+            # dP2dQ2total = np.zeros([len(T), len(R), len(theta)])
 
             # dp1dp1ij = [
             #     [[[] for col in range(17)] for col in range(grid)]
@@ -464,14 +464,14 @@ if False:
             #     [[[] for col in range(17)] for col in range(grid)]
             #     for col in range(timeGrid)
             # ]
-            # dp1dq2ij = [
-            #     [[[] for col in range(17)] for col in range(grid)]
-            #     for col in range(timeGrid)
-            # ]
-            dp2dq2ij = [
+            dp1dq2ij = [
                 [[[] for col in range(17)] for col in range(grid)]
                 for col in range(timeGrid)
             ]
+            # dp2dq2ij = [
+            #     [[[] for col in range(17)] for col in range(grid)]
+            #     for col in range(timeGrid)
+            # ]
 
             print(filename + datetime.now().strftime(" %H:%M:%S"))
             dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
@@ -514,8 +514,8 @@ if False:
                         # "dq2dq2i",
                         # "dq1dq2i",
                         # "dp1dq1i",
-                        # "dp1dq2i",
-                        "dp2dq2i",
+                        "dp1dq2i",
+                        # "dp2dq2i",
                     ]
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
@@ -543,12 +543,12 @@ if False:
                     # df["dp1dq1i"] = list(
                     #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dq1
                     # )
-                    # df["dp1dq2i"] = list(
-                    #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dq2
-                    # )
-                    df["dp2dq2i"] = list(
-                        np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dq2
+                    df["dp1dq2i"] = list(
+                        np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 0] * dq2
                     )
+                    # df["dp2dq2i"] = list(
+                    #     np.stack(np.array(df.loc[:, "dp"]), axis=0)[:, 1] * dq2
+                    # )
 
                     for j in range(len(df)):
                         # dp1dp1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
@@ -569,12 +569,12 @@ if False:
                         # dp1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                         #     int(8 * df["dtheta"].iloc[j] / np.pi)
                         # ].append(df["dp1dq1i"].iloc[j])
-                        # dp1dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                        #     int(8 * df["dtheta"].iloc[j] / np.pi)
-                        # ].append(df["dp1dq2i"].iloc[j])
-                        dp2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                        dp1dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                             int(8 * df["dtheta"].iloc[j] / np.pi)
-                        ].append(df["dp2dq2i"].iloc[j])
+                        ].append(df["dp1dq2i"].iloc[j])
+                        # dp2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
+                        #     int(8 * df["dtheta"].iloc[j] / np.pi)
+                        # ].append(df["dp2dq2i"].iloc[j])
 
             T = np.linspace(0, (timeGrid - 1), timeGrid)
             R = np.linspace(0, 2 * (grid - 1), grid)
@@ -588,8 +588,8 @@ if False:
                         # dQ2dQ2Correlation[i][j][th] = np.mean(dq2dq2ij[i][j][th])
                         # dQ1dQ2Correlation[i][j][th] = np.mean(dq1dq2ij[i][j][th])
                         # dP1dQ1Correlation[i][j][th] = np.mean(dp1dq1ij[i][j][th])
-                        # dP1dQ2Correlation[i][j][th] = np.mean(dp1dq2ij[i][j][th])
-                        dP2dQ2Correlation[i][j][th] = np.mean(dp2dq2ij[i][j][th])
+                        dP1dQ2Correlation[i][j][th] = np.mean(dp1dq2ij[i][j][th])
+                        # dP2dQ2Correlation[i][j][th] = np.mean(dp2dq2ij[i][j][th])
 
                         # dP1dP1Correlation_std[i][j][th] = np.std(dp1dp1ij[i][j][th])
                         # dP2dP2Correlation_std[i][j][th] = np.std(dp2dp2ij[i][j][th])
@@ -597,16 +597,16 @@ if False:
                         # dQ2dQ2Correlation_std[i][j][th] = np.std(dq2dq2ij[i][j][th])
                         # dQ1dQ2Correlation_std[i][j][th] = np.std(dq1dq2ij[i][j][th])
                         # dP1dQ1Correlation_std[i][j][th] = np.std(dp1dq1ij[i][j][th])
-                        # dP1dQ2Correlation_std[i][j][th] = np.std(dp1dq2ij[i][j][th])
-                        dP2dQ2Correlation_std[i][j][th] = np.std(dp2dq2ij[i][j][th])
+                        dP1dQ2Correlation_std[i][j][th] = np.std(dp1dq2ij[i][j][th])
+                        # dP2dQ2Correlation_std[i][j][th] = np.std(dp2dq2ij[i][j][th])
                         # dP1dP1total[i][j][th] = len(dp1dp1ij[i][j][th])
                         # dP2dP2total[i][j][th] = len(dp2dp2ij[i][j][th])
                         # dQ1dQ1total[i][j][th] = len(dq1dq1ij[i][j][th])
                         # dQ2dQ2total[i][j][th] = len(dq2dq2ij[i][j][th])
                         # dQ1dQ2total[i][j][th] = len(dq1dq2ij[i][j][th])
                         # dP1dQ1total[i][j][th] = len(dp1dq1ij[i][j][th])
-                        # dP1dQ2total[i][j][th] = len(dp1dq2ij[i][j][th])
-                        dP2dQ2total[i][j][th] = len(dp2dq2ij[i][j][th])
+                        dP1dQ2total[i][j][th] = len(dp1dq2ij[i][j][th])
+                        # dP2dQ2total[i][j][th] = len(dp2dq2ij[i][j][th])
 
             _df.append(
                 {
@@ -617,28 +617,28 @@ if False:
                     # "dQ2dQ2Correlation": dQ2dQ2Correlation,
                     # "dQ1dQ2Correlation": dQ1dQ2Correlation,
                     # "dP1dQ1Correlation": dP1dQ1Correlation,
-                    # "dP1dQ2Correlation": dP1dQ2Correlation,
-                    "dP2dQ2Correlation": dP2dQ2Correlation,
+                    "dP1dQ2Correlation": dP1dQ2Correlation,
+                    # "dP2dQ2Correlation": dP2dQ2Correlation,
                     # "dP1dP1Correlation_std": dP1dP1Correlation_std,
                     # "dP2dP2Correlation_std": dP2dP2Correlation_std,
                     # "dQ1dQ1Correlation_std": dQ1dQ1Correlation_std,
                     # "dQ2dQ2Correlation_std": dQ2dQ2Correlation_std,
                     # "dQ1dQ2Correlation_std": dQ1dQ2Correlation_std,
                     # "dP1dQ1Correlation_std": dP1dQ1Correlation_std,
-                    # "dP1dQ2Correlation_std": dP1dQ2Correlation_std,
-                    "dP2dQ2Correlation_std": dP2dQ2Correlation_std,
+                    "dP1dQ2Correlation_std": dP1dQ2Correlation_std,
+                    # "dP2dQ2Correlation_std": dP2dQ2Correlation_std,
                     # "dP1dP1Count": dP1dP1total,
                     # "dP2dP2Count": dP2dP2total,
                     # "dQ1dQ1Count": dQ1dQ1total,
                     # "dQ2dQ2Count": dQ2dQ2total,
                     # "dQ1dQ2Count": dQ1dQ2total,
                     # "dP1dQ1Count": dP1dQ1total,
-                    # "dP1dQ2Count": dP1dQ2total,
-                    "dP2dQ2Count": dP2dQ2total,
+                    "dP1dQ2Count": dP1dQ2total,
+                    # "dP2dQ2Count": dP2dQ2total,
                 }
             )
             dfCorrelation = pd.DataFrame(_df)
-            dfCorrelation.to_pickle(f"databases/correlations/dfCorMidway{filename}_8.pkl")
+            dfCorrelation.to_pickle(f"databases/correlations/dfCorMidway{filename}_7.pkl")
 
 # space time cell density correlation
 if False:
@@ -958,50 +958,50 @@ if True:
         dP1dP1 = np.nan_to_num(dfCorMid_1["dP1dP1Correlation"].iloc[0])
         dP1dP1_std = np.nan_to_num(dfCorMid_1["dP1dP1Correlation_std"].iloc[0])
         dP1dP1total = np.nan_to_num(dfCorMid_1["dP1dP1Count"].iloc[0])
-        if np.sum(dP1dP1total)==0:
-            print(0)
+        if np.sum(dP1dP1)==0:
+            print("dP1dP1")
 
         dP2dP2 = np.nan_to_num(dfCorMid_2["dP2dP2Correlation"].iloc[0])
         dP2dP2_std = np.nan_to_num(dfCorMid_2["dP2dP2Correlation_std"].iloc[0])
         dP2dP2total = np.nan_to_num(dfCorMid_2["dP2dP2Count"].iloc[0])
-        if np.sum(dP2dP2total)==0:
-            print(0)
+        if np.sum(dP2dP2)==0:
+            print("dP2dP2")
 
         dQ1dQ1 = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation"].iloc[0])
         dQ1dQ1_std = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation_std"].iloc[0])
         dQ1dQ1total = np.nan_to_num(dfCorMid_3["dQ1dQ1Count"].iloc[0])
-        if np.sum(dQ1dQ1total)==0:
-            print(0)
+        if np.sum(dQ1dQ1)==0:
+            print("dQ1dQ1")
 
-        dQ1dP1 = np.nan_to_num(dfCorMid_4["dQ1dP1Correlation"].iloc[0])
-        dQ1dP1_std = np.nan_to_num(dfCorMid_4["dQ1dP1Correlation_std"].iloc[0])
-        dQ1dP1total = np.nan_to_num(dfCorMid_4["dQ1dP1Count"].iloc[0])
-        if np.sum(dQ1dP1total)==0:
-            print(0)
+        dQ2dQ2 = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation"].iloc[0])
+        dQ2dQ2_std = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation_std"].iloc[0])
+        dQ2dQ2total = np.nan_to_num(dfCorMid_4["dQ2dQ2Count"].iloc[0])
+        if np.sum(dQ2dQ2)==0:
+            print("dQ2dQ2")
 
-        dQ2dQ1 = np.nan_to_num(dfCorMid_5["dQ2dQ1Correlation"].iloc[0])
-        dQ2dQ1_std = np.nan_to_num(dfCorMid_5["dQ2dQ1Correlation_std"].iloc[0])
-        dQ2dQ1total = np.nan_to_num(dfCorMid_5["dQ2dQ1Count"].iloc[0])
-        if np.sum(dQ2dQ1total)==0:
-            print(0)
+        dQ1dQ2 = np.nan_to_num(dfCorMid_5["dQ1dQ2Correlation"].iloc[0])
+        dQ1dQ2_std = np.nan_to_num(dfCorMid_5["dQ1dQ2Correlation_std"].iloc[0])
+        dQ1dQ2total = np.nan_to_num(dfCorMid_5["dQ1dQ2Count"].iloc[0])
+        if np.sum(dQ1dQ2)==0:
+            print("dQ1dQ2")
 
-        dQ2dQ2 = np.nan_to_num(dfCorMid_6["dQ2dQ2Correlation"].iloc[0])
-        dQ2dQ2_std = np.nan_to_num(dfCorMid_6["dQ2dQ2Correlation_std"].iloc[0])
-        dQ2dQ2total = np.nan_to_num(dfCorMid_6["dQ2dQ2Count"].iloc[0])
-        if np.sum(dQ2dQ2total)==0:
-            print(0)
+        dP1dQ1 = np.nan_to_num(dfCorMid_6["dP1dQ1Correlation"].iloc[0])
+        dP1dQ1_std = np.nan_to_num(dfCorMid_6["dP1dQ1Correlation_std"].iloc[0])
+        dP1dQ1total = np.nan_to_num(dfCorMid_6["dP1dQ1Count"].iloc[0])
+        if np.sum(dP1dQ1)==0:
+            print("dP1dQ1")
 
-        dQ2dP1 = np.nan_to_num(dfCorMid_7["dQ2dP1Correlation"].iloc[0])
-        dQ2dP1_std = np.nan_to_num(dfCorMid_7["dQ2dP1Correlation_std"].iloc[0])
-        dQ2dP1total = np.nan_to_num(dfCorMid_7["dQ2dP1Count"].iloc[0])
-        if np.sum(dQ2dP1total)==0:
-            print(0)
+        dP1dQ2 = np.nan_to_num(dfCorMid_7["dP1dQ2Correlation"].iloc[0])
+        dP1dQ2_std = np.nan_to_num(dfCorMid_7["dP1dQ2Correlation_std"].iloc[0])
+        dP1dQ2total = np.nan_to_num(dfCorMid_7["dP1dQ2Count"].iloc[0])
+        if np.sum(dP1dQ2)==0:
+            print("dP1dQ2")
 
-        dQ2dP2 = np.nan_to_num(dfCorMid_8["dQ2dP2Correlation"].iloc[0])
-        dQ2dP2_std = np.nan_to_num(dfCorMid_8["dQ2dP2Correlation_std"].iloc[0])
-        dQ2dP2total = np.nan_to_num(dfCorMid_8["dQ2dP2Count"].iloc[0])
-        if np.sum(dQ2dP2total)==0:
-            print(0)
+        dP2dQ2 = np.nan_to_num(dfCorMid_8["dP2dQ2Correlation"].iloc[0])
+        dP2dQ2_std = np.nan_to_num(dfCorMid_8["dP2dQ2Correlation_std"].iloc[0])
+        dP2dQ2total = np.nan_to_num(dfCorMid_8["dP2dQ2Count"].iloc[0])
+        if np.sum(dP2dQ2)==0:
+            print("dP2dQ2")
 
         dRhodRho = np.nan_to_num(dfCorRho["dRhodRhoCorrelation"].iloc[0])
         dRhodRho_std = np.nan_to_num(dfCorRho["dRhodRhoCorrelation_std"].iloc[0])
@@ -1029,25 +1029,25 @@ if True:
                 "dQ1dQ1Correlation_std": dQ1dQ1_std,
                 "dQ1dQ1Count": dQ1dQ1total,
 
-                "dQ1dP1Correlation": dQ1dP1,
-                "dQ1dP1Correlation_std": dQ1dP1_std,
-                "dQ1dP1Count": dQ1dP1total,
-
-                "dQ2dQ1Correlation": dQ2dQ1,
-                "dQ2dQ1Correlation_std": dQ2dQ1_std,
-                "dQ2dQ1Count": dQ2dQ1total,
-
                 "dQ2dQ2Correlation": dQ2dQ2,
                 "dQ2dQ2Correlation_std": dQ2dQ2_std,
                 "dQ2dQ2Count": dQ2dQ2total,
 
-                "dQ2dP1Correlation": dQ2dP1,
-                "dQ2dP1Correlation_std": dQ2dP1_std,
-                "dQ2dP1Count": dQ2dP1total,
+                "dQ1dQ2Correlation": dQ1dQ2,
+                "dQ1dQ2Correlation_std": dQ1dQ2_std,
+                "dQ1dQ2Count": dQ1dQ2total,
 
-                "dQ2dP2Correlation": dQ2dP2,
-                "dQ2dP2Correlation_std": dQ2dP2_std,
-                "dQ2dP2Count": dQ2dP2total,
+                "dP1dQ1Correlation": dP1dQ1,
+                "dP1dQ1Correlation_std": dP1dQ1_std,
+                "dP1dQ1Count": dP1dQ1total,
+
+                "dP1dQ2Correlation": dP1dQ2,
+                "dP1dQ2Correlation_std": dP1dQ2_std,
+                "dP1dQ2Count": dP1dQ2total,
+
+                "dP2dQ2Correlation": dP2dQ2,
+                "dP2dQ2Correlation_std": dP2dQ2_std,
+                "dP2dQ2Count": dP2dQ2total,
 
                 "dRhodRho": dRhodRho,
                 "dRhodRho_std": dRhodRho_std,

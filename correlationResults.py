@@ -115,18 +115,6 @@ def CorrdP2(R, T):
 
 # ------------------- divisons
 
-# 3d Scatter plot
-if False:
-    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
-    for filename in filenames:
-        df = dfDivisions[dfDivisions["Filename"] == filename]
-        x = np.array(df["X"])
-        y = np.array(df["Y"])
-        t = np.array(df["T"])
-        fig = go.Figure(data=[go.Scatter3d(x=x, y=y, z=t, mode="markers")])
-        fig.show()
-        plt.close("all")
-
 # Distributions of divisons in x and y
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -383,6 +371,11 @@ if False:
 
 # Division orientation correlations by filename
 if False:
+    T = 160
+    timeStep = 10
+    R = 110
+    rStep = 10
+
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     thetaCorr = df["thetaCorr"].iloc[0]
     df = 0
@@ -482,11 +475,11 @@ if False:
         total += np.sum(dfCor["dP1dP1Count"].iloc[i])
         total += np.sum(dfCor["dP2dP2Count"].iloc[i])
         total += np.sum(dfCor["dQ1dQ1Count"].iloc[i])
-        total += np.sum(dfCor["dQ1dP1Count"].iloc[i])
-        total += np.sum(dfCor["dQ2dQ1Count"].iloc[i])
         total += np.sum(dfCor["dQ2dQ2Count"].iloc[i])
-        total += np.sum(dfCor["dQ2dP1Count"].iloc[i])
-        total += np.sum(dfCor["dQ2dP2Count"].iloc[i])
+        total += np.sum(dfCor["dQ1dQ2Count"].iloc[i])
+        total += np.sum(dfCor["dP1dQ1Count"].iloc[i])
+        total += np.sum(dfCor["dP1dQ2Count"].iloc[i])
+        total += np.sum(dfCor["dP2dQ2Count"].iloc[i])
 
     numbers = "{:,}".format(int(total))
     print(numbers)
@@ -579,72 +572,72 @@ if False:
     ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
 
-    T, R, Theta = dfCor["dQ1dQ1"].iloc[0].shape
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
-    dQ1dQ1 = np.zeros([len(filenames), T, R - 1])
-    dQ1dP1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dQ1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dQ2 = np.zeros([len(filenames), T, R - 1])
-    dQ2dP1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dP2 = np.zeros([len(filenames), T, R - 1])
     dP1dP1 = np.zeros([len(filenames), T, R - 1])
     dP2dP2 = np.zeros([len(filenames), T, R - 1])
+    dQ1dQ1 = np.zeros([len(filenames), T, R - 1])
+    dQ2dQ2 = np.zeros([len(filenames), T, R - 1])
+    dQ1dQ2 = np.zeros([len(filenames), T, R - 1])
+    dP1dQ1 = np.zeros([len(filenames), T, R - 1])
+    dP1dQ2 = np.zeros([len(filenames), T, R - 1])
+    dP2dQ2 = np.zeros([len(filenames), T, R - 1])
     for i in range(len(filenames)):
-        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
-        dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
-        ) / np.sum(dQ1dQ1total, axis=2)
-
-        dQ1dP1total = dfCor["dQ1dP1Count"].iloc[i][:, :-1, :-1]
-        dQ1dP1[i] = np.sum(
-            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * dQ1dP1total, axis=2
-        ) / np.sum(dQ1dP1total, axis=2)
-
-        dQ2dQ1total = dfCor["dQ2dQ1Count"].iloc[i][:, :-1, :-1]
-        dQ2dQ1[i] = np.sum(
-            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * dQ2dQ1total, axis=2
-        ) / np.sum(dQ2dQ1total, axis=2)
-
-        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
-        dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
-        ) / np.sum(dQ2dQ2total, axis=2)
-
-        dQ2dP1total = dfCor["dQ2dP1Count"].iloc[i][:, :-1, :-1]
-        dQ2dP1[i] = np.sum(
-            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * dQ2dP1total, axis=2
-        ) / np.sum(dQ2dP1total, axis=2)
-
-        dQ2dP2total = dfCor["dQ2dP2Count"].iloc[i][:, :-1, :-1]
-        dQ2dP2[i] = np.sum(
-            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * dQ2dP2total, axis=2
-        ) / np.sum(dQ2dP2total, axis=2)
-        
         dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
         dP1dP1[i] = np.sum(
-            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
+            dfCor["dP1dP1Correlation"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
         ) / np.sum(dP1dP1total, axis=2)
 
         dP2dP2total = dfCor["dP2dP2Count"].iloc[i][:, :-1, :-1]
         dP2dP2[i] = np.sum(
-            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
+            dfCor["dP2dP2Correlation"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
         ) / np.sum(dP2dP2total, axis=2)
 
-    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
-    dQ1dP1 = np.mean(dQ1dP1, axis=0)
-    dQ2dQ1 = np.mean(dQ2dQ1, axis=0)
-    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
-    dQ2dP1 = np.mean(dQ2dP1, axis=0)
-    dQ2dP2 = np.mean(dQ2dP2, axis=0)
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ1dQ2total = dfCor["dQ1dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ2[i] = np.sum(
+            dfCor["dQ1dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ2total, axis=2
+        ) / np.sum(dQ1dQ2total, axis=2)
+
+        dP1dQ1total = dfCor["dP1dQ1Count"].iloc[i][:, :-1, :-1]
+        dP1dQ1[i] = np.sum(
+            dfCor["dP1dQ1Correlation"].iloc[i][:, :-1, :-1] * dP1dQ1total, axis=2
+        ) / np.sum(dP1dQ1total, axis=2)
+        
+        dP1dQ2total = dfCor["dP1dQ2Count"].iloc[i][:, :-1, :-1]
+        dP1dQ2[i] = np.sum(
+            dfCor["dP1dQ2Correlation"].iloc[i][:, :-1, :-1] * dP1dQ2total, axis=2
+        ) / np.sum(dP1dQ2total, axis=2)
+
+        dP2dQ2total = dfCor["dP2dQ2Count"].iloc[i][:, :-1, :-1]
+        dP2dQ2[i] = np.sum(
+            dfCor["dP2dQ2Correlation"].iloc[i][:, :-1, :-1] * dP2dQ2total, axis=2
+        ) / np.sum(dP2dQ2total, axis=2)
+
     dP1dP1 = np.mean(dP1dP1, axis=0)
     dP2dP2 = np.mean(dP2dP2, axis=0)
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+    dQ1dQ2 = np.mean(dQ1dQ2, axis=0)
+    dP1dQ1 = np.mean(dP1dQ1, axis=0)
+    dP1dQ2 = np.mean(dP1dQ2, axis=0)
+    dP2dQ2 = np.mean(dP2dQ2, axis=0)
 
     t, r = np.mgrid[0:102:2, 0:82:2]
-    maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
+    maxCorr = np.max([dP1dP1, -dP1dP1])
     c = ax[1, 0].pcolor(
         t,
         r,
-        dQ1dQ1,
+        dP1dP1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -653,13 +646,13 @@ if False:
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time (mins)")
     ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
+    ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
-    maxCorr = np.max([dQ1dP1, -dQ1dP1])
+    maxCorr = np.max([dP2dP2, -dP2dP2])
     c = ax[1, 1].pcolor(
         t,
         r,
-        dQ1dP1,
+        dP2dP2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -668,13 +661,13 @@ if False:
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set_xlabel("Time (mins)")
     ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"$\langle \delta Q^1 \delta P_1 \rangle$")
+    ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
-    maxCorr = np.max([dQ2dQ1, -dQ2dQ1])
+    maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
     c = ax[1, 2].pcolor(
         t,
         r,
-        dQ2dQ1,
+        dQ1dQ1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -683,7 +676,7 @@ if False:
     fig.colorbar(c, ax=ax[1, 2])
     ax[1, 2].set_xlabel("Time (mins)")
     ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"$\langle \delta Q^2 \delta Q^1 \rangle$")
+    ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
     maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
     c = ax[1, 3].pcolor(
@@ -700,11 +693,11 @@ if False:
     ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 3].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
 
-    maxCorr = np.max([dQ2dP1, -dQ2dP1])
+    maxCorr = np.max([dQ1dQ2, -dQ1dQ2])
     c = ax[2, 0].pcolor(
         t,
         r,
-        dQ2dP1,
+        dQ1dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -713,13 +706,13 @@ if False:
     fig.colorbar(c, ax=ax[2, 0])
     ax[2, 0].set_xlabel("Time (mins)")
     ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"$\langle \delta Q^2 \delta P_1 \rangle$")
+    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
-    maxCorr = np.max([dQ2dP2, -dQ2dP2])
+    maxCorr = np.max([dP1dQ1, -dP1dQ1])
     c = ax[2, 1].pcolor(
         t,
         r,
-        dQ2dP2,
+        dP1dQ1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -728,13 +721,13 @@ if False:
     fig.colorbar(c, ax=ax[2, 1])
     ax[2, 1].set_xlabel("Time (mins)")
     ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(r"$\langle \delta Q^2 \delta P_2 \rangle$")
+    ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
 
-    maxCorr = np.max([dP1dP1, -dP1dP1])
+    maxCorr = np.max([dP1dQ2, -dP1dQ2])
     c = ax[2, 2].pcolor(
         t,
         r,
-        dP1dP1,
+        dP1dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -743,13 +736,13 @@ if False:
     fig.colorbar(c, ax=ax[2, 2])
     ax[2, 2].set_xlabel("Time (mins)")
     ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
 
-    maxCorr = np.max([dP2dP2, -dP2dP2])
+    maxCorr = np.max([dP2dQ2, -dP2dQ2])
     c = ax[2, 3].pcolor(
         t,
         r,
-        dP2dP2,
+        dP2dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -758,7 +751,7 @@ if False:
     fig.colorbar(c, ax=ax[2, 3])
     ax[2, 3].set_xlabel("Time (mins)")
     ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
 
     fig.savefig(
         f"results/Correlations {fileType}",
@@ -861,81 +854,81 @@ if False:
     ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
 
-    T, R, Theta = dfCor["dQ1dQ1"].iloc[0].shape
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
-    dQ1dQ1 = np.zeros([len(filenames), T, R - 1])
-    dQ1dP1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dQ1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dQ2 = np.zeros([len(filenames), T, R - 1])
-    dQ2dP1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dP2 = np.zeros([len(filenames), T, R - 1])
     dP1dP1 = np.zeros([len(filenames), T, R - 1])
     dP2dP2 = np.zeros([len(filenames), T, R - 1])
+    dQ1dQ1 = np.zeros([len(filenames), T, R - 1])
+    dQ2dQ2 = np.zeros([len(filenames), T, R - 1])
+    dQ1dQ2 = np.zeros([len(filenames), T, R - 1])
+    dP1dQ1 = np.zeros([len(filenames), T, R - 1])
+    dP1dQ2 = np.zeros([len(filenames), T, R - 1])
+    dP2dQ2 = np.zeros([len(filenames), T, R - 1])
     for i in range(len(filenames)):
-        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
-        dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
-        ) / np.sum(dQ1dQ1total, axis=2)
-
-        dQ1dP1total = dfCor["dQ1dP1Count"].iloc[i][:, :-1, :-1]
-        dQ1dP1[i] = np.sum(
-            dfCor["dQ1dP1"].iloc[i][:, :-1, :-1] * dQ1dP1total, axis=2
-        ) / np.sum(dQ1dP1total, axis=2)
-
-        dQ2dQ1total = dfCor["dQ2dQ1Count"].iloc[i][:, :-1, :-1]
-        dQ2dQ1[i] = np.sum(
-            dfCor["dQ2dQ1"].iloc[i][:, :-1, :-1] * dQ2dQ1total, axis=2
-        ) / np.sum(dQ2dQ1total, axis=2)
-
-        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
-        dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
-        ) / np.sum(dQ2dQ2total, axis=2)
-
-        dQ2dP1total = dfCor["dQ2dP1Count"].iloc[i][:, :-1, :-1]
-        dQ2dP1[i] = np.sum(
-            dfCor["dQ2dP1"].iloc[i][:, :-1, :-1] * dQ2dP1total, axis=2
-        ) / np.sum(dQ2dP1total, axis=2)
-
-        dQ2dP2total = dfCor["dQ2dP2Count"].iloc[i][:, :-1, :-1]
-        dQ2dP2[i] = np.sum(
-            dfCor["dQ2dP2"].iloc[i][:, :-1, :-1] * dQ2dP2total, axis=2
-        ) / np.sum(dQ2dP2total, axis=2)
-        
         dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
         dP1dP1[i] = np.sum(
-            dfCor["dP1dP1"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
+            dfCor["dP1dP1Correlation"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
         ) / np.sum(dP1dP1total, axis=2)
 
         dP2dP2total = dfCor["dP2dP2Count"].iloc[i][:, :-1, :-1]
         dP2dP2[i] = np.sum(
-            dfCor["dP2dP2"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
+            dfCor["dP2dP2Correlation"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
         ) / np.sum(dP2dP2total, axis=2)
 
-    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
-    dQ1dP1 = np.mean(dQ1dP1, axis=0)
-    dQ2dQ1 = np.mean(dQ2dQ1, axis=0)
-    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
-    dQ2dP1 = np.mean(dQ2dP1, axis=0)
-    dQ2dP2 = np.mean(dQ2dP2, axis=0)
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ1dQ2total = dfCor["dQ1dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ2[i] = np.sum(
+            dfCor["dQ1dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ2total, axis=2
+        ) / np.sum(dQ1dQ2total, axis=2)
+
+        dP1dQ1total = dfCor["dP1dQ1Count"].iloc[i][:, :-1, :-1]
+        dP1dQ1[i] = np.sum(
+            dfCor["dP1dQ1Correlation"].iloc[i][:, :-1, :-1] * dP1dQ1total, axis=2
+        ) / np.sum(dP1dQ1total, axis=2)
+        
+        dP1dQ2total = dfCor["dP1dQ2Count"].iloc[i][:, :-1, :-1]
+        dP1dQ2[i] = np.sum(
+            dfCor["dP1dQ2Correlation"].iloc[i][:, :-1, :-1] * dP1dQ2total, axis=2
+        ) / np.sum(dP1dQ2total, axis=2)
+
+        dP2dQ2total = dfCor["dP2dQ2Count"].iloc[i][:, :-1, :-1]
+        dP2dQ2[i] = np.sum(
+            dfCor["dP2dQ2Correlation"].iloc[i][:, :-1, :-1] * dP2dQ2total, axis=2
+        ) / np.sum(dP2dQ2total, axis=2)
+
     dP1dP1 = np.mean(dP1dP1, axis=0)
     dP2dP2 = np.mean(dP2dP2, axis=0)
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+    dQ1dQ2 = np.mean(dQ1dQ2, axis=0)
+    dP1dQ1 = np.mean(dP1dQ1, axis=0)
+    dP1dQ2 = np.mean(dP1dQ2, axis=0)
+    dP2dQ2 = np.mean(dP2dQ2, axis=0)
 
     std_dp = np.std(np.stack(np.array(df.loc[:, "dp"]), axis=0), axis=0)
-    dQ1dQ1 = dQ1dQ1 / (std_dq[0, 0] * std_dq[0, 0])
-    dQ1dP1 = dQ1dP1 / (std_dq[0, 0] * std_dp[0])
-    dQ2dQ1 = dQ2dQ1 / (std_dq[0, 1] * std_dq[0, 1])
-    dQ2dQ2 = dQ2dQ2 / (std_dq[0, 1] * std_dq[0, 1])
-    dQ2dP1 = dQ2dP1 / (std_dq[0, 1] * std_dp[0])
-    dQ2dP2 = dQ2dP2 / (std_dq[0, 1] * std_dp[1])
     dP1dP1 = dP1dP1 / (std_dp[0] * std_dp[0])
     dP2dP2 = dP2dP2 / (std_dp[1] * std_dp[1])
+    dQ1dQ1 = dQ1dQ1 / (std_dq[0, 0] * std_dq[0, 0])
+    dQ2dQ2 = dQ2dQ2 / (std_dq[0, 1] * std_dq[0, 1])
+    dQ1dQ2 = dQ1dQ2 / (std_dq[0, 0] * std_dq[0, 1])
+    dP1dQ1 = dP1dQ1 / (std_dp[0] * std_dq[0, 0])
+    dP1dQ2 = dP1dQ2 / (std_dp[0] * std_dq[0, 1])
+    dP2dQ2 = dP2dQ2 / (std_dp[1] * std_dq[0, 1])
 
     t, r = np.mgrid[0:102:2, 0:82:2]
     c = ax[1, 0].pcolor(
         t,
         r,
-        dQ1dQ1,
+        dP1dP1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -944,12 +937,12 @@ if False:
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time (mins)")
     ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
+    ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
     c = ax[1, 1].pcolor(
         t,
         r,
-        dQ1dP1,
+        dP2dP2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -958,12 +951,12 @@ if False:
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set_xlabel("Time (mins)")
     ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"$\langle \delta Q^1 \delta P_1 \rangle$")
+    ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
     c = ax[1, 2].pcolor(
         t,
         r,
-        dQ2dQ1,
+        dQ1dQ1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -972,7 +965,7 @@ if False:
     fig.colorbar(c, ax=ax[1, 2])
     ax[1, 2].set_xlabel("Time (mins)")
     ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"$\langle \delta Q^2 \delta Q^1 \rangle$")
+    ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
     c = ax[1, 3].pcolor(
         t,
@@ -991,7 +984,7 @@ if False:
     c = ax[2, 0].pcolor(
         t,
         r,
-        dQ2dP1,
+        dQ1dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1000,12 +993,12 @@ if False:
     fig.colorbar(c, ax=ax[2, 0])
     ax[2, 0].set_xlabel("Time (mins)")
     ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"$\langle \delta Q^2 \delta P_1 \rangle$")
+    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
     c = ax[2, 1].pcolor(
         t,
         r,
-        dQ2dP2,
+        dP1dQ1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1014,12 +1007,12 @@ if False:
     fig.colorbar(c, ax=ax[2, 1])
     ax[2, 1].set_xlabel("Time (mins)")
     ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(r"$\langle \delta Q^2 \delta P_2 \rangle$")
+    ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
 
     c = ax[2, 2].pcolor(
         t,
         r,
-        dP1dP1,
+        dP1dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1028,12 +1021,12 @@ if False:
     fig.colorbar(c, ax=ax[2, 2])
     ax[2, 2].set_xlabel("Time (mins)")
     ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
 
     c = ax[2, 3].pcolor(
         t,
         r,
-        dP2dP2,
+        dP2dQ2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1042,7 +1035,7 @@ if False:
     fig.colorbar(c, ax=ax[2, 3])
     ax[2, 3].set_xlabel("Time (mins)")
     ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
 
     fig.savefig(
         f"results/Correlations Norm {fileType}",
