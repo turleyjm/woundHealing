@@ -11,7 +11,6 @@ import cv2
 import shutil
 import cellProperties as cell
 from shapely.geometry import Polygon
-from colour import Color
 from PIL import ImageColor
 from PIL import Image
 from skimage.morphology import square, erosion
@@ -45,6 +44,49 @@ def rgb2gray(rgb):
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
 
+
+def convolve2D(image, kernel, padding=0, strides=1):
+    # Cross Correlation
+    kernel = np.flipud(np.fliplr(kernel))
+
+    # Gather Shapes of Kernel + Image + Padding
+    xKernShape = kernel.shape[0]
+    yKernShape = kernel.shape[1]
+    xImgShape = image.shape[0]
+    yImgShape = image.shape[1]
+
+    # Shape of Output Convolution
+    xOutput = int(((xImgShape - xKernShape + 2 * padding) / strides) + 1)
+    yOutput = int(((yImgShape - yKernShape + 2 * padding) / strides) + 1)
+    output = np.zeros((xOutput, yOutput))
+
+    # Apply Equal Padding to All Sides
+    if padding != 0:
+        imagePadded = np.zeros((image.shape[0] + padding*2, image.shape[1] + padding*2))
+        imagePadded[int(padding):int(-1 * padding), int(padding):int(-1 * padding)] = image
+        print(imagePadded)
+    else:
+        imagePadded = image
+
+    # Iterate through image
+    for y in range(image.shape[1]):
+        # Exit Convolution
+        if y > image.shape[1] - yKernShape:
+            break
+        # Only Convolve if y has gone down by the specified Strides
+        if y % strides == 0:
+            for x in range(image.shape[0]):
+                # Go to next row once kernel is out of bounds
+                if x > image.shape[0] - xKernShape:
+                    break
+                try:
+                    # Only Convolve if x has moved by the specified Strides
+                    if x % strides == 0:
+                        output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
+                except:
+                    break
+
+    return output
 
 # -------------------
 
@@ -753,3 +795,59 @@ if False:
         tifffile.imwrite(
             f"results/displayProperties/divisionsTracks{filename}.tif", focus
         )
+
+# filter applied to image (from in figure folder)
+if False:
+    blur3 = sm.io.imread(f"dat/Unwound18h13_3.tif").astype(int)
+    image = np.zeros([74,74,3])
+    filters = np.zeros([15,15,3])
+    image[7:67,7:67] = blur3 
+
+    kernel = np.zeros([15,15])
+    kernel[:, :5] += 1
+    kernel[:, :4] += 1
+    kernel[:, :3] += 1
+    kernel[:, :2] += 1
+    kernel[:, :1] += 1
+    kernel[:, 6:] += -1
+    filters[:, :, 0] = kernel
+    
+    output = convolve2D(image[:,:,0], kernel, padding=0, strides=1)
+
+    kernel = np.zeros([15,15])
+    kernel[:, 5:10] += 3
+    kernel[:, 6:9] += 2
+    kernel[:, 7:8] += 1
+    kernel[:, 12:] += -1
+    kernel[:, 13:] += -1
+    kernel[:, 14:] += -1
+    kernel[:, :3] += -1
+    kernel[:, :2] += -1
+    kernel[:, :1] += -1
+    filters[:, :, 1] = kernel
+    
+    output += convolve2D(image[:,:,1], kernel, padding=0, strides=1)
+
+    kernel = np.zeros([15,15])
+    kernel[:, 10:] += 1
+    kernel[:, 11:] += 1
+    kernel[:, 12:] += 1
+    kernel[:, 13:] += 1
+    kernel[:, 14:] += 1
+    kernel[:, :9] += -1
+    filters[:, :, 2] = kernel
+    
+    output += convolve2D(image[:,:,2], kernel, padding=0, strides=1)
+
+    output = np.asarray(output, "int32")
+    tifffile.imwrite(
+        f"results/myFilteredImage.tif", output
+    )
+    filters[filters<0]=0
+    filters = np.flip(filters, axis=1)
+    filters = np.asarray(filters, "uint16")
+    tifffile.imwrite(
+        f"results/myFilter.tif", filters
+    )
+
+

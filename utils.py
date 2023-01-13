@@ -29,9 +29,9 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
-fileType = "Unwound18h"
+# fileType = "Unwound18h"
 # fileType = "WoundL18h"
-# fileType = "WoundS18h"
+fileType = "WoundS18h"
 
 # fileType = "UnwoundJNK"
 # fileType = "WoundLJNK"
@@ -45,8 +45,13 @@ fileType = "Unwound18h"
 # fileType = "WoundLrpr"
 # fileType = "WoundSrpr"
 
-# fileType = "All"
+# fileType = "AllTypes"
+# fileType = "18h"
+# fileType = "JNK"
+# fileType = "Ca"
+# fileType = "rpr"
 
+# fileType = "All"
 
 def getFilesType(fileType=fileType):
 
@@ -86,6 +91,30 @@ def getFilesType(fileType=fileType):
 
     return filenames, fileType
 
+def getFilesTypes(fileType = "AllTypes"):
+    if fileType == "AllTypes":
+        return ["Unwound18h", 
+                "WoundL18h", 
+                "WoundS18h", 
+                "UnwoundJNK", 
+                "WoundLJNK", 
+                "WoundSJNK"]
+    elif fileType == "18h":
+        return ["Unwound18h", 
+                "WoundL18h", 
+                "WoundS18h"]
+    elif fileType == "JNK":
+        return ["UnwoundJNK", 
+                "WoundLJNK", 
+                "WoundSJNK"]
+    elif fileType == "Ca":
+        return ["UnwoundCa", 
+                "WoundLCa", 
+                "WoundSCa"]
+    elif fileType == "rpr":
+        return ["Unwoundrpr", 
+                "WoundLrpr", 
+                "WoundSrpr"]
 
 def getFileTitle(fileType):
 

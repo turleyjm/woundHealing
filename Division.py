@@ -81,8 +81,7 @@ def OLSfit(x, y, dy=None):
     return [m, dm, b, db]
 
 
-def bestFitUnwound():
-    fileType = "Unwound18h"
+def bestFitUnwound(fileType = "Unwound18h"):
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     filenames = util.getFilesType(fileType)[0]
     count = np.zeros([len(filenames), int(T / timeStep)])
@@ -236,7 +235,7 @@ if False:
     plt.close("all")
 
 # Divison density with time best fit
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
@@ -316,7 +315,7 @@ if True:
     plt.close("all")
 
 # Compare divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     # legend = ["Unwounded", "Small wound", "Large wound"]
