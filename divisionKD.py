@@ -45,6 +45,7 @@ rStep = 10
 Theta = 390
 thetaStep = 30
 
+
 def weighted_avg_and_std(values, weight, axis=0):
     average = np.average(values, weights=weight, axis=axis)
     variance = np.average((values - average) ** 2, weights=weight, axis=axis)
@@ -67,21 +68,21 @@ def OLSfit(x, y, dy=None):
     if dy is None:
         # if no error bars, weight every point the same
         dy = np.ones(x.size)
-    denom = np.sum(1 / dy ** 2) * np.sum((x / dy) ** 2) - (np.sum(x / dy ** 2)) ** 2
+    denom = np.sum(1 / dy**2) * np.sum((x / dy) ** 2) - (np.sum(x / dy**2)) ** 2
     m = (
-        np.sum(1 / dy ** 2) * np.sum(x * y / dy ** 2)
-        - np.sum(x / dy ** 2) * np.sum(y / dy ** 2)
+        np.sum(1 / dy**2) * np.sum(x * y / dy**2)
+        - np.sum(x / dy**2) * np.sum(y / dy**2)
     ) / denom
     b = (
-        np.sum(x ** 2 / dy ** 2) * np.sum(y / dy ** 2)
-        - np.sum(x / dy ** 2) * np.sum(x * y / dy ** 2)
+        np.sum(x**2 / dy**2) * np.sum(y / dy**2)
+        - np.sum(x / dy**2) * np.sum(x * y / dy**2)
     ) / denom
-    dm = np.sqrt(np.sum(1 / dy ** 2) / denom)
-    db = np.sqrt(np.sum(x / dy ** 2) / denom)
+    dm = np.sqrt(np.sum(1 / dy**2) / denom)
+    db = np.sqrt(np.sum(x / dy**2) / denom)
     return [m, dm, b, db]
 
 
-def bestFitUnwound(fileType = "Unwound18h"):
+def bestFitUnwound(fileType="Unwound18h"):
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     filenames = util.getFilesType(fileType)[0]
     count = np.zeros([len(filenames), int(T / timeStep)])
@@ -105,7 +106,7 @@ def bestFitUnwound(fileType = "Unwound18h"):
                 t1 = 0
             if t2 < 0:
                 t2 = 0
-            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
     time = []
     dd = []
     std = []
@@ -125,11 +126,12 @@ def bestFitUnwound(fileType = "Unwound18h"):
 
     return m, c
 
+
 # Compare divison density with time
 if False:
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
-    
+
         fig, ax = plt.subplots(1, 1, figsize=(4, 4))
 
         dat_dd = []
@@ -152,7 +154,8 @@ if False:
                     count[k, t] = len(df)
 
                 inPlane = 1 - (
-                    sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+                    sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)
+                    / 255
                 )
                 for t in range(area.shape[1]):
                     t1 = int(timeStep / 2 * t - t0 / 2)
@@ -161,7 +164,7 @@ if False:
                         t1 = 0
                     if t2 < 0:
                         t2 = 0
-                    area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+                    area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
             dat_dd.append(count / area)
 
@@ -195,10 +198,12 @@ if False:
 
     time = np.array(time)
     ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
-    ax.set(xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.set(
+        xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)"
+    )
     ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
     ax.set_ylim([0, 7])
-    ax.legend(loc='upper left', fontsize=12)
+    ax.legend(loc="upper left", fontsize=12)
 
     fig.savefig(
         f"results/Compared division density with time",
@@ -253,10 +258,11 @@ if False:
                     area[k, t, r] = (
                         np.sum(
                             inPlane[t1:t2][
-                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
                             ]
                         )
-                        * scale ** 2
+                        * scale**2
                     )
 
         dd = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -346,10 +352,11 @@ if False:
                     area[k, t, r] = (
                         np.sum(
                             inPlane[t1:t2][
-                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
                             ]
                         )
-                        * scale ** 2
+                        * scale**2
                     )
 
         dd = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -399,7 +406,9 @@ if False:
         fig.colorbar(c, ax=ax)
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(f"Deviation in division density: \n {boldTitle} from linear model")
+        ax.title.set_text(
+            f"Deviation in division density: \n {boldTitle} from linear model"
+        )
 
         fig.savefig(
             f"results/Change in Division density heatmap {fileType}",
@@ -429,5 +438,3 @@ if False:
                 dpi=300,
             )
             plt.close("all")
-
-

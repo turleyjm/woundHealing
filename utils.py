@@ -29,9 +29,11 @@ plt.rcParams.update({"font.size": 20})
 
 # -------------------
 
+# ---- individual conditions ----
+
 # fileType = "Unwound18h"
 # fileType = "WoundL18h"
-fileType = "WoundS18h"
+# fileType = "WoundS18h"
 
 # fileType = "UnwoundJNK"
 # fileType = "WoundLJNK"
@@ -41,21 +43,25 @@ fileType = "WoundS18h"
 # fileType = "WoundLCa"
 # fileType = "WoundSCa"
 
-# fileType = "Unwoundrpr"
+fileType = "Unwoundrpr"
 # fileType = "WoundLrpr"
 # fileType = "WoundSrpr"
 
+# ---- grouped conditions ----
+
 # fileType = "AllTypes"
 # fileType = "AllWound"
+
 # fileType = "18h"
 # fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
+
 # fileType = "Unwound"
 # fileType = "WoundL"
 # fileType = "WoundS"
 
-# fileType = "All"
+# ---- fileType functions ----
 
 
 def getFilesType(fileType=fileType):
@@ -107,8 +113,9 @@ def getFilesTypes(fileType=fileType):
             "WoundLJNK",
             "WoundSJNK",
         ]
-    if fileType == "AllWound":
+    elif fileType == "AllWound":
         fileTypes = ["WoundL18h", "WoundS18h", "WoundLJNK", "WoundSJNK"]
+
     elif fileType == "18h":
         fileTypes = ["Unwound18h", "WoundL18h", "WoundS18h"]
     elif fileType == "JNK":
@@ -117,6 +124,7 @@ def getFilesTypes(fileType=fileType):
         fileTypes = ["UnwoundCa", "WoundLCa", "WoundSCa"]
     elif fileType == "rpr":
         fileTypes = ["Unwoundrpr", "WoundLrpr", "WoundSrpr"]
+
     elif fileType == "Unwound":
         # fileTypes = ["Unwound18h", "UnwoundJNK", "UnwoundCa", "Unwoundrpr"]
         fileTypes = ["Unwound18h", "UnwoundJNK"]
@@ -126,10 +134,11 @@ def getFilesTypes(fileType=fileType):
     elif fileType == "WoundS":
         # fileTypes = ["WoundS18h", "WoundSJNK", "WoundSCa", "WoundSrpr"]
         fileTypes = ["WoundS18h", "WoundSJNK"]
+
     else:
         fileTypes = [fileType]
 
-    groupTitle = getgroupTitle(fileTypes)
+    groupTitle = getgroupTitle(fileType)
 
     return fileTypes, groupTitle
 
@@ -171,7 +180,7 @@ def getgroupTitle(fileTypes):
 
     if fileTypes == "AllTypes":
         groupTitle = "all conditions"
-    if fileTypes == "AllTypes":
+    elif fileTypes == "AllWound":
         groupTitle = "all wounded conditions"
 
     elif fileTypes == "18h":
@@ -232,6 +241,9 @@ def getBoldTitle(fileTitle):
         )
 
     return boldTitle
+
+
+# ---------------
 
 
 def getColor(fileType):
