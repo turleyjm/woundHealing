@@ -27,7 +27,7 @@ import xml.etree.ElementTree as et
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 12})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -46,7 +46,7 @@ if False:
     for t in range(T):
         A.append(np.mean(dfShape["Area"][dfShape["T"] == t] ** 0.5))
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     ax.plot(2 * np.array(range(T)), A)
     ax.set(xlabel=r"Time", ylabel=r"Typical cell length $(\mu m)$")
     ax.title.set_text("Typical Cell Length")
@@ -69,7 +69,7 @@ if False:
             np.std(np.stack(dfShape["Shape Factor"][dfShape["T"] == t], axis=0))
         )
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), sf, yerr=sfstd)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{S_f}$")
     ax[0].title.set_text(r"Mean of $S_f$")
@@ -104,7 +104,7 @@ if False:
         Q1.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 0])
         Q1std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 0]))
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), Q1, yerr=Q1std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(1)}$")
     ax[0].title.set_text(r"Mean of $Q^{(1)}$")
@@ -140,7 +140,7 @@ if False:
         Q2.append(np.mean(dfShape["q"][dfShape["T"] == t])[0, 1])
         Q2std.append(np.std(np.stack(dfShape["q"][dfShape["T"] == t], axis=0)[:, 0, 1]))
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}$")
     ax[0].title.set_text(r"Mean of $Q^{(2)}$")
@@ -182,7 +182,7 @@ if False:
     Q2 = np.array(Q2) / Q1max
     Q2std = np.array(Q2std) / Q1max
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), Q2, yerr=Q2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{Q}^{(2)}/\bar{Q}^{(1)}$")
     ax[0].title.set_text(r"Mean of $Q^{(2)}$")
@@ -220,7 +220,7 @@ if False:
             np.std(np.stack(dfShape["Polar"][dfShape["T"] == t], axis=0)[:, 0])
         )
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), P1, yerr=P1std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_1$")
     ax[0].title.set_text(r"Mean of $P_1$")
@@ -257,7 +257,7 @@ if False:
             np.std(np.stack(dfShape["Polar"][dfShape["T"] == t], axis=0)[:, 1])
         )
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].errorbar(2 * np.array(range(T)), P2, yerr=P2std)
     ax[0].set(xlabel=r"Time", ylabel=r"$\bar{P}_2$")
     ax[0].title.set_text(r"Mean of $P_2$")
@@ -290,7 +290,7 @@ if False:
     for t in range(T):
         rho.append(1 / np.mean(dfShape["Area"][dfShape["T"] == t]))
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].plot(2 * np.array(range(T)), rho)
     ax[0].set(xlabel=r"Time", ylabel=r"$\rho$")
     ax[0].title.set_text(r"$\rho$")
@@ -373,16 +373,21 @@ if False:
     plt.close("all")
 
 # entropy
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     ent = []
     entStd = []
     for t in range(T):
         x = []
         for filename in filenames:
-            q = np.stack(dfShape["q"][(dfShape["T"] == t) & (dfShape["Filename"] == filename)])
+            q = np.stack(
+                dfShape["q"][(dfShape["T"] == t) & (dfShape["Filename"] == filename)]
+            )
             heatmap, xedges, yedges = np.histogram2d(
-                q[:,0,0], q[:,1,0], range=[[-0.3, 0.3], [-0.15, 0.15]], bins=(30,15)
+                q[:, 0, 0],
+                q[:, 1, 0],
+                range=[[-0.3, 0.3], [-0.15, 0.15]],
+                bins=(30, 15),
             )
 
             prob = heatmap / q.shape[0]
@@ -394,7 +399,7 @@ if True:
         ent.append(np.mean(x))
         entStd.append(np.std(x))
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     ax.errorbar(2 * np.array(range(T)), ent, yerr=entStd)
     ax.set(xlabel=r"Time", ylabel="Shannon entropy")
     ax.title.set_text("Shannon entropy with time")
@@ -408,5 +413,3 @@ if True:
         bbox_inches="tight",
     )
     plt.close("all")
-
-

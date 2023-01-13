@@ -176,6 +176,7 @@ def vectorBoundary(pts):
             continue
     return test
 
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
@@ -183,7 +184,7 @@ scale = 123.26 / 512
 T = 93
 
 # Nucleus velocity relative to tissue
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -235,7 +236,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 # Cell division relative to tissue and wound
-if False:
+if True:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -329,7 +330,7 @@ if True:
 
         for t in range(T):
             dft = df[df["Time"] == t]
-            if len(dft)>0:
+            if len(dft) > 0:
                 Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
                 P = np.matmul(R, np.mean(dft["Polar"]))
 
@@ -340,7 +341,7 @@ if True:
                 ]
                 q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
                 dq = q - Q
-                A = dft["Area"].iloc[i] * scale ** 2
+                A = dft["Area"].iloc[i] * scale**2
                 TrQdq = np.trace(np.matmul(Q, dq))
                 dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                 [x, y] = np.matmul(R, np.array([x, y]))
@@ -370,7 +371,7 @@ if True:
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 # Cell Shape relative to wound
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -385,8 +386,10 @@ if False:
 
             for t in range(T):
                 dft = df[df["Time"] == t]
-                if len(dft)>0:
-                    Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+                if len(dft) > 0:
+                    Q = np.matmul(
+                        R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R))
+                    )
                     P = np.matmul(R, np.mean(dft["Polar"]))
                     xw, yw = dfWound["Position"].iloc[t]
 
@@ -403,7 +406,7 @@ if False:
                     dq = q - Q
                     dq = np.matmul(Rw, np.matmul(dq, np.matrix.transpose(Rw)))
 
-                    A = dft["Area"].iloc[i] * scale ** 2
+                    A = dft["Area"].iloc[i] * scale**2
                     dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                     dp = np.matmul(Rw, np.matmul(dp, np.matrix.transpose(Rw)))
 
@@ -435,8 +438,10 @@ if False:
 
             for t in range(T):
                 dft = df[df["Time"] == t]
-                if len(dft)>0:
-                    Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+                if len(dft) > 0:
+                    Q = np.matmul(
+                        R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R))
+                    )
                     P = np.matmul(R, np.mean(dft["Polar"]))
                     mig = np.sum(
                         np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
@@ -461,7 +466,7 @@ if False:
                     dq = q - Q
                     dq = np.matmul(Rw, np.matmul(dq, np.matrix.transpose(Rw)))
 
-                    A = dft["Area"].iloc[i] * scale ** 2
+                    A = dft["Area"].iloc[i] * scale**2
                     dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                     dp = np.matmul(Rw, np.matmul(dp, np.matrix.transpose(Rw)))
 
@@ -483,7 +488,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 # Nucleus velocity relative to wound
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -496,7 +501,7 @@ if False:
             for t in range(T):
                 dft = df[df["T"] == t]
 
-                if len(dft)>0:
+                if len(dft) > 0:
                     xw, yw = dfWound["Position"].iloc[t]
                     V = np.mean(dft["Velocity"])
 
@@ -533,7 +538,7 @@ if False:
 
             for t in range(T):
                 dft = df[df["T"] == t]
-                if len(dft)>0:
+                if len(dft) > 0:
                     mig = np.sum(
                         np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
                     )
@@ -572,7 +577,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divsions and Shape changes
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -957,7 +962,7 @@ if False:
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
 
 # Nucleus velocity relative to tissue for Prewound
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -971,7 +976,9 @@ if False:
         theta0 = np.arccos(Q[0, 0] / (Q[0, 0] ** 2 + Q[0, 1] ** 2) ** 0.5) / 2
         R = util.rotation_matrix(-theta0)
 
-        df = pd.read_pickle(f"dat/{filename}/{filenamePre}/nucleusVelocity{filenamePre}.pkl")
+        df = pd.read_pickle(
+            f"dat/{filename}/{filenamePre}/nucleusVelocity{filenamePre}.pkl"
+        )
         mig = np.zeros(2)
 
         for t in range(6):
@@ -1013,12 +1020,14 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
 
 # Cell division relative to tissue and wound for Prewound
-if False:
+if True:
     _df = []
     for filename in filenames:
         try:
             filenamePre = util.Prewound(filename)
-            dfDivision = pd.read_pickle(f"dat/{filename}/{filenamePre}/dfDivision{filenamePre}.pkl")
+            dfDivision = pd.read_pickle(
+                f"dat/{filename}/{filenamePre}/dfDivision{filenamePre}.pkl"
+            )
         except:
             continue
 
@@ -1027,15 +1036,15 @@ if False:
         theta0 = 0.5 * np.arctan2(Q[1, 0], Q[0, 0])
 
         t0 = util.findStartTime(filename)
-        dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{util.Prewound(fileType)}.pkl")
+        dfVelocityMean = pd.read_pickle(
+            f"databases/dfVelocityMean{util.Prewound(fileType)}.pkl"
+        )
         dfFilename = dfVelocityMean[
             dfVelocityMean["Filename"] == filenamePre
         ].reset_index()
         for i in range(len(dfDivision)):
             t = dfDivision["T"].iloc[i]
-            mig = np.sum(
-                np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
-            )
+            mig = np.sum(np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0)
             xc = 256 * scale + mig[0]
             yc = 256 * scale + mig[1]
             x = dfDivision["X"].iloc[i] * scale
@@ -1066,10 +1075,12 @@ if False:
     dfDivisions.to_pickle(f"databases/dfDivisions{util.Prewound(fileType)}.pkl")
 
 # Cell Shape relative to tissue for Prewound
-if False:
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
-    dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{util.Prewound(fileType)}.pkl")
+    dfVelocityMean = pd.read_pickle(
+        f"databases/dfVelocityMean{util.Prewound(fileType)}.pkl"
+    )
     for filename in filenames:
         try:
             filenamePre = util.Prewound(filename)
@@ -1095,7 +1106,7 @@ if False:
                 ]
                 q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
                 dq = q - Q
-                A = dft["Area"].iloc[i] * scale ** 2
+                A = dft["Area"].iloc[i] * scale**2
                 TrQdq = np.trace(np.matmul(Q, dq))
                 dp = np.matmul(R, dft["Polar"].iloc[i]) - P
                 [x, y] = np.matmul(R, np.array([x, y]))
@@ -1123,4 +1134,3 @@ if False:
 
     dfShape = pd.DataFrame(_df2)
     dfShape.to_pickle(f"databases/dfShape{util.Prewound(util.fileType)}.pkl")
-

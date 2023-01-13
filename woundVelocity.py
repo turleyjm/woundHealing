@@ -28,7 +28,7 @@ import xml.etree.ElementTree as et
 import cellProperties as cell
 import utils as util
 
-plt.rcParams.update({"font.size": 14})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -157,7 +157,7 @@ if False:
                             (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
                         ]
                     )
-                    * scale ** 2
+                    * scale**2
                 )
 
     V1 = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -344,7 +344,16 @@ if False:
 
 # run all v with distance from wound edge and time
 if True:
-    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "WoundXL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    fileTypes = [
+        "Unwound18h",
+        "WoundS18h",
+        "WoundL18h",
+        "WoundXL18h",
+        "UnwoundJNK",
+        "WoundSJNK",
+        "WoundLJNK",
+        "WoundXLJNK",
+    ]
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
         v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -388,10 +397,11 @@ if True:
                     area[k, t, r] = (
                         np.sum(
                             inPlane[t1:t2][
-                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
                             ]
                         )
-                        * scale ** 2
+                        * scale**2
                     )
 
         V1 = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -434,10 +444,7 @@ if True:
             xlabel="Time after wounding (mins)",
             ylabel=r"Distance from wound edge $(\mu m)$",
         )
-        ax.title.set_text(
-                r"$\delta v_1$"
-                + f" distance and time {typeName}"
-            )
+        ax.title.set_text(r"$\delta v_1$" + f" distance and time {typeName}")
 
         fig.savefig(
             f"results/v heatmap {fileType}",
@@ -446,4 +453,3 @@ if True:
             dpi=300,
         )
         plt.close("all")
-

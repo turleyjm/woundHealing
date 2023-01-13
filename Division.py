@@ -67,21 +67,21 @@ def OLSfit(x, y, dy=None):
     if dy is None:
         # if no error bars, weight every point the same
         dy = np.ones(x.size)
-    denom = np.sum(1 / dy ** 2) * np.sum((x / dy) ** 2) - (np.sum(x / dy ** 2)) ** 2
+    denom = np.sum(1 / dy**2) * np.sum((x / dy) ** 2) - (np.sum(x / dy**2)) ** 2
     m = (
-        np.sum(1 / dy ** 2) * np.sum(x * y / dy ** 2)
-        - np.sum(x / dy ** 2) * np.sum(y / dy ** 2)
+        np.sum(1 / dy**2) * np.sum(x * y / dy**2)
+        - np.sum(x / dy**2) * np.sum(y / dy**2)
     ) / denom
     b = (
-        np.sum(x ** 2 / dy ** 2) * np.sum(y / dy ** 2)
-        - np.sum(x / dy ** 2) * np.sum(x * y / dy ** 2)
+        np.sum(x**2 / dy**2) * np.sum(y / dy**2)
+        - np.sum(x / dy**2) * np.sum(x * y / dy**2)
     ) / denom
-    dm = np.sqrt(np.sum(1 / dy ** 2) / denom)
-    db = np.sqrt(np.sum(x / dy ** 2) / denom)
+    dm = np.sqrt(np.sum(1 / dy**2) / denom)
+    db = np.sqrt(np.sum(x / dy**2) / denom)
     return [m, dm, b, db]
 
 
-def bestFitUnwound(fileType = "Unwound18h"):
+def bestFitUnwound(fileType="Unwound18h"):
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     filenames = util.getFilesType(fileType)[0]
     count = np.zeros([len(filenames), int(T / timeStep)])
@@ -105,7 +105,7 @@ def bestFitUnwound(fileType = "Unwound18h"):
                 t1 = 0
             if t2 < 0:
                 t2 = 0
-            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
     time = []
     dd = []
     std = []
@@ -120,7 +120,7 @@ def bestFitUnwound(fileType = "Unwound18h"):
     time = np.array(time)
     dd = np.array(dd)
     std = np.array(std)
-    bestfit = OLSfit(time, dd, dy=std)
+    bestfit = OLSfit(time, dd)
     (m, c) = (bestfit[0], bestfit[2])
 
     return m, c
@@ -153,7 +153,7 @@ if False:
                 t1 = 0
             if t2 < 0:
                 t2 = 0
-            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
     time = []
     dd = []
@@ -209,7 +209,7 @@ if False:
                 t1 = 0
             if t2 < 0:
                 t2 = 0
-            area[t] = np.sum(inPlane[t1:t2]) * scale ** 2
+            area[t] = np.sum(inPlane[t1:t2]) * scale**2
 
         time = []
         dd = []
@@ -259,7 +259,7 @@ if False:
                 t1 = 0
             if t2 < 0:
                 t2 = 0
-            area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
     time = []
     dd = []
@@ -298,14 +298,17 @@ if False:
             + str(str(fileTitle).split(" ")[1])
             + "}$"
         )
-        ax.set(xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+        ax.set(
+            xlabel="Time after wounding (mins)",
+            ylabel=r"Divison density ($100\mu m^{-2}$)",
+        )
     else:
         ax.title.set_text(
             f"Division density with \n time " + r"$\bf{" + str(fileTitle) + "}$"
         )
         ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
 
-    ax.legend(loc='upper left', fontsize=12)
+    ax.legend(loc="upper left", fontsize=12)
     fig.savefig(
         f"results/Divison density with time best fit {fileType}",
         transparent=True,
@@ -352,7 +355,7 @@ if False:
                     t1 = 0
                 if t2 < 0:
                     t2 = 0
-                area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+                area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
         dat_dd.append(count / area)
 
@@ -376,10 +379,12 @@ if False:
 
     time = np.array(time)
     ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
-    ax.set(xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.set(
+        xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)"
+    )
     ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
     ax.set_ylim([0, 7])
-    ax.legend(loc='upper left', fontsize=12)
+    ax.legend(loc="upper left", fontsize=12)
 
     fig.savefig(
         f"results/Compared division density with time",
@@ -424,7 +429,7 @@ if False:
                     t1 = 0
                 if t2 < 0:
                     t2 = 0
-                area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+                area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
         dat_dd.append(count / area)
 
@@ -490,7 +495,7 @@ if False:
         for r in range(area.shape[1]):
             area[k, r] = (
                 np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
-                * scale ** 2
+                * scale**2
             )
             # test = np.zeros([t2,512,512])
             # test[(dist > rStep * r) & (dist <= rStep * (r + 1))] = 1
@@ -554,7 +559,7 @@ if False:
             for r in range(area.shape[1]):
                 area[k, r] = (
                     np.sum(inPlane[(dist > rStep * r) & (dist <= rStep * (r + 1))])
-                    * scale ** 2
+                    * scale**2
                 )
 
         radius = []
@@ -629,7 +634,7 @@ if False:
                             (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
                         ]
                     )
-                    * scale ** 2
+                    * scale**2
                 )
 
     dd = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -718,7 +723,7 @@ if False:
                             (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
                         ]
                     )
-                    * scale ** 2
+                    * scale**2
                 )
 
     dd = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -769,10 +774,15 @@ if False:
             + str(str(fileTitle).split(" ")[1])
             + "}$ from linear model"
         )
-        ax.set(xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$")
+        ax.set(
+            xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$"
+        )
     else:
         ax.title.set_text(
-            f"Deviation in division density: \n " + r"$\bf{" + str(fileTitle) + "}$ from linear model"
+            f"Deviation in division density: \n "
+            + r"$\bf{"
+            + str(fileTitle)
+            + "}$ from linear model"
         )
         ax.set(xlabel="Time (mins)", ylabel=r"Distance from wound $(\mu m)$")
 
@@ -817,15 +827,15 @@ if False:
         filename = filenames[k]
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         A0.append(dfWound["Area"].iloc[0] * (scale) ** 2)
-    mu_r = (np.mean(A0)/np.pi)**0.5
+    mu_r = (np.mean(A0) / np.pi) ** 0.5
 
     for k in range(len(filenames)):
         filename = filenames[k]
         dfFile = dfDivisions[dfDivisions["Filename"] == filename]
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         A = dfWound["Area"].iloc[0] * (scale) ** 2
-        normalize = ((A/np.pi)**0.5)/mu_r
-        
+        normalize = ((A / np.pi) ** 0.5) / mu_r
+
         t0 = util.findStartTime(filename)
         t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
 
@@ -843,7 +853,8 @@ if False:
         )
         dist = (
             sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
-            * scale * normalize
+            * scale
+            * normalize
         )
 
         for r in range(area.shape[2]):
@@ -860,7 +871,7 @@ if False:
                             (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
                         ]
                     )
-                    * scale ** 2
+                    * scale**2
                 )
 
     dd = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -941,7 +952,7 @@ if False:
                         (angle > thetaStep * theta) & (angle <= thetaStep * (theta + 1))
                     ]
                 )
-                * scale ** 2
+                * scale**2
             )
             # test = np.zeros([t2,512,512])
             # test[(dist > rStep * r) & (dist <= rStep * (r + 1))] = 1
@@ -976,7 +987,14 @@ if False:
 
 # run all Divison density with distance from wound edge and time
 if False:
-    fileTypes = ["Unwound18h", "WoundS18h", "WoundL18h", "UnwoundJNK", "WoundSJNK", "WoundLJNK"]
+    fileTypes = [
+        "Unwound18h",
+        "WoundS18h",
+        "WoundL18h",
+        "UnwoundJNK",
+        "WoundSJNK",
+        "WoundLJNK",
+    ]
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -1019,10 +1037,11 @@ if False:
                     area[k, t, r] = (
                         np.sum(
                             inPlane[t1:t2][
-                                (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
                             ]
                         )
-                        * scale ** 2
+                        * scale**2
                     )
 
         dd = np.zeros([int(T / timeStep), int(R / rStep)])

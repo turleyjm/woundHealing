@@ -35,7 +35,7 @@ plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
-fileTypes, title = util.getFilesTypes()
+fileTypes, groupTitle = util.getFilesTypes()
 
 scale = 123.26 / 512
 T = 180
@@ -121,92 +121,88 @@ def bestFitUnwound(fileType="Unwound18h"):
     time = np.array(time)
     dd = np.array(dd)
     std = np.array(std)
-    bestfit = OLSfit(time, dd, dy=std)
+    bestfit = OLSfit(time, dd)
     (m, c) = (bestfit[0], bestfit[2])
 
     return m, c
 
 
+# -------------------
+
 # Compare divison density with time
-if False:
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    total = 0
     for fileType in fileTypes:
-        filenames, fileType = util.getFilesType(fileType)
+        filenames = util.getFilesType(fileType)[0]
 
-        fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+        count = np.zeros([len(filenames), int(T / timeStep)])
+        area = np.zeros([len(filenames), int(T / timeStep)])
+        dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        total += len(dfDivisions)
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            t0 = util.findStartTime(filename)
+            dfFile = dfDivisions[dfDivisions["Filename"] == filename]
 
-        dat_dd = []
-        total = 0
-        i = 0
-        for fileType in labels:
-            filenames = util.getFilesType(fileType)[0]
-            count = np.zeros([len(filenames), int(T / timeStep)])
-            area = np.zeros([len(filenames), int(T / timeStep)])
-            dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
-            total += len(dfDivisions)
-            for k in range(len(filenames)):
-                filename = filenames[k]
-                t0 = util.findStartTime(filename)
-                dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df = df1[df1["T"] <= timeStep * (t + 1)]
+                count[k, t] = len(df)
 
-                for t in range(count.shape[1]):
-                    df1 = dfFile[dfFile["T"] > timeStep * t]
-                    df = df1[df1["T"] <= timeStep * (t + 1)]
-                    count[k, t] = len(df)
-
-                inPlane = 1 - (
-                    sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)
-                    / 255
-                )
-                for t in range(area.shape[1]):
-                    t1 = int(timeStep / 2 * t - t0 / 2)
-                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
-                    if t1 < 0:
-                        t1 = 0
-                    if t2 < 0:
-                        t2 = 0
-                    area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
-
-            dat_dd.append(count / area)
-
-            time = []
-            dd = []
-            std = []
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+            )
             for t in range(area.shape[1]):
-                _area = area[:, t][area[:, t] > 0]
-                _count = count[:, t][area[:, t] > 0]
-                if len(_area) > 0:
-                    _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                    dd.append(_dd * 10000)
-                    std.append(_std * 10000)
-                    time.append(t * timeStep + timeStep / 2)
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
 
-            dd = np.array(dd)
-            std = np.array(std)
-            ax.plot(time, dd, label=f"{legend[i]}", marker="o", color=colors[i])
-            ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colors[i])
-            i += 1
+        time = []
+        dd = []
+        std = []
+        for t in range(area.shape[1]):
+            _area = area[:, t][area[:, t] > 0]
+            _count = count[:, t][area[:, t] > 0]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd.append(_dd * 10000)
+                std.append(_std * 10000)
+                time.append(t * timeStep + timeStep / 2)
 
-    if "18h" in fileType:
-        compare = "Unwound18h"
-    elif "JNK" in fileType:
-        compare = "UnwoundJNK"
-    elif "Ca" in fileType:
-        compare = "UnwoundCa"
-    else:
-        compare = "Unwoundrpr"
-    (m, c) = bestFitUnwound(compare)
+        dd = np.array(dd)
+        std = np.array(std)
+        color = util.getColor(fileType)
+        fileTitle = util.getFileTitle(fileType)
+        ax.plot(time, dd, label=fileTitle, marker="o", color=color)
+        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=color)
 
     time = np.array(time)
-    ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
+
+    if (
+        groupTitle == "wild type"
+        or groupTitle == "JNK DN"
+        or groupTitle == "Ca RNAi"
+        or groupTitle == "immune ablation"
+    ):
+        compare = util.compareType(groupTitle)
+        (m, c) = bestFitUnwound(compare)
+        ax.plot(time, (m * time + c) * 10000, color="k", label=f"Linear model")
+
     ax.set(
         xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)"
     )
-    ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
+    boldTitle = util.getBoldTitle(groupTitle)
+    ax.title.set_text(f"Division density with \n time " + boldTitle)
     ax.set_ylim([0, 7])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
 
     fig.savefig(
-        f"results/Compared division density with time",
+        f"results/Compared division density with time {groupTitle}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -217,7 +213,7 @@ if False:
 # Divison density with distance from wound edge and time
 if False:
     for fileType in fileTypes:
-        filenames, fileType = util.getFilesType(fileType)
+        filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -311,7 +307,7 @@ if False:
 # Change in divison density with distance from wound edge and time
 if False:
     for fileType in fileTypes:
-        filenames, fileType = util.getFilesType(fileType)
+        filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")

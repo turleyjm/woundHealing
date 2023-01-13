@@ -27,9 +27,9 @@ import cellProperties as cell
 
 plt.rcParams.update({"font.size": 20})
 
-# -------------------
 
 # ---- individual conditions ----
+
 
 # fileType = "Unwound18h"
 # fileType = "WoundL18h"
@@ -43,11 +43,12 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "WoundLCa"
 # fileType = "WoundSCa"
 
-fileType = "Unwoundrpr"
+# fileType = "Unwoundrpr"
 # fileType = "WoundLrpr"
 # fileType = "WoundSrpr"
 
 # ---- grouped conditions ----
+
 
 # fileType = "AllTypes"
 # fileType = "AllWound"
@@ -59,7 +60,8 @@ fileType = "Unwoundrpr"
 
 # fileType = "Unwound"
 # fileType = "WoundL"
-# fileType = "WoundS"
+fileType = "WoundS"
+
 
 # ---- fileType functions ----
 
@@ -227,7 +229,7 @@ def getBoldTitle(fileTitle):
             + str(fileTitle).split(" ")[2]
             + "}$"
         )
-    elif len(str(fileTitle).split(" ")) == 3:
+    elif len(str(fileTitle).split(" ")) == 4:
         boldTitle = (
             r"$\bf{"
             + fileTitle.split(" ")[0]
@@ -243,7 +245,17 @@ def getBoldTitle(fileTitle):
     return boldTitle
 
 
-# ---------------
+def compareType(groupTitle):
+    if groupTitle == "wild type":
+        compare = "Unwound18h"
+    elif groupTitle == "JNK DN":
+        compare = "UnwoundJNK"
+    elif groupTitle == "Ca RNAi":
+        compare = "UnwoundCa"
+    elif groupTitle == "immune ablation":
+        compare = "Unwoundrpr"
+
+    return compare
 
 
 def getColor(fileType):
@@ -267,6 +279,9 @@ def getColor(fileType):
     i = colorDict[fileType]
 
     return cm(1.0 * i / n)
+
+
+# ---------------
 
 
 def ThreeD(a):
