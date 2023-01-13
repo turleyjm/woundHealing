@@ -35,19 +35,7 @@ plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
-filenames, fileType = util.getFilesType()
-if fileType == "AllTypes":
-    fileTypes = util.getFilesTypes(fileType)
-elif fileType == "18h":
-    fileTypes = util.getFilesTypes(fileType)
-elif fileType == "JNK":
-    fileTypes = util.getFilesTypes(fileType)
-elif fileType == "Ca":
-    fileTypes = util.getFilesTypes(fileType)
-elif fileType == "rpr":
-    fileTypes = util.getFilesTypes(fileType)
-else:
-    fileTypes = [fileType]
+fileTypes, title = util.getFilesTypes()
 
 scale = 123.26 / 512
 T = 180
@@ -137,9 +125,92 @@ def bestFitUnwound(fileType = "Unwound18h"):
 
     return m, c
 
+# Compare divison density with time
+if False:
+    for fileType in fileTypes:
+        filenames, fileType = util.getFilesType(fileType)
+    
+        fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+
+        dat_dd = []
+        total = 0
+        i = 0
+        for fileType in labels:
+            filenames = util.getFilesType(fileType)[0]
+            count = np.zeros([len(filenames), int(T / timeStep)])
+            area = np.zeros([len(filenames), int(T / timeStep)])
+            dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+            total += len(dfDivisions)
+            for k in range(len(filenames)):
+                filename = filenames[k]
+                t0 = util.findStartTime(filename)
+                dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
+                for t in range(count.shape[1]):
+                    df1 = dfFile[dfFile["T"] > timeStep * t]
+                    df = df1[df1["T"] <= timeStep * (t + 1)]
+                    count[k, t] = len(df)
+
+                inPlane = 1 - (
+                    sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+                )
+                for t in range(area.shape[1]):
+                    t1 = int(timeStep / 2 * t - t0 / 2)
+                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                    if t1 < 0:
+                        t1 = 0
+                    if t2 < 0:
+                        t2 = 0
+                    area[k, t] = np.sum(inPlane[t1:t2]) * scale ** 2
+
+            dat_dd.append(count / area)
+
+            time = []
+            dd = []
+            std = []
+            for t in range(area.shape[1]):
+                _area = area[:, t][area[:, t] > 0]
+                _count = count[:, t][area[:, t] > 0]
+                if len(_area) > 0:
+                    _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                    dd.append(_dd * 10000)
+                    std.append(_std * 10000)
+                    time.append(t * timeStep + timeStep / 2)
+
+            dd = np.array(dd)
+            std = np.array(std)
+            ax.plot(time, dd, label=f"{legend[i]}", marker="o", color=colors[i])
+            ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colors[i])
+            i += 1
+
+    if "18h" in fileType:
+        compare = "Unwound18h"
+    elif "JNK" in fileType:
+        compare = "UnwoundJNK"
+    elif "Ca" in fileType:
+        compare = "UnwoundCa"
+    else:
+        compare = "Unwoundrpr"
+    (m, c) = bestFitUnwound(compare)
+
+    time = np.array(time)
+    ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
+    ax.set(xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+    ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
+    ax.set_ylim([0, 7])
+    ax.legend(loc='upper left', fontsize=12)
+
+    fig.savefig(
+        f"results/Compared division density with time",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+    print(total)
 
 # Divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -219,7 +290,9 @@ if True:
         )
         fig.colorbar(c, ax=ax)
         ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-        ax.title.set_text(f"Division density {fileType}")
+        fileTitle = util.getFileTitle(fileType)
+        boldTitle = util.getBoldTitle(fileTitle)
+        ax.title.set_text(f"Division density {boldTitle}")
 
         fig.savefig(
             f"results/Division density heatmap {fileType}",
@@ -230,7 +303,7 @@ if True:
         plt.close("all")
 
 # Change in divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -324,23 +397,9 @@ if True:
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
-        if "Wound" in fileType:
-            ax.title.set_text(
-                f"Deviation in division density: \n "
-                + r"$\bf{"
-                + str(str(fileTitle).split(" ")[0])
-                + "}$"
-                + " "
-                + r"$\bf{"
-                + str(str(fileTitle).split(" ")[1])
-                + "}$ from linear model"
-            )
-            ax.set(xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$")
-        else:
-            ax.title.set_text(
-                f"Deviation in division density: \n " + r"$\bf{" + str(fileTitle) + "}$ from linear model"
-            )
-            ax.set(xlabel="Time (mins)", ylabel=r"Distance from wound $(\mu m)$")
+        fileTitle = util.getFileTitle(fileType)
+        boldTitle = util.getBoldTitle(fileTitle)
+        ax.title.set_text(f"Deviation in division density: \n {boldTitle} from linear model")
 
         fig.savefig(
             f"results/Change in Division density heatmap {fileType}",
@@ -361,7 +420,7 @@ if True:
             )
             fig.colorbar(c, ax=ax)
             ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
-            ax.title.set_text(f"Area of division bins distance and time {fileType}")
+            ax.title.set_text(f"Area of division bins distance and time {boldTitle}")
 
             fig.savefig(
                 f"results/Divison density Area bin heatmap {fileType}",
@@ -370,3 +429,5 @@ if True:
                 dpi=300,
             )
             plt.close("all")
+
+
