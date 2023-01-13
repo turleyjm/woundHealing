@@ -46,12 +46,17 @@ fileType = "WoundS18h"
 # fileType = "WoundSrpr"
 
 # fileType = "AllTypes"
+# fileType = "AllWound"
 # fileType = "18h"
 # fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
+# fileType = "Unwound"
+# fileType = "WoundL"
+# fileType = "WoundS"
 
 # fileType = "All"
+
 
 def getFilesType(fileType=fileType):
 
@@ -91,30 +96,43 @@ def getFilesType(fileType=fileType):
 
     return filenames, fileType
 
-def getFilesTypes(fileType = "AllTypes"):
+
+def getFilesTypes(fileType=fileType):
     if fileType == "AllTypes":
-        return ["Unwound18h", 
-                "WoundL18h", 
-                "WoundS18h", 
-                "UnwoundJNK", 
-                "WoundLJNK", 
-                "WoundSJNK"]
+        fileTypes = [
+            "Unwound18h",
+            "WoundL18h",
+            "WoundS18h",
+            "UnwoundJNK",
+            "WoundLJNK",
+            "WoundSJNK",
+        ]
+    if fileType == "AllWound":
+        fileTypes = ["WoundL18h", "WoundS18h", "WoundLJNK", "WoundSJNK"]
     elif fileType == "18h":
-        return ["Unwound18h", 
-                "WoundL18h", 
-                "WoundS18h"]
+        fileTypes = ["Unwound18h", "WoundL18h", "WoundS18h"]
     elif fileType == "JNK":
-        return ["UnwoundJNK", 
-                "WoundLJNK", 
-                "WoundSJNK"]
+        fileTypes = ["UnwoundJNK", "WoundLJNK", "WoundSJNK"]
     elif fileType == "Ca":
-        return ["UnwoundCa", 
-                "WoundLCa", 
-                "WoundSCa"]
+        fileTypes = ["UnwoundCa", "WoundLCa", "WoundSCa"]
     elif fileType == "rpr":
-        return ["Unwoundrpr", 
-                "WoundLrpr", 
-                "WoundSrpr"]
+        fileTypes = ["Unwoundrpr", "WoundLrpr", "WoundSrpr"]
+    elif fileType == "Unwound":
+        # fileTypes = ["Unwound18h", "UnwoundJNK", "UnwoundCa", "Unwoundrpr"]
+        fileTypes = ["Unwound18h", "UnwoundJNK"]
+    elif fileType == "WoundL":
+        # fileTypes = ["WoundL18h", "WoundLJNK", "WoundLCa", "WoundLrpr"]
+        fileTypes = ["WoundL18h", "WoundLJNK"]
+    elif fileType == "WoundS":
+        # fileTypes = ["WoundS18h", "WoundSJNK", "WoundSCa", "WoundSrpr"]
+        fileTypes = ["WoundS18h", "WoundSJNK"]
+    else:
+        fileTypes = [fileType]
+
+    groupTitle = getgroupTitle(fileTypes)
+
+    return fileTypes, groupTitle
+
 
 def getFileTitle(fileType):
 
@@ -125,28 +143,118 @@ def getFileTitle(fileType):
     elif fileType == "Unwound18h":
         fileTitle = "unwounded"
 
-    elif fileType == "WoundLCa":
-        fileTitle = "large wound Ca KD"
-    elif fileType == "WoundSCa":
-        fileTitle = "small wound Ca KD"
-    elif fileType == "UnwoundCa":
-        fileTitle = "unwounded Ca KD"
-
     elif fileType == "WoundLJNK":
-        fileTitle = "large wound JNK KD"
+        fileTitle = "large wound JNK DN"
     elif fileType == "WoundSJNK":
-        fileTitle = "small wound JNK KD"
+        fileTitle = "small wound JNK DN"
     elif fileType == "UnwoundJNK":
-        fileTitle = "unwounded JNK KD"
+        fileTitle = "unwounded JNK DN"
+
+    elif fileType == "WoundLCa":
+        fileTitle = "large wound Ca RNAi"
+    elif fileType == "WoundSCa":
+        fileTitle = "small wound Ca RNAi"
+    elif fileType == "UnwoundCa":
+        fileTitle = "unwounded Ca RNAi"
 
     elif fileType == "WoundLrpr":
-        fileTitle = "large wound rpr"
+        fileTitle = "large wound immune ablation"
     elif fileType == "WoundSrpr":
-        fileTitle = "small wound rpr"
+        fileTitle = "small wound immune ablation"
     elif fileType == "Unwoundrpr":
-        fileTitle = "unwounded rpr"
+        fileTitle = "unwounded immune ablation"
 
     return fileTitle
+
+
+def getgroupTitle(fileTypes):
+
+    if fileTypes == "AllTypes":
+        groupTitle = "all conditions"
+    if fileTypes == "AllTypes":
+        groupTitle = "all wounded conditions"
+
+    elif fileTypes == "18h":
+        groupTitle = "wild type"
+    elif fileTypes == "JNK":
+        groupTitle = "JNK DN"
+    elif fileTypes == "Ca":
+        groupTitle = "Ca RNAi"
+    elif fileTypes == "rpr":
+        groupTitle = "immune ablation"
+
+    elif fileTypes == "Unwound":
+        groupTitle = "unwounded"
+    elif fileTypes == "WoundL":
+        groupTitle = "large wound"
+    elif fileTypes == "WoundS":
+        groupTitle = "small wound"
+
+    else:
+        groupTitle = getFileTitle(fileTypes[0])
+
+    return groupTitle
+
+
+def getBoldTitle(fileTitle):
+
+    if len(str(fileTitle).split(" ")) == 1:
+        boldTitle = r"$\bf{" + fileTitle + "}$"
+    elif len(str(fileTitle).split(" ")) == 2:
+        boldTitle = (
+            r"$\bf{"
+            + fileTitle.split(" ")[0]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[1]
+            + "}$"
+        )
+    elif len(str(fileTitle).split(" ")) == 3:
+        boldTitle = (
+            r"$\bf{"
+            + fileTitle.split(" ")[0]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[1]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[2]
+            + "}$"
+        )
+    elif len(str(fileTitle).split(" ")) == 3:
+        boldTitle = (
+            r"$\bf{"
+            + fileTitle.split(" ")[0]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[1]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[2]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[3]
+            + "}$"
+        )
+
+    return boldTitle
+
+
+def getColor(fileType):
+
+    colorDict = {
+        "Unwound18h": 1,
+        "WoundL18h": 5,
+        "WoundS18h": 9,
+        "UnwoundJNK": 4,
+        "WoundLJNK": 8,
+        "WoundSJNK": 12,
+        "UnwoundCa": 7,
+        "WoundLCa": 11,
+        "WoundSCa": 3,
+        "Unwoundrpr": 10,
+        "WoundLrpr": 2,
+        "WoundSrpr": 6,
+    }
+    n = 12
+    cm = plt.get_cmap("gist_rainbow")
+    i = colorDict[fileType]
+
+    return cm(1.0 * i / n)
 
 
 def ThreeD(a):
