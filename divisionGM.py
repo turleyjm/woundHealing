@@ -291,13 +291,16 @@ if False:
             vmax=6,
         )
         fig.colorbar(c, ax=ax)
-        ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
+        ax.set(
+            xlabel="Time after wounding (mins)",
+            ylabel=r"Distance from wound edge $(\mu m)$",
+        )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(f"Division density {boldTitle}")
 
         fig.savefig(
-            f"results/Division density heatmap {fileType}",
+            f"results/Division density heatmap {fileTitle}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,
@@ -378,7 +381,7 @@ if False:
             compare = "UnwoundJNK"
         elif "Ca" in fileType:
             compare = "UnwoundCa"
-        else:
+        elif "rpr" in fileType:
             compare = "Unwoundrpr"
         (m, c) = bestFitUnwound(compare)
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
@@ -407,7 +410,7 @@ if False:
         )
 
         fig.savefig(
-            f"results/Change in Division density heatmap {fileType}",
+            f"results/Change in Division density heatmap {fileTitle}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,
@@ -424,11 +427,14 @@ if False:
                 cmap="Reds",
             )
             fig.colorbar(c, ax=ax)
-            ax.set(xlabel="Time (min)", ylabel=r"$R (\mu m)$")
+            ax.set(
+                xlabel="Time after wounding (mins)",
+                ylabel=r"Distance from wound edge $(\mu m)$",
+            )
             ax.title.set_text(f"Area of division bins distance and time {boldTitle}")
 
             fig.savefig(
-                f"results/Divison density Area bin heatmap {fileType}",
+                f"results/Divison density Area bin heatmap {fileTitle}",
                 transparent=True,
                 bbox_inches="tight",
                 dpi=300,
