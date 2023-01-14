@@ -282,8 +282,12 @@ if True:
                         dq1_std.append(dq_std[0, 0] / (len(dft)) ** 0.5)
                         time.append(timeStep * t + timeStep / 2)
 
-                ax[0, 0].plot(time, dq1)
-                ax[1, 0].plot(time, np.array(dq1) / rad)
+                if i == 0:
+                    ax[0, 0].plot(time, dq1)
+                    ax[1, 0].plot(time, np.array(dq1) / rad)
+                else:
+                    ax[0, 0].plot(time, dq1, marker="o")
+                    ax[1, 0].plot(time, np.array(dq1) / rad, marker="o")
 
             time = []
             dQ1_mu = []
@@ -305,21 +309,24 @@ if True:
 
             color = util.getColor(fileType)
             fileTitle = util.getFileTitle(fileType)
-            ax[0, 1].plot(
-                time - 1 / 2 + i, dQ1_mu, label=fileTitle, color=color, marker="o"
-            )
+            if i == 0:
+                ax[0, 1].plot(time, dQ1_mu, label=fileTitle, color=color)
+                ax[1, 1].plot(time, dQ1_nor_mu, label=fileTitle, color=color)
+            else:
+                ax[0, 1].plot(time, dQ1_mu, label=fileTitle, color=color, marker="o")
+                ax[1, 1].plot(
+                    time, dQ1_nor_mu, label=fileTitle, color=color, marker="o"
+                )
+
             ax[0, 1].fill_between(
-                time - 1 / 2 + i,
+                time,
                 dQ1_mu - dQ1_std,
                 dQ1_mu + dQ1_std,
                 alpha=0.15,
                 color=color,
             )
-            ax[1, 1].plot(
-                time - 1 / 2 + i, dQ1_nor_mu, label=fileTitle, color=color, marker="o"
-            )
             ax[1, 1].fill_between(
-                time - 1 / 2 + i,
+                time,
                 dQ1_nor_mu - dQ1_nor_std,
                 dQ1_nor_mu + dQ1_nor_std,
                 alpha=0.15,
@@ -335,7 +342,7 @@ if True:
         ax[0, 1].set_ylim([-0.02, 0.0075])
         ax[0, 1].legend(loc="lower right", fontsize=12)
         ax[1, 1].set(
-            xlabel=f"Time (mins)", ylabel=r"Mean Norm. $Q^{(1)}$ rel. to wound"
+            xlabel=f"Time (mins)", ylabel=r"Mean norm. $Q^{(1)}$ rel. to wound"
         )
         ax[1, 1].set_ylim([-0.0003, 0.00015])
         ax[1, 1].legend(loc="lower right", fontsize=12)

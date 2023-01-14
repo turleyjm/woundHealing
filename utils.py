@@ -53,8 +53,8 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "AllTypes"
 # fileType = "AllWound"
 
-# fileType = "18h"
-fileType = "JNK"
+fileType = "18h"
+# fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
 
