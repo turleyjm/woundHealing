@@ -35,15 +35,15 @@ from datetime import datetime
 import cellProperties as cell
 import utils as util
 
-pd.options.mode.chained_assignment = None
-plt.rcParams.update({"font.size": 10})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 
-if False:
+# mean velocity
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(5, 3))
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
     for filename in filenames:
@@ -80,8 +80,8 @@ if False:
     )
     plt.close("all")
 
-
-if True:
+# distribution of dv
+if False:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dv = np.stack(dfVelocity["dv"])
 
