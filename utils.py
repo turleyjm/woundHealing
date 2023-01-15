@@ -50,11 +50,11 @@ plt.rcParams.update({"font.size": 20})
 # ---- grouped conditions ----
 
 
-# fileType = "AllTypes"
+fileType = "AllTypes"
 # fileType = "AllWound"
 
 # fileType = "18h"
-fileType = "JNK"
+# fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
 

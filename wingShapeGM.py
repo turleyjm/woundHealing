@@ -38,7 +38,7 @@ scale = 123.26 / 512
 
 # -------------------
 
-# compare mean sf
+# compare: Mean sf
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -73,7 +73,7 @@ if True:
     )
     plt.close("all")
 
-# Q1 tensor
+# compare: Mean Q1 tensor
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -108,7 +108,7 @@ if True:
     )
     plt.close("all")
 
-# Q2 tensor
+# compare: Mean Q2 tensor
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -143,7 +143,7 @@ if True:
     )
     plt.close("all")
 
-# mean P1
+# compare: Mean P1
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -178,7 +178,7 @@ if True:
     )
     plt.close("all")
 
-# mean P2
+# compare: Mean P2
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -213,7 +213,7 @@ if True:
     )
     plt.close("all")
 
-# mean rho
+# compare: Mean rho
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
@@ -248,7 +248,7 @@ if True:
     )
     plt.close("all")
 
-# entropy
+# compare: entropy
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:

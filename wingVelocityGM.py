@@ -44,7 +44,7 @@ scale = 123.26 / 512
 
 # -------------------
 
-# mean velocity
+# compare: Mean velocity
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     for fileType in fileTypes:

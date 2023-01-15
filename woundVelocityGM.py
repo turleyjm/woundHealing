@@ -50,7 +50,7 @@ rStep = 10
 
 # -------------------
 
-# v with distance from wound edge and time
+# Individual: v with distance from wound edge and time
 if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -148,7 +148,7 @@ if False:
         )
         plt.close("all")
 
-# Compare rescale Speed Towards Wound
+# Compare: Rescale Speed Towards Wound
 if True:
     if (
         groupTitle == "wild type"

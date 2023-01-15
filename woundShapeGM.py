@@ -51,7 +51,7 @@ rStep = 10
 # -------------------
 
 
-# Density with distance from wound edge and time
+# Individual: Density with distance from wound edge and time
 if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -147,7 +147,7 @@ if False:
         )
         plt.close("all")
 
-# Q1 with distance from wound edge and time
+# Individual: Q1 with distance from wound edge and time
 if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -245,7 +245,7 @@ if False:
         )
         plt.close("all")
 
-# Compare rescale Q1 relative to Wound
+# Compare: Rescale Q1 relative to Wound
 if True:
     if (
         groupTitle == "wild type"
