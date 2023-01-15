@@ -130,7 +130,7 @@ def bestFitUnwound(fileType="Unwound18h"):
 # -------------------
 
 # Compare divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     total = 0
     for fileType in fileTypes:
