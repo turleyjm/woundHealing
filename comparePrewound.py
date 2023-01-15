@@ -56,6 +56,8 @@ if True:
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
         )
+        # q = np.mean(df["q"][df["T"] < 8])[0, 0]
+        # print(f"{filename}: {q}")
 
     fileType = "WoundS18h"
     filenames, fileType = util.getFilesType(fileType)
@@ -63,7 +65,7 @@ if True:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfShape[dfShape["Filename"] == filenamePre]
-        if len(df) >0: 
+        if len(df) > 0:
             _df.append(
                 {
                     "Type": "Prewound wt",
@@ -71,13 +73,16 @@ if True:
                     "q": np.mean(df["q"], axis=0)[0, 0],
                 }
             )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
+
     fileType = "WoundL18h"
     filenames, fileType = util.getFilesType(fileType)
     dfShape = pd.read_pickle(f"databases/dfShape{util.Prewound(fileType)}.pkl")
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfShape[dfShape["Filename"] == filenamePre]
-        if len(df) >0: 
+        if len(df) > 0:
             _df.append(
                 {
                     "Type": "Prewound wt",
@@ -85,7 +90,9 @@ if True:
                     "q": np.mean(df["q"])[0, 0],
                 }
             )
-        
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
+
     fileType = "UnwoundJNK"
     filenames, fileType = util.getFilesType(fileType)
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -98,6 +105,8 @@ if True:
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
         )
+        # q = np.mean(df["q"][df["T"] < 8])[0, 0]
+        # print(f"{filename}: {q}")
 
     fileType = "WoundSJNK"
     filenames, fileType = util.getFilesType(fileType)
@@ -105,7 +114,7 @@ if True:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfShape[dfShape["Filename"] == filenamePre]
-        if len(df) >0: 
+        if len(df) > 0:
             _df.append(
                 {
                     "Type": "Prewound JNK",
@@ -113,13 +122,16 @@ if True:
                     "q": np.mean(df["q"])[0, 0],
                 }
             )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
+
     fileType = "WoundLJNK"
     filenames, fileType = util.getFilesType(fileType)
     dfShape = pd.read_pickle(f"databases/dfShape{util.Prewound(fileType)}.pkl")
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfShape[dfShape["Filename"] == filenamePre]
-        if len(df) >0: 
+        if len(df) > 0:
             _df.append(
                 {
                     "Type": "Prewound JNK",
@@ -127,9 +139,11 @@ if True:
                     "q": np.mean(df["q"])[0, 0],
                 }
             )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
 
     df = pd.DataFrame(_df)
-    sns.boxplot(y="q", x="Type", data=df, boxprops={'facecolor':'None'}) 
+    sns.boxplot(y="q", x="Type", data=df, boxprops={"facecolor": "None"})
     sns_plot = sns.swarmplot(data=df, y="q", x="Type")
     fig = sns_plot.get_figure()
     fig.savefig(
@@ -150,14 +164,16 @@ if False:
     for filename in filenames:
         df = dfDivisions[dfDivisions["Filename"] == filename]
         outPlane = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)
-        area = np.sum(255-outPlane[1:5])/255 * scale**2
-        if area==0:
+        area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
+        if area == 0:
             print(0)
         _df.append(
             {
                 "Type": "Unwound wt",
                 "Filename": filename,
-                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*5000/area,
+                "Divsion density": len(df[(df["T"] >= 1 * 2) & (df["T"] < 5 * 2)])
+                * 5000
+                / area,
             }
         )
 
@@ -167,14 +183,16 @@ if False:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfDivisions[dfDivisions["Filename"] == filenamePre]
-        if len(df) > 0: 
-            outPlane = sm.io.imread(f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif").astype(int)
-            area = np.sum(255-outPlane[1:5])/255 * scale**2
+        if len(df) > 0:
+            outPlane = sm.io.imread(
+                f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif"
+            ).astype(int)
+            area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
             _df.append(
                 {
                     "Type": "Prewound wt",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*5000/area,
+                    "Divsion density": len(df) * 5000 / area,
                 }
             )
     fileType = "WoundL18h"
@@ -183,29 +201,33 @@ if False:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfDivisions[dfDivisions["Filename"] == filenamePre]
-        if len(df) >0: 
-            outPlane = sm.io.imread(f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif").astype(int)
-            area = np.sum(255-outPlane[1:5])/255 * scale**2
+        if len(df) > 0:
+            outPlane = sm.io.imread(
+                f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif"
+            ).astype(int)
+            area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
             _df.append(
                 {
                     "Type": "Prewound wt",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*5000/area,
+                    "Divsion density": len(df) * 5000 / area,
                 }
             )
-        
+
     fileType = "UnwoundJNK"
     filenames, fileType = util.getFilesType(fileType)
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     for filename in filenames:
         df = dfDivisions[dfDivisions["Filename"] == filename]
         outPlane = sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)
-        area = np.sum(255-outPlane[1:5])/255 * scale**2
+        area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
         _df.append(
             {
                 "Type": "Unwound JNK",
                 "Filename": filename,
-                "Divsion density": len(df[(df["T"]>=1*2)&(df["T"]<5*2)])*5000/area,
+                "Divsion density": len(df[(df["T"] >= 1 * 2) & (df["T"] < 5 * 2)])
+                * 5000
+                / area,
             }
         )
 
@@ -215,14 +237,16 @@ if False:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfDivisions[dfDivisions["Filename"] == filenamePre]
-        if len(df) >0: 
-            outPlane = sm.io.imread(f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif").astype(int)
-            area = np.sum(255-outPlane[1:5])/255 * scale**2
+        if len(df) > 0:
+            outPlane = sm.io.imread(
+                f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif"
+            ).astype(int)
+            area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
             _df.append(
                 {
                     "Type": "Prewound JNK",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*5000/area,
+                    "Divsion density": len(df) * 5000 / area,
                 }
             )
     fileType = "WoundLJNK"
@@ -231,19 +255,21 @@ if False:
     for filename in filenames:
         filenamePre = util.Prewound(filename)
         df = dfDivisions[dfDivisions["Filename"] == filenamePre]
-        if len(df) >0: 
-            outPlane = sm.io.imread(f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif").astype(int)
-            area = np.sum(255-outPlane[1:5])/255 * scale**2
+        if len(df) > 0:
+            outPlane = sm.io.imread(
+                f"dat/{filename}/{filenamePre}/outPlane{filenamePre}.tif"
+            ).astype(int)
+            area = np.sum(255 - outPlane[1:5]) / 255 * scale**2
             _df.append(
                 {
                     "Type": "Prewound JNK",
                     "Filename": filenamePre,
-                    "Divsion density": len(df)*5000/area,
+                    "Divsion density": len(df) * 5000 / area,
                 }
             )
 
     df = pd.DataFrame(_df)
-    sns.boxplot(y="Divsion density", x="Type", data=df, boxprops={'facecolor':'None'}) 
+    sns.boxplot(y="Divsion density", x="Type", data=df, boxprops={"facecolor": "None"})
     sns_plot = sns.swarmplot(data=df, y="Divsion density", x="Type")
     fig = sns_plot.get_figure()
     fig.savefig(

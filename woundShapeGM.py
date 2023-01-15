@@ -300,7 +300,7 @@ if True:
                     dQ1_nor_mu.append(np.mean(dQ1_nor[t]))
                     dQ1_std.append(np.std(dQ1[t]))
                     dQ1_nor_std.append(np.std(dQ1_nor[t]))
-                    time.append(timeStep * t + timeStep / 2)
+                    time.append(timeStep * t)
             time = np.array(time)
             dQ1_mu = np.array(dQ1_mu)
             dQ1_nor_mu = np.array(dQ1_nor_mu)
@@ -356,7 +356,7 @@ if True:
             r"Rescale $Q^{(1)}$ relative to wound" + " with time " + boldTitle,
             fontsize=24,
         )
-        st.set_y(0.95)
+        st.set_y(0.97)
 
         fig.savefig(
             f"results/Compare rescale Q1 relative to wound {groupTitle}",
