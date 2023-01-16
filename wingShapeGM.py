@@ -66,7 +66,7 @@ if True:
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Mean shape factor with \n time " + boldTitle)
     fig.savefig(
-        f"results/mean S_f {fileType}",
+        f"results/mean S_f {groupTitle}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

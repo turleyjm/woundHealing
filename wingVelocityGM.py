@@ -44,7 +44,7 @@ scale = 123.26 / 512
 
 # -------------------
 
-# compare: Mean velocity
+# compare: Mean migration of cells in tissue
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     for fileType in fileTypes:
@@ -84,7 +84,7 @@ if True:
     ax.legend(loc="upper right", fontsize=12)
 
     fig.savefig(
-        f"results/migration of tissue {groupTitle}",
+        f"results/Migration of cells in tissue {groupTitle}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

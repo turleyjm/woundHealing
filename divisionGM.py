@@ -130,7 +130,7 @@ def bestFitUnwound(fileType="Unwound18h"):
 # -------------------
 
 # Compare: Divison density with time
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     total = 0
     for fileType in fileTypes:
@@ -211,7 +211,7 @@ if False:
     print(total)
 
 # Individual: Divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -308,7 +308,7 @@ if True:
         plt.close("all")
 
 # Individual: Change in divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])

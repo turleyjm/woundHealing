@@ -37,7 +37,7 @@ T = 93
 
 # -------------------
 
-# Compare: Mean wound area
+# Compare wounds: Mean wound area
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     i = 0
