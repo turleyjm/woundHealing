@@ -169,18 +169,18 @@ if False:
     for filename in filenames:
         process_stack(filename)
 
-if False:
+if True:
     normIntenEcad = np.zeros([len(filenames), 93])
     normIntenH2 = np.zeros([len(filenames), 93])
     for k in range(len(filenames)):
         filename = filenames[k]
         ecadBleach = sm.io.imread(f"datBleach/ecadBleach{filename}.tif").astype(int)
         h2Bleach = sm.io.imread(f"datBleach/h2Bleach{filename}.tif").astype(int)
-        muEcad = ecadBleach[0][ecadBleach[t] > 0]
-        muH2 = h2Bleach[0][h2Bleach[t] > 0]
+        muEcad = np.mean(ecadBleach[0][ecadBleach[0] > 0])
+        muH2 = np.mean(h2Bleach[0][h2Bleach[0] > 0])
         for t in range(T):
-            normIntenEcad[k, t] = ecadBleach[t][ecadBleach[t] > 0] / muEcad
-            normIntenH2[k, t] = h2Bleach[t][h2Bleach[t] > 0] / muH2
+            normIntenEcad[k, t] = np.mean(ecadBleach[t][ecadBleach[t] > 0]) / muEcad
+            normIntenH2[k, t] = np.mean(h2Bleach[t][h2Bleach[t] > 0]) / muH2
 
     time = 2 * np.array(range(T))
     stdEcad = np.std(normIntenEcad, axis=0)
@@ -197,10 +197,16 @@ if False:
     ax[1].fill_between(time, normIntenH2 - stdH2, normIntenH2 + stdH2, alpha=0.15)
 
     ax[0].set(xlabel="Time (mins)", ylabel="Normalised intensity")
-    ax[0].title.set_text("E-Cadherin-GFP bleaching over time")
+    ax[0].title.set_text("E-Cadherin-GFP bleaching")
+    ax[0].set_ylim([0.25, 1.15])
 
     ax[1].set(xlabel="Time (mins)", ylabel="Normalised intensity")
-    ax[1].title.set_text("histone2-RFP bleaching over time")
+    ax[1].title.set_text("histone2-RFP bleaching")
+    ax[1].set_ylim([0.25, 1.15])
+
+    plt.subplots_adjust(
+        left=0.1, bottom=0.1, right=0.95, top=0.89, wspace=0.32, hspace=0.2
+    )
 
     fig.savefig(
         f"results/Bleaching wild type",
@@ -212,7 +218,7 @@ if False:
 
 fileTypes, groupTitle = util.getFilesTypes("18h")
 
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
