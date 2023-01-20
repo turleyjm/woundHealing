@@ -40,12 +40,13 @@ plt.rcParams.update({"font.size": 16})
 # -------------------
 
 fileTypes, groupTitle = util.getFilesTypes()
+T = 90
 scale = 123.26 / 512
 
 # -------------------
 
-# compare: Mean migration of cells in tissue
-if True:
+# compare: Mean migration of cells in tissue in x snd y
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -85,6 +86,48 @@ if True:
 
     fig.savefig(
         f"results/Migration of cells in tissue {groupTitle}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+# compare: Mean migration of cells in tissue in r
+if True:
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    for fileType in fileTypes:
+        filenames = util.getFilesType(fileType)[0]
+        dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+        df = dfVelocityMean[dfVelocityMean["Filename"] == filenames[0]]
+        n = len(df)
+        m = 5
+        V = np.zeros([len(filenames), n // m])
+        for i in range(len(filenames)):
+            filename = filenames[i]
+            df = dfVelocityMean[dfVelocityMean["Filename"] == filename]
+            mig = 0
+            for t in range(n):
+                mig += np.mean(df["V"][df["T"] == t], axis=0)
+                if t % m == 0:
+                    V[i, int(t / m)] = (mig[0] ** 2 + mig[1] ** 2) ** 0.5
+
+        time = 2 * m * np.array(range(int(T / m)))
+
+        std = np.std(V, axis=0)
+        V = np.mean(V, axis=0)
+        color = util.getColor(fileType)
+        fileTitle = util.getFileTitle(fileType)
+        ax.plot(time, V, label=fileTitle, color=color)
+        ax.fill_between(time, V - std, V + std, alpha=0.15, color=color)
+
+    ax.set(xlabel="Time (mins)", ylabel=r"y ($\mu m$)")
+    boldTitle = util.getBoldTitle(groupTitle)
+    ax.title.set_text(f"Migration magnitude of cells in tissue \n {boldTitle}")
+    ax.set_ylim([0, 60])
+    ax.legend(loc="upper left", fontsize=12)
+
+    fig.savefig(
+        f"results/Migration magnitude of cells in tissue {groupTitle}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
