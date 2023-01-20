@@ -45,7 +45,7 @@ fileTypes, groupTitle = util.getFilesTypes()
 scale = 123.26 / 512
 T = 84
 timeStep = 4
-R = 80
+R = 50
 rStep = 10
 
 # -------------------
@@ -148,15 +148,18 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        q1Cont = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
         for k in range(len(filenames)):
             filename = filenames[k]
             dfFile = dfShape[dfShape["Filename"] == filename]
+            dQ1Cont = np.mean(dfFile["dq"] ** 2, axis=0)[0, 0] ** 0.5
+
             if "Wound" in filename:
                 t0 = util.findStartTime(filename)
             else:
@@ -171,6 +174,7 @@ if False:
                     df = df3[df3["R"] <= rStep * (r + 1)]
                     if len(df) > 0:
                         q1[k, t, r] = np.mean(df["dq"], axis=0)[0, 0]
+                        q1Cont[k, t, r] = np.mean(df["dq"], axis=0)[0, 0] / dQ1Cont
 
             inPlane = 1 - (
                 sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
@@ -200,6 +204,7 @@ if False:
                     )
 
         Q1 = np.zeros([int(T / timeStep), int(R / rStep)])
+        Q1Cont = np.zeros([int(T / timeStep), int(R / rStep)])
         std = np.zeros([int(T / timeStep), int(R / rStep)])
         meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
 
@@ -207,19 +212,24 @@ if False:
             for t in range(area.shape[1]):
                 _Q1 = q1[:, t, r][q1[:, t, r] != 0]
                 _area = area[:, t, r][q1[:, t, r] != 0]
+                _Q1Cont = q1Cont[:, t, r][q1Cont[:, t, r] != 0]
                 if (len(_area) > 0) & (np.sum(_area) > 0):
                     _dd, _std = weighted_avg_and_std(_Q1, _area)
                     Q1[t, r] = _dd
                     std[t, r] = _std
                     meanArea[t, r] = np.mean(_area)
+                    _dd, _std = weighted_avg_and_std(_Q1Cont, _area)
+                    Q1Cont[t, r] = _dd
                 else:
                     Q1[t, r] = np.nan
                     std[t, r] = np.nan
+                    Q1Cont[t, r] = np.nan
 
         Q1[meanArea < 500] = np.nan
+        Q1Cont[meanArea < 500] = np.nan
 
         t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-        fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
         c = ax.pcolor(
             t,
             r,
@@ -231,7 +241,7 @@ if False:
         fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=r"Distance from wound edge $(\mu m)$",
+            ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
@@ -245,8 +255,65 @@ if False:
         )
         plt.close("all")
 
+        if True:
+            controlType = util.controlType(fileType)
+            dfCont = pd.read_pickle(f"databases/dfShapeWound{controlType}.pkl")
+            dQ1Cont = np.mean(dfCont["dq"] ** 2, axis=0)[0, 0] ** 0.5
+
+            fig, ax = plt.subplots(2, 1, figsize=(6, 6))
+            c = ax[0].pcolor(
+                t,
+                r,
+                Q1 / dQ1Cont,
+                vmin=-1.2,
+                vmax=1.2,
+                cmap="RdBu_r",
+            )
+            fig.colorbar(c, ax=ax[0])
+            ax[0].set(
+                xlabel="Time after wounding (mins)",
+                ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            )
+            fileTitle = util.getFileTitle(fileType)
+            boldTitle = util.getBoldTitle(fileTitle)
+            controlTitle = util.getFileTitle(controlType)
+            controlTitle = util.getBoldTitle(controlTitle)
+            ax[0].title.set_text(
+                r"$\delta Q^{(1)}$"
+                + f"{boldTitle} heterogeneity \n compared to {controlTitle}"
+            )
+
+            c = ax[1].pcolor(
+                t,
+                r,
+                Q1Cont,
+                vmin=-1.2,
+                vmax=1.2,
+                cmap="RdBu_r",
+            )
+            fig.colorbar(c, ax=ax[1])
+            ax[1].set(
+                xlabel="Time after wounding (mins)",
+                ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            )
+            fileTitle = util.getFileTitle(fileType)
+            boldTitle = util.getBoldTitle(fileTitle)
+            ax[1].title.set_text(r"$\delta Q^{(1)}$" + f"{boldTitle} heterogeneity")
+
+            plt.subplots_adjust(
+                left=0.12, bottom=0.11, right=0.9, top=0.88, wspace=0.2, hspace=0.55
+            )
+
+            fig.savefig(
+                f"results/Q1 heatmap heterogeneity {fileTitle}",
+                transparent=True,
+                bbox_inches="tight",
+                dpi=300,
+            )
+            plt.close("all")
+
 # Compare: Rescale Q1 relative to Wound
-if True:
+if False:
     if (
         groupTitle == "wild type"
         or groupTitle == "JNK DN"
@@ -347,7 +414,7 @@ if True:
         ax[1, 1].set_ylim([-0.0003, 0.00015])
         ax[1, 1].legend(loc="lower right", fontsize=12)
 
-        plt.subplot_tool()
+        # plt.subplot_tool()
         plt.subplots_adjust(
             left=0.075, bottom=0.1, right=0.95, top=0.89, wspace=0.4, hspace=0.3
         )

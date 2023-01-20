@@ -50,10 +50,10 @@ plt.rcParams.update({"font.size": 20})
 # ---- grouped conditions ----
 
 
-# fileType = "AllTypes"
+fileType = "AllTypes"
 # fileType = "AllWound"
 
-fileType = "18h"
+# fileType = "18h"
 # fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
@@ -256,6 +256,19 @@ def compareType(groupTitle):
         compare = "Unwoundrpr"
 
     return compare
+
+
+def controlType(fileType):
+    if "18h" in fileType:
+        control = "Unwound18h"
+    elif "JNK" in fileType:
+        control = "UnwoundJNK"
+    elif "Ca" in fileType:
+        control = "UnwoundCa"
+    elif "rpr" in fileType:
+        control = "Unwoundrpr"
+
+    return control
 
 
 def getColor(fileType):

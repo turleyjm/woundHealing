@@ -84,9 +84,9 @@ if True:
     plt.ylabel(r"Area ($\mu m ^2$)")
     boldTitle = util.getBoldTitle(groupTitle)
     plt.title(f"Mean area of wound \n {boldTitle}")
-    plt.legend()
+    plt.legend(loc="upper right", fontsize=12)
     fig.savefig(
-        f"results/Compared Mean Wound Area {groupTitle}",
+        f"results/Compared mean wound area {groupTitle}",
         bbox_inches="tight",
         dpi=300,
     )
