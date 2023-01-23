@@ -1,15 +1,60 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import utils as util
 
-NUM_COLORS = 12
 
-cm = plt.get_cmap('gist_rainbow')
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_prop_cycle(color=[cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
-for i in range(NUM_COLORS):
-    ax.plot(np.arange(10)*(i+1))
+def getColorLineMarker(fileType, groupTitle):
 
-fig.savefig('moreColors.png')
+    if (
+        groupTitle == "wild type"
+        or groupTitle == "JNK DN"
+        or groupTitle == "Ca RNAi"
+        or groupTitle == "immune ablation"
+    ):
+        colorDict = {
+            "Unwound18h": [3, "--", "o"],
+            "WoundL18h": [10, ":", "o"],
+            "WoundS18h": [20, "-.", "o"],
+            "UnwoundJNK": [3, "--", "^"],
+            "WoundLJNK": [10, ":", "^"],
+            "WoundSJNK": [20, "-.", "^"],
+            "UnwoundCa": [3, "--", "s"],
+            "WoundLCa": [10, ":", "s"],
+            "WoundSCa": [20, "-.", "s"],
+            "Unwoundrpr": [3, "--", "p"],
+            "WoundLrpr": [10, ":", "p"],
+            "WoundSrpr": [20, "-.", "p"],
+        }
+    else:
+        colorDict = {
+            "Unwound18h": [0, "--", "o"],
+            "WoundL18h": [0, ":", "o"],
+            "WoundS18h": [0, "-.", "o"],
+            "UnwoundJNK": [8, "--", "^"],
+            "WoundLJNK": [8, ":", "^"],
+            "WoundSJNK": [8, "-.", "^"],
+            "UnwoundCa": [16, "--", "s"],
+            "WoundLCa": [16, ":", "s"],
+            "WoundSCa": [16, "-.", "s"],
+            "Unwoundrpr": [22, "--", "p"],
+            "WoundLrpr": [22, ":", "p"],
+            "WoundSrpr": [22, "-.", "p"],
+        }
+    n = 23
+    cm = plt.get_cmap("gist_rainbow")
+    i, line, mark = colorDict[fileType]
+
+    return cm(1.0 * i / n), line, mark
+
+
+fileTypes, groupTitle = util.getFilesTypes()
+
+fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+i = 0
+for fileType in fileTypes:
+    colour, line, mark = getColorLineMarker(fileType, groupTitle)
+    ax.plot(np.arange(10) * (i + 1), color=colour, linestyle=line, marker=mark)
+    i += 1
+
+fig.savefig("results/moreColors.png")
 plt.show()
-print(0)

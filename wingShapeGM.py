@@ -55,10 +55,17 @@ if True:
 
         std = np.std(S_f, axis=0)
         S_f = np.mean(S_f, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, S_f, label=fileTitle, color=color)
-        ax.fill_between(time, S_f - std, S_f + std, alpha=0.15, color=color)
+        ax.plot(
+            time,
+            S_f,
+            label=fileTitle,
+            color=colour,
+            marker=mark,
+            markevery=10,
+        )
+        ax.fill_between(time, S_f - std, S_f + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0.3, 0.47])
     ax.legend(loc="upper left", fontsize=12)
@@ -90,10 +97,10 @@ if True:
 
         std = np.std(q1, axis=0)
         Q1 = np.mean(q1, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, Q1, label=fileTitle, color=color)
-        ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=color)
+        ax.plot(time, Q1, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0, 0.042])
     ax.legend(loc="upper left", fontsize=12)
@@ -125,10 +132,10 @@ if True:
 
         std = np.std(q2, axis=0)
         Q2 = np.mean(q2, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, Q2, label=fileTitle, color=color)
-        ax.fill_between(time, Q2 - std, Q2 + std, alpha=0.15, color=color)
+        ax.plot(time, Q2, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, Q2 - std, Q2 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.0075, 0.0075])
     ax.legend(loc="upper left", fontsize=12)
@@ -160,10 +167,10 @@ if True:
 
         std = np.std(p1, axis=0)
         P1 = np.mean(p1, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, P1, label=fileTitle, color=color)
-        ax.fill_between(time, P1 - std, P1 + std, alpha=0.15, color=color)
+        ax.plot(time, P1, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, P1 - std, P1 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.001, 0.001])
     ax.legend(loc="upper left", fontsize=12)
@@ -195,10 +202,10 @@ if True:
 
         std = np.std(p2, axis=0)
         P2 = np.mean(p2, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, P2, label=fileTitle, color=color)
-        ax.fill_between(time, P2 - std, P2 + std, alpha=0.15, color=color)
+        ax.plot(time, P2, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, P2 - std, P2 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.001, 0.001])
     ax.legend(loc="upper left", fontsize=12)
@@ -230,10 +237,10 @@ if True:
 
         std = np.std(rho, axis=0)
         rho = np.mean(rho, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, rho, label=fileTitle, color=color)
-        ax.fill_between(time, rho - std, rho + std, alpha=0.15, color=color)
+        ax.plot(time, rho, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, rho - std, rho + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0.05, 0.1])
     ax.legend(loc="upper left", fontsize=12)
@@ -277,10 +284,10 @@ if True:
 
         std = np.std(ent, axis=0)
         ent = np.mean(ent, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, ent, label=fileTitle, color=color)
-        ax.fill_between(time, ent - std, ent + std, alpha=0.15, color=color)
+        ax.plot(time, ent, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, ent - std, ent + std, alpha=0.15, color=colour)
 
     ax.set_ylim([2.6, 3.7])
     ax.legend(loc="lower left", fontsize=12)

@@ -53,8 +53,8 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "AllTypes"
 # fileType = "AllWound"
 
-fileType = "18h"
-# fileType = "JNK"
+# fileType = "18h"
+fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
 
@@ -115,6 +115,20 @@ def getFilesTypes(fileType=fileType):
             "WoundLJNK",
             "WoundSJNK",
         ]
+        # fileTypes = [
+        #     "Unwound18h",
+        #     "WoundL18h",
+        #     "WoundS18h",
+        #     "UnwoundJNK",
+        #     "WoundLJNK",
+        #     "WoundSJNK",
+        #     "UnwoundCa",
+        #     "WoundLCa",
+        #     "WoundSCa",
+        #     "Unwoundrpr",
+        #     "WoundLrpr",
+        #     "WoundSrpr",
+        # ]
     elif fileType == "AllWound":
         fileTypes = ["WoundL18h", "WoundS18h", "WoundLJNK", "WoundSJNK"]
 
@@ -271,27 +285,49 @@ def controlType(fileType):
     return control
 
 
-def getColor(fileType):
+def getColorLineMarker(fileType, groupTitle):
 
-    colorDict = {
-        "Unwound18h": 1,
-        "WoundL18h": 5,
-        "WoundS18h": 9,
-        "UnwoundJNK": 4,
-        "WoundLJNK": 8,
-        "WoundSJNK": 12,
-        "UnwoundCa": 7,
-        "WoundLCa": 11,
-        "WoundSCa": 3,
-        "Unwoundrpr": 10,
-        "WoundLrpr": 2,
-        "WoundSrpr": 6,
-    }
-    n = 12
+    if (
+        groupTitle == "wild type"
+        or groupTitle == "JNK DN"
+        or groupTitle == "Ca RNAi"
+        or groupTitle == "immune ablation"
+    ):
+        colorDict = {
+            "Unwound18h": [3, "o"],
+            "WoundL18h": [10, "^"],
+            "WoundS18h": [20, "s"],
+            "UnwoundJNK": [3, ">"],
+            "WoundLJNK": [10, "*"],
+            "WoundSJNK": [20, "+"],
+            "UnwoundCa": [3, "h"],
+            "WoundLCa": [10, "d"],
+            "WoundSCa": [20, "<"],
+            "Unwoundrpr": [3, "v"],
+            "WoundLrpr": [10, "H"],
+            "WoundSrpr": [20, "p"],
+        }
+    else:
+        colorDict = {
+            "Unwound18h": [0, "o"],
+            "WoundL18h": [0, "^"],
+            "WoundS18h": [0, "s"],
+            "UnwoundJNK": [8, ">"],
+            "WoundLJNK": [8, "*"],
+            "WoundSJNK": [8, "+"],
+            "UnwoundCa": [16, "h"],
+            "WoundLCa": [16, "d"],
+            "WoundSCa": [16, "<"],
+            "Unwoundrpr": [22, "v"],
+            "WoundLrpr": [22, "H"],
+            "WoundSrpr": [22, "p"],
+        }
+
+    n = 23
     cm = plt.get_cmap("gist_rainbow")
-    i = colorDict[fileType]
+    i, mark = colorDict[fileType]
 
-    return cm(1.0 * i / n)
+    return cm(1.0 * i / n), mark
 
 
 # ---------------

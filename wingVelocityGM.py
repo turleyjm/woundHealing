@@ -46,7 +46,7 @@ scale = 123.26 / 512
 # -------------------
 
 # compare: Mean migration of cells in tissue in x snd y
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -65,7 +65,7 @@ if False:
 
         std = np.std(V, axis=0)
         V = np.mean(V, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
         ax.errorbar(
             V[:, 0],
@@ -73,8 +73,8 @@ if False:
             std[:, 0],
             std[:, 1],
             label=fileTitle,
-            color=color,
-            marker="o",
+            color=colour,
+            marker=mark,
         )
 
     ax.set(xlabel=r"x ($\mu m$)", ylabel=r"y ($\mu m$)")
@@ -100,25 +100,23 @@ if True:
         dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
         df = dfVelocityMean[dfVelocityMean["Filename"] == filenames[0]]
         n = len(df)
-        m = 5
-        V = np.zeros([len(filenames), n // m])
+        V = np.zeros([len(filenames), n])
         for i in range(len(filenames)):
             filename = filenames[i]
             df = dfVelocityMean[dfVelocityMean["Filename"] == filename]
             mig = 0
             for t in range(n):
                 mig += np.mean(df["V"][df["T"] == t], axis=0)
-                if t % m == 0:
-                    V[i, int(t / m)] = (mig[0] ** 2 + mig[1] ** 2) ** 0.5
+                V[i, int(t)] = (mig[0] ** 2 + mig[1] ** 2) ** 0.5
 
-        time = 2 * m * np.array(range(int(T / m)))
+        time = 2 * np.array(range(int(T)))
 
         std = np.std(V, axis=0)
         V = np.mean(V, axis=0)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, V, label=fileTitle, color=color)
-        ax.fill_between(time, V - std, V + std, alpha=0.15, color=color)
+        ax.plot(time, V, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, V - std, V + std, alpha=0.15, color=colour)
 
     ax.set(xlabel="Time (mins)", ylabel=r"y ($\mu m$)")
     boldTitle = util.getBoldTitle(groupTitle)

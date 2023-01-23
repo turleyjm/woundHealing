@@ -130,7 +130,7 @@ def bestFitUnwound(fileType="Unwound18h"):
 # -------------------
 
 # Compare: Divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     total = 0
     for fileType in fileTypes:
@@ -176,10 +176,10 @@ if True:
 
         dd = np.array(dd)
         std = np.array(std)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, dd, label=fileTitle, marker="o", color=color)
-        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=color)
+        ax.plot(time, dd, label=fileTitle, marker=mark, color=colour)
+        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colour)
 
     time = np.array(time)
 
@@ -211,7 +211,7 @@ if True:
     print(total)
 
 # Individual: Divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -292,12 +292,12 @@ if False:
         )
         fig.colorbar(c, ax=ax)
         ax.set(
-            xlabel="Time after wounding (mins)",
-            ylabel=r"Distance from wound edge $(\mu m)$",
+            xlabel="Time (mins)",
+            ylabel=r"Distance from wound $(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(f"Division density {boldTitle}")
+        ax.title.set_text(f"Division density \n {boldTitle}")
 
         fig.savefig(
             f"results/Division density heatmap {fileTitle}",
@@ -308,7 +308,7 @@ if False:
         plt.close("all")
 
 # Individual: Change in divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -403,6 +403,10 @@ if False:
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
+        ax.set(
+            xlabel="Time (mins)",
+            ylabel=r"Distance from wound $(\mu m)$",
+        )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(

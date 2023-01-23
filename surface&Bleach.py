@@ -169,7 +169,7 @@ if False:
     for filename in filenames:
         process_stack(filename)
 
-if True:
+if False:
     normIntenEcad = np.zeros([len(filenames), 93])
     normIntenH2 = np.zeros([len(filenames), 93])
     for k in range(len(filenames)):
@@ -201,7 +201,7 @@ if True:
     ax[0].set_ylim([0.25, 1.15])
 
     ax[1].set(xlabel="Time (mins)", ylabel="Normalised intensity")
-    ax[1].title.set_text("histone2-RFP bleaching")
+    ax[1].title.set_text("Histone2-RFP bleaching")
     ax[1].set_ylim([0.25, 1.15])
 
     plt.subplots_adjust(
@@ -218,7 +218,7 @@ if True:
 
 fileTypes, groupTitle = util.getFilesTypes("18h")
 
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -233,11 +233,11 @@ if False:
         std = np.std(surf, axis=0)
         surf = np.mean(surf, axis=0)
 
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
 
-        ax.plot(time, surf, label=fileTitle, color=color)
-        ax.fill_between(time, surf - std, surf + std, alpha=0.15, color=color)
+        ax.plot(time, surf, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, surf - std, surf + std, alpha=0.15, color=colour)
 
     ax.legend(loc="upper right", fontsize=12)
     ax.set(xlabel="Time (mins)", ylabel=r"Mean surface height ($\mu m$)")

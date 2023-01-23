@@ -75,10 +75,10 @@ if True:
 
         A = np.array(A)
         std = np.array(std)
-        color = util.getColor(fileType)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, A, label=fileTitle, marker="o", color=color)
-        ax.fill_between(time, A - std, A + std, alpha=0.15, color=color)
+        ax.plot(time, A, label=fileTitle, marker=mark, color=colour)
+        ax.fill_between(time, A - std, A + std, alpha=0.15, color=colour)
 
     plt.xlabel("Time after wounding (mins)")
     plt.ylabel(r"Area ($\mu m ^2$)")

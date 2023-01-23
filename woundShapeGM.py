@@ -148,7 +148,7 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -313,7 +313,7 @@ if True:
             plt.close("all")
 
 # Compare: Rescale Q1 relative to Wound
-if False:
+if True:
     if (
         groupTitle == "wild type"
         or groupTitle == "JNK DN"
@@ -374,15 +374,25 @@ if False:
             dQ1_std = np.array(dQ1_std)
             dQ1_nor_std = np.array(dQ1_nor_std)
 
-            color = util.getColor(fileType)
+            colour, mark = util.getColorLineMarker(fileType, groupTitle)
             fileTitle = util.getFileTitle(fileType)
             if i == 0:
-                ax[0, 1].plot(time, dQ1_mu, label=fileTitle, color=color)
-                ax[1, 1].plot(time, dQ1_nor_mu, label=fileTitle, color=color)
+                ax[0, 1].plot(time, dQ1_mu, label=fileTitle, color=colour)
+                ax[1, 1].plot(time, dQ1_nor_mu, label=fileTitle, color=colour)
             else:
-                ax[0, 1].plot(time, dQ1_mu, label=fileTitle, color=color, marker="o")
+                ax[0, 1].plot(
+                    time,
+                    dQ1_mu,
+                    label=fileTitle,
+                    color=colour,
+                    marker=mark,
+                )
                 ax[1, 1].plot(
-                    time, dQ1_nor_mu, label=fileTitle, color=color, marker="o"
+                    time,
+                    dQ1_nor_mu,
+                    label=fileTitle,
+                    color=colour,
+                    marker=mark,
                 )
 
             ax[0, 1].fill_between(
@@ -390,14 +400,14 @@ if False:
                 dQ1_mu - dQ1_std,
                 dQ1_mu + dQ1_std,
                 alpha=0.15,
-                color=color,
+                color=colour,
             )
             ax[1, 1].fill_between(
                 time,
                 dQ1_nor_mu - dQ1_nor_std,
                 dQ1_nor_mu + dQ1_nor_std,
                 alpha=0.15,
-                color=color,
+                color=colour,
             )
             i += 1
 
