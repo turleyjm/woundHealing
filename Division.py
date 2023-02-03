@@ -235,7 +235,7 @@ if False:
     plt.close("all")
 
 # Divison density with time best fit
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
@@ -282,7 +282,7 @@ if False:
     ax.plot(time, dd, marker="o", label=f"Unwounded")
     ax.fill_between(time, dd - std, dd + std, alpha=0.15)
     ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
-    ax.set(xlabel="Time", ylabel=r"Divison density ($\mu m^{-2}$)")
+    ax.set(xlabel="Time", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with time {fileType}")
     ax.set_ylim([0, 7])
 
@@ -300,13 +300,11 @@ if False:
         )
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=r"Divison density ($100\mu m^{-2}$)",
+            ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
         )
     else:
-        ax.title.set_text(
-            f"Division density with \n time " + r"$\bf{" + str(fileTitle) + "}$"
-        )
-        ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)")
+        ax.title.set_text(f"Division density with \n time " + r"$\bf{unwounded}$")
+        ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
 
     ax.legend(loc="upper left", fontsize=12)
     fig.savefig(
@@ -318,7 +316,7 @@ if False:
     plt.close("all")
 
 # Compare divison density with time
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     # legend = ["Unwounded", "Small wound", "Large wound"]
@@ -380,7 +378,8 @@ if False:
     time = np.array(time)
     ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
     ax.set(
-        xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)"
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
     )
     ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
     ax.set_ylim([0, 7])
@@ -452,7 +451,7 @@ if False:
 
     ax.set(
         xlabel="Time after wounding (mins)",
-        ylabel=r"Divison density ($10000\mu m^{-2}$)",
+        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
     )
     ax.title.set_text(f"Division density with time")
     ax.set_ylim([0, 8])

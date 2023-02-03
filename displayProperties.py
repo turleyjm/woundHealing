@@ -62,8 +62,12 @@ def convolve2D(image, kernel, padding=0, strides=1):
 
     # Apply Equal Padding to All Sides
     if padding != 0:
-        imagePadded = np.zeros((image.shape[0] + padding*2, image.shape[1] + padding*2))
-        imagePadded[int(padding):int(-1 * padding), int(padding):int(-1 * padding)] = image
+        imagePadded = np.zeros(
+            (image.shape[0] + padding * 2, image.shape[1] + padding * 2)
+        )
+        imagePadded[
+            int(padding) : int(-1 * padding), int(padding) : int(-1 * padding)
+        ] = image
         print(imagePadded)
     else:
         imagePadded = image
@@ -82,18 +86,21 @@ def convolve2D(image, kernel, padding=0, strides=1):
                 try:
                     # Only Convolve if x has moved by the specified Strides
                     if x % strides == 0:
-                        output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
+                        output[x, y] = (
+                            kernel * imagePadded[x : x + xKernShape, y : y + yKernShape]
+                        ).sum()
                 except:
                     break
 
     return output
+
 
 # -------------------
 
 filenames, fileType = util.getFilesType()
 # filename = "prettyWound"
 scale = 123.26 / 512
-T = 8
+T = 93
 
 # Display divisons
 if False:
@@ -799,11 +806,11 @@ if False:
 # filter applied to image (from in figure folder)
 if False:
     blur3 = sm.io.imread(f"dat/Unwound18h13_3.tif").astype(int)
-    image = np.zeros([74,74,3])
-    filters = np.zeros([15,15,3])
-    image[7:67,7:67] = blur3 
+    image = np.zeros([74, 74, 3])
+    filters = np.zeros([15, 15, 3])
+    image[7:67, 7:67] = blur3
 
-    kernel = np.zeros([15,15])
+    kernel = np.zeros([15, 15])
     kernel[:, :5] += 1
     kernel[:, :4] += 1
     kernel[:, :3] += 1
@@ -811,10 +818,10 @@ if False:
     kernel[:, :1] += 1
     kernel[:, 6:] += -1
     filters[:, :, 0] = kernel
-    
-    output = convolve2D(image[:,:,0], kernel, padding=0, strides=1)
 
-    kernel = np.zeros([15,15])
+    output = convolve2D(image[:, :, 0], kernel, padding=0, strides=1)
+
+    kernel = np.zeros([15, 15])
     kernel[:, 5:10] += 3
     kernel[:, 6:9] += 2
     kernel[:, 7:8] += 1
@@ -825,10 +832,10 @@ if False:
     kernel[:, :2] += -1
     kernel[:, :1] += -1
     filters[:, :, 1] = kernel
-    
-    output += convolve2D(image[:,:,1], kernel, padding=0, strides=1)
 
-    kernel = np.zeros([15,15])
+    output += convolve2D(image[:, :, 1], kernel, padding=0, strides=1)
+
+    kernel = np.zeros([15, 15])
     kernel[:, 10:] += 1
     kernel[:, 11:] += 1
     kernel[:, 12:] += 1
@@ -836,18 +843,91 @@ if False:
     kernel[:, 14:] += 1
     kernel[:, :9] += -1
     filters[:, :, 2] = kernel
-    
-    output += convolve2D(image[:,:,2], kernel, padding=0, strides=1)
+
+    output += convolve2D(image[:, :, 2], kernel, padding=0, strides=1)
 
     output = np.asarray(output, "int32")
-    tifffile.imwrite(
-        f"results/myFilteredImage.tif", output
-    )
-    filters[filters<0]=0
+    tifffile.imwrite(f"results/myFilteredImage.tif", output)
+    filters[filters < 0] = 0
     filters = np.flip(filters, axis=1)
     filters = np.asarray(filters, "uint16")
-    tifffile.imwrite(
-        f"results/myFilter.tif", filters
-    )
+    tifffile.imwrite(f"results/myFilter.tif", filters)
 
+# Director Q field
+if True:
+    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    cm = plt.get_cmap("RdBu_r")
+    for filename in filenames:
+        t0 = util.findStartTime(filename)
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        (T, X, Y, rgb) = focus.shape
+        binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
 
+        imgLabel = np.zeros([T, 512, 512])
+        for t in range(T):
+            img = 255 - binary[t]
+
+            # find and labels cells
+            imgLabel[t] = sm.measure.label(img, background=0, connectivity=1)
+
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        dQ1 = np.zeros([T, 512, 512, 3])
+
+        df = dfShape[dfShape["Filename"] == filename]
+
+        for i in range(len(df)):
+            x = int(df["X"].iloc[i] / scale)
+            y = int(df["Y"].iloc[i] / scale)
+            t = int((df["T"].iloc[i] - t0) / 2)
+            dq = df["dq"].iloc[i]
+            col = (dq[0, 0] + 0.05) / 0.1
+            if col > 0.999:
+                col = 0.999
+            elif col < 0:
+                col = 0
+            colour = cm(col)
+
+            label = imgLabel[t, int(512 - y), int(x)]
+            if label != 0:
+                dQ1[t, :, :, 0][imgLabel[t] == label] = colour[0] * 255
+                dQ1[t, :, :, 1][imgLabel[t] == label] = colour[1] * 255
+                dQ1[t, :, :, 2][imgLabel[t] == label] = colour[2] * 255
+            # if t == 30:
+            #     if label == 174:
+            #         print(0)
+
+        for t in range(T):
+            (x, y) = dfWound["Position"].iloc[t]
+            label = imgLabel[t, int(512 - y), int(x)]
+            dQ1[t, :, :, 0][imgLabel[t] == label] = 0
+            dQ1[t, :, :, 1][imgLabel[t] == label] = 0
+            dQ1[t, :, :, 2][imgLabel[t] == label] = 0
+            if x < 5:
+                x = 5
+            if x > 507:
+                x = 507
+            if y < 5:
+                y = 5
+            if y > 507:
+                y = 507
+            rr, cc = sm.draw.disk([511 - (y), x], 5)
+            dQ1[t][rr, cc, 0] = 200
+
+        dQ1[:, :, :, 1][binary == 255] = 200
+
+        mask = np.all((dQ1 - np.zeros(3)) == 0, axis=3)
+
+        dQ1[:, :, :, 0][mask] = gray[mask]
+        dQ1[:, :, :, 1][mask] = gray[mask]
+        dQ1[:, :, :, 2][mask] = gray[mask]
+
+        dQ1 = np.asarray(dQ1, "uint8")
+        tifffile.imwrite(f"results/displayProperties/dq1{filename}.tif", dQ1)
+        print(0)
+        # imgLabel = np.asarray(imgLabel, "uint16")
+        # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)

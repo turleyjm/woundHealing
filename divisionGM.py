@@ -194,7 +194,8 @@ if False:
         ax.plot(time, (m * time + c) * 10000, color="k", label=f"Linear model")
 
     ax.set(
-        xlabel="Time after wounding (mins)", ylabel=r"Divison density ($100\mu m^{-2}$)"
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
     )
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Division density with \n time " + boldTitle)
