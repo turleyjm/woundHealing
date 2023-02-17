@@ -41,7 +41,7 @@ T = 93
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     i = 0
-    for fileType in fileTypes:
+    for fileType in fileTypes[1:]:
         filenames, fileType = util.getFilesType(fileType)
         _df = []
         Area0 = []

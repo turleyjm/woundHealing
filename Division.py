@@ -379,7 +379,7 @@ if True:
     ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
     ax.set(
         xlabel="Time after wounding (mins)",
-        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
+        ylabel=r"Division density ($10^{-4}\mu m^{-2}$)",
     )
     ax.title.set_text(f"Division density with \n time " + r"$\bf{wounds}$")
     ax.set_ylim([0, 7])

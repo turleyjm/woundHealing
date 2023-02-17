@@ -118,7 +118,7 @@ if True:
         ax.plot(time, V, label=fileTitle, color=colour, marker=mark, markevery=10)
         ax.fill_between(time, V - std, V + std, alpha=0.15, color=colour)
 
-    ax.set(xlabel="Time (mins)", ylabel=r"y ($\mu m$)")
+    ax.set(xlabel="Time (mins)", ylabel=r"r ($\mu m$)")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Migration magnitude of cells in tissue \n {boldTitle}")
     ax.set_ylim([0, 60])

@@ -860,7 +860,6 @@ if True:
     for filename in filenames:
         t0 = util.findStartTime(filename)
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
-        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         (T, X, Y, rgb) = focus.shape
         binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
 
@@ -897,26 +896,47 @@ if True:
                 dQ1[t, :, :, 0][imgLabel[t] == label] = colour[0] * 255
                 dQ1[t, :, :, 1][imgLabel[t] == label] = colour[1] * 255
                 dQ1[t, :, :, 2][imgLabel[t] == label] = colour[2] * 255
-            # if t == 30:
-            #     if label == 174:
-            #         print(0)
 
-        for t in range(T):
-            (x, y) = dfWound["Position"].iloc[t]
-            label = imgLabel[t, int(512 - y), int(x)]
-            dQ1[t, :, :, 0][imgLabel[t] == label] = 0
-            dQ1[t, :, :, 1][imgLabel[t] == label] = 0
-            dQ1[t, :, :, 2][imgLabel[t] == label] = 0
-            if x < 5:
-                x = 5
-            if x > 507:
-                x = 507
-            if y < 5:
-                y = 5
-            if y > 507:
-                y = 507
-            rr, cc = sm.draw.disk([511 - (y), x], 5)
-            dQ1[t][rr, cc, 0] = 200
+        if "Wound" in filename:
+            dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+            for t in range(T):
+                (x, y) = dfWound["Position"].iloc[t]
+                label = imgLabel[t, int(512 - y), int(x)]
+                dQ1[t, :, :, 0][imgLabel[t] == label] = 0
+                dQ1[t, :, :, 1][imgLabel[t] == label] = 0
+                dQ1[t, :, :, 2][imgLabel[t] == label] = 0
+                if x < 5:
+                    x = 5
+                if x > 507:
+                    x = 507
+                if y < 5:
+                    y = 5
+                if y > 507:
+                    y = 507
+                rr, cc = sm.draw.disk([511 - (y), x], 5)
+                dQ1[t][rr, cc, 1] = 255
+        else:
+            dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+            dfFilename = dfVelocityMean[
+                dfVelocityMean["Filename"] == filename
+            ].reset_index()
+            for t in range(T):
+                mig = np.sum(
+                    np.stack(np.array(dfFilename.loc[:t, "V"]), axis=0), axis=0
+                )
+                x = 256 + mig[0] / scale
+                y = 256 + mig[1] / scale
+                label = imgLabel[t, int(512 - y), int(x)]
+                if x < 5:
+                    x = 5
+                if x > 507:
+                    x = 507
+                if y < 5:
+                    y = 5
+                if y > 507:
+                    y = 507
+                rr, cc = sm.draw.disk([511 - (y), x], 5)
+                dQ1[t][rr, cc, 1] = 255
 
         dQ1[:, :, :, 1][binary == 255] = 200
 
@@ -928,6 +948,5 @@ if True:
 
         dQ1 = np.asarray(dQ1, "uint8")
         tifffile.imwrite(f"results/displayProperties/dq1{filename}.tif", dQ1)
-        print(0)
         # imgLabel = np.asarray(imgLabel, "uint16")
         # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
