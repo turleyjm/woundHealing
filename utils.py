@@ -143,7 +143,7 @@ def getFilesTypes(fileType=fileType):
 
     elif fileType == "Unwound":
         # fileTypes = ["Unwound18h", "UnwoundJNK", "UnwoundCa", "Unwoundrpr"]
-        fileTypes = ["Unwound18h", "UnwoundJNK"]
+        fileTypes = ["Unwound18h", "UnwoundJNK", "Unwoundrpr"]
     elif fileType == "WoundL":
         # fileTypes = ["WoundL18h", "WoundLJNK", "WoundLCa", "WoundLrpr"]
         fileTypes = ["WoundL18h", "WoundLJNK"]

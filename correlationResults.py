@@ -41,33 +41,42 @@ filenames, fileType = util.getFilesType()
 T = 90
 scale = 123.26 / 512
 
+
 def corRho_T(T, C):
     return C / T
 
+
 def corRho_R(R, C, D):
     T = 2.5
-    return C / T * np.exp(-(R ** 2) / (4 * D * T))
+    return C / T * np.exp(-(R**2) / (4 * D * T))
+
 
 def expCos(R, C, D, w):
     return C * np.exp(-D * R) * np.cos(w * R)
 
+
 def exp(R, C, D):
     return C * np.exp(-D * R)
 
+
 def expStretched(R, C, D, alpha):
-    return C * np.exp(-D * R ** alpha)
+    return C * np.exp(-D * R**alpha)
+
 
 def explinear(R, C, D, m, c):
     return C * np.exp(-D * R) + m * R + c
 
+
 def CorR0(t, C, a):
     return C * upperGamma(0, a * t)
+
 
 def upperGamma(a, x):
     if a == 0:
         return -sc.expi(-x)
     else:
         return sc.gamma(a) * sc.gammaincc(a, x)
+
 
 def binomialGamma(j, a, t):
     s = 0
@@ -76,9 +85,11 @@ def binomialGamma(j, a, t):
     s += (t) ** (-j) * upperGamma(j, a * t)
     return s
 
+
 def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
     y, R, T = np.meshgrid(y, R, T, indexing="ij")
     return C * np.exp(-y * T) * sc.jv(0, R * ((y - a) / b) ** 0.5) / y
+
 
 def Integral(R, b):
     a = 0.014231800277153952
@@ -88,6 +99,7 @@ def Integral(R, b):
     h = y[1] - y[0]
     return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
+
 def Integral_P2(R, b):
     a = 0.014231800277153952
     T = 2
@@ -96,6 +108,7 @@ def Integral_P2(R, b):
     h = y[1] - y[0]
     return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
 
+
 def CorrdP1(R, T):
     a = 0.014231800277153952
     b = 0.02502418
@@ -103,6 +116,7 @@ def CorrdP1(R, T):
     y = np.linspace(a, a * 100, 100000)
     h = y[1] - y[0]
     return np.sum(forIntegral(y, b, R, a, T, C) * h, axis=0)[:, 0]
+
 
 def CorrdP2(R, T):
     a = 0.014231800277153952
@@ -239,7 +253,6 @@ if False:
         )
         plt.close("all")
 
-
     t, r = np.mgrid[10:110:10, 10:120:10]
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     plt.subplots_adjust(wspace=0.3)
@@ -249,7 +262,7 @@ if False:
     c = ax.pcolor(
         t,
         r,
-        divCorr[:10] * 10000 ** 2,
+        divCorr[:10] * 10000**2,
         cmap="RdBu_r",
         vmin=-3,
         vmax=3,
@@ -257,7 +270,7 @@ if False:
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
-    fileTitle = util.getFileTitle(fileType) 
+    fileTitle = util.getFileTitle(fileType)
 
     if "Wound" in fileType:
         ax.title.set_text(
@@ -282,7 +295,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-        
 
     t, r = np.mgrid[10:110:10, 10:120:10]
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -293,7 +305,8 @@ if False:
     c = ax.pcolor(
         t,
         r,
-        (divCorr[:10] - np.mean(divCorr[:10,7:10], axis=1).reshape((10,1))) * 10000 ** 2,
+        (divCorr[:10] - np.mean(divCorr[:10, 7:10], axis=1).reshape((10, 1)))
+        * 10000**2,
         cmap="RdBu_r",
         vmin=-3,
         vmax=3,
@@ -301,7 +314,7 @@ if False:
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
-    fileTitle = util.getFileTitle(fileType) 
+    fileTitle = util.getFileTitle(fileType)
 
     if "Wound" in fileType:
         ax.title.set_text(
@@ -344,7 +357,7 @@ if False:
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
     fileTitle = util.getFileTitle(fileType)
-    
+
     if "Wound" in fileType:
         ax.title.set_text(
             f"Division orientation \n correlation "
@@ -612,7 +625,7 @@ if False:
         dP1dQ1[i] = np.sum(
             dfCor["dP1dQ1Correlation"].iloc[i][:, :-1, :-1] * dP1dQ1total, axis=2
         ) / np.sum(dP1dQ1total, axis=2)
-        
+
         dP1dQ2total = dfCor["dP1dQ2Count"].iloc[i][:, :-1, :-1]
         dP1dQ2[i] = np.sum(
             dfCor["dP1dQ2Correlation"].iloc[i][:, :-1, :-1] * dP1dQ2total, axis=2
@@ -894,7 +907,7 @@ if False:
         dP1dQ1[i] = np.sum(
             dfCor["dP1dQ1Correlation"].iloc[i][:, :-1, :-1] * dP1dQ1total, axis=2
         ) / np.sum(dP1dQ1total, axis=2)
-        
+
         dP1dQ2total = dfCor["dP1dQ2Count"].iloc[i][:, :-1, :-1]
         dP1dQ2[i] = np.sum(
             dfCor["dP1dQ2Correlation"].iloc[i][:, :-1, :-1] * dP1dQ2total, axis=2
@@ -1320,25 +1333,25 @@ if False:
     plt.close("all")
 
 # fit carves Q
-if False:
+if True:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     plt.rcParams.update({"font.size": 12})
     fig, ax = plt.subplots(2, 2, figsize=(15, 15))
 
-    T, R, Theta = dfCor["dQ1dQ1"].iloc[0].shape
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0][:, :-1, :-1].shape
 
     dQ1dQ1 = np.zeros([len(filenames), T, R])
     dQ2dQ2 = np.zeros([len(filenames), T, R])
     for i in range(len(filenames)):
         dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
         dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
         ) / np.sum(dQ1dQ1total, axis=2)
 
         dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
         dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
         ) / np.sum(dQ2dQ2total, axis=2)
 
     dfCor = 0
@@ -1351,17 +1364,17 @@ if False:
 
     m = sp.optimize.curve_fit(
         f=explinear,
-        xdata=np.linspace(0, 80, 41),
+        xdata=np.linspace(0, 80, 40),
         ydata=dQ1dQ1[0, :-1],
         p0=(0.0006, 1, -3e-06, 0.00016),
     )[0]
 
     print(m[0], m[1], m[2], m[3])
 
-    ax[0, 0].plot(np.linspace(0, 80, 41), dQ1dQ1[0, :-1])
+    ax[0, 0].plot(np.linspace(0, 80, 40), dQ1dQ1[0, :-1])
     ax[0, 0].plot(
-        np.linspace(0, 80, 410),
-        explinear(np.linspace(0, 80, 410), m[0], m[1], m[2], m[3]),
+        np.linspace(0, 80, 400),
+        explinear(np.linspace(0, 80, 400), m[0], m[1], m[2], m[3]),
     )
     ax[0, 0].set_xlabel(r"$R (\mu m)$ ")
     ax[0, 0].set_ylabel(r"$\langle \delta Q_1 \delta Q_1 \rangle$")
@@ -1396,17 +1409,17 @@ if False:
 
     m = sp.optimize.curve_fit(
         f=explinear,
-        xdata=np.linspace(0, 80, 41),
+        xdata=np.linspace(0, 80, 40),
         ydata=dQ2dQ2[0, :-1],
         p0=(0.0006, 1, -3e-06, 0.00016),
     )[0]
 
     print(m[0], m[1], m[2], m[3])
 
-    ax[1, 0].plot(np.linspace(0, 80, 41), dQ2dQ2[0, :-1])
+    ax[1, 0].plot(np.linspace(0, 80, 40), dQ2dQ2[0, :-1])
     ax[1, 0].plot(
-        np.linspace(0, 80, 410),
-        explinear(np.linspace(0, 80, 410), m[0], m[1], m[2], m[3]),
+        np.linspace(0, 80, 400),
+        explinear(np.linspace(0, 80, 400), m[0], m[1], m[2], m[3]),
     )
     ax[1, 0].set_xlabel(r"$R (\mu m)$ ")
     ax[1, 0].set_ylabel(r"$\langle \delta Q_2 \delta Q_2 \rangle$")
@@ -1916,9 +1929,3 @@ if False:
         bbox_inches="tight",
     )
     plt.close("all")
-
-
-
-
-
-
