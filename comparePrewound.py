@@ -142,6 +142,21 @@ if True:
             # q = np.mean(df["q"])[0, 0]
             # print(f"{filenamePre}: {q}")
 
+    fileType = "Unwoundrpr"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        _df.append(
+            {
+                "Type": "Unwound Immune ab.",
+                "Filename": filename,
+                "q": np.mean(df["q"][df["T"] < 8])[0, 0],
+            }
+        )
+        # q = np.mean(df["q"][df["T"] < 8])[0, 0]
+        # print(f"{filename}: {q}")
+
     df = pd.DataFrame(_df)
     sns.boxplot(y="q", x="Type", data=df, boxprops={"facecolor": "None"})
     sns_plot = sns.swarmplot(data=df, y="q", x="Type")

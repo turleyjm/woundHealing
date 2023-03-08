@@ -391,7 +391,7 @@ if False:
 # space time cell-cell shape correlation
 if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 42
+    grid = 27
     timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
@@ -474,7 +474,7 @@ if True:
                 for col in range(timeGrid)
             ]
 
-            print(datetime.now().strftime(" %H:%M:%S") + filename)
+            print(datetime.now().strftime("%H:%M:%S ") + filename)
             dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
             n = int(len(dfShapeF) / 20)
             random.seed(10)
@@ -647,7 +647,7 @@ if True:
 # space time cell-cell shape correlation close to wound
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 42
+    grid = 32
     timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
@@ -779,7 +779,7 @@ if False:
 # space time cell-cell shape correlation far from wound
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 42
+    grid = 32
     timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
@@ -917,7 +917,7 @@ if False:
 if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
-    grid = 42
+    grid = 32
     timeGrid = 51
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)

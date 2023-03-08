@@ -71,19 +71,19 @@ def CorR0(t, C, a):
     return C * upperGamma(0, a * t)
 
 
-def upperGamma(a, x):
-    if a == 0:
-        return -sc.expi(-x)
-    else:
-        return sc.gamma(a) * sc.gammaincc(a, x)
-
-
 def binomialGamma(j, a, t):
     s = 0
     for l in range(j):
         s += (-a) ** (j - l) * (t) ** (-l) * upperGamma(l, a * t)
     s += (t) ** (-j) * upperGamma(j, a * t)
     return s
+
+
+def upperGamma(a, x):
+    if a == 0:
+        return -sc.expi(-x)
+    else:
+        return sc.gamma(a) * sc.gammaincc(a, x)
 
 
 def forIntegral(y, b, R, a=0.014231800277153952, T=2, C=8.06377854e-06):
@@ -1122,7 +1122,7 @@ if False:
     )
     plt.close("all")
 
-# fit carves dRhodRho
+# fit carves dRhodRho (non-model)
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1211,7 +1211,7 @@ if False:
     )
     plt.close("all")
 
-# fit carves Polarisation
+# fit carves Polarisation (non-model)
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1332,8 +1332,8 @@ if False:
     )
     plt.close("all")
 
-# fit carves Q
-if True:
+# fit carves Q (non-model)
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     plt.rcParams.update({"font.size": 12})
@@ -1363,24 +1363,23 @@ if True:
     limMin = np.min(dQ1dQ1[:, :-1])
 
     m = sp.optimize.curve_fit(
-        f=explinear,
-        xdata=np.linspace(0, 80, 40),
+        f=expCos,
+        xdata=np.linspace(0, 80, 41),
         ydata=dQ1dQ1[0, :-1],
-        p0=(0.0006, 1, -3e-06, 0.00016),
+        p0=(0.00008, 0.00004, 1),
     )[0]
 
-    print(m[0], m[1], m[2], m[3])
+    print(m[0], m[1], m[2])
 
-    ax[0, 0].plot(np.linspace(0, 80, 40), dQ1dQ1[0, :-1])
+    ax[0, 0].plot(np.linspace(0, 80, 41), dQ1dQ1[0, :-1])
     ax[0, 0].plot(
-        np.linspace(0, 80, 400),
-        explinear(np.linspace(0, 80, 400), m[0], m[1], m[2], m[3]),
+        np.linspace(0, 80, 410), expCos(np.linspace(0, 80, 410), m[0], m[1], m[2])
     )
     ax[0, 0].set_xlabel(r"$R (\mu m)$ ")
-    ax[0, 0].set_ylabel(r"$\langle \delta Q_1 \delta Q_1 \rangle$")
+    ax[0, 0].set_ylabel(r"$\langle \delta Q^{(1)} \delta Q^{(1)} \rangle$")
     ax[0, 0].set_ylim([limMin * 2, limMax * 1.05])
     ax[0, 0].title.set_text(
-        r"$\langle \delta Q_1(r,t) \delta Q_1(r',t) \rangle = Ce^{-aR} + mR + c$"
+        r"$\langle \delta Q^{(1)}(r,t) \delta Q^{(1)}(r',t) \rangle = Ce^{-aR}\cos(\omega R)$"
     )
 
     m = sp.optimize.curve_fit(
@@ -1390,7 +1389,7 @@ if True:
         p0=(0.0003, 0.04, 1),
     )[0]
 
-    # print(m[0], m[1], m[2])
+    print(m[0], m[1], m[2])
 
     ax[0, 1].plot(np.linspace(0, 100, 51), dQ1dQ1[:, 0])
     ax[0, 1].plot(
@@ -1398,34 +1397,33 @@ if True:
         expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
     )
     ax[0, 1].set_xlabel(r"Time (mins)")
-    ax[0, 1].set_ylabel(r"$\langle \delta Q_1 \delta Q_1 \rangle$")
+    ax[0, 1].set_ylabel(r"$\langle \delta Q^{(1)} \delta Q^{(1)} \rangle$")
     ax[0, 1].set_ylim([limMin * 2, limMax * 1.05])
     ax[0, 1].title.set_text(
-        r"$\langle \delta Q_1(r,t) \delta Q_1(r,t') \rangle = Ce^{-aT^\alpha}$"
+        r"$\langle \delta Q^{(1)}(r,t) \delta Q^{(1)}(r,t') \rangle = Ce^{-aT^\alpha}$"
     )
 
     limMax = np.max(dQ2dQ2[:, :-1])
     limMin = np.min(dQ2dQ2[:, :-1])
 
     m = sp.optimize.curve_fit(
-        f=explinear,
-        xdata=np.linspace(0, 80, 40),
+        f=expCos,
+        xdata=np.linspace(0, 80, 41),
         ydata=dQ2dQ2[0, :-1],
-        p0=(0.0006, 1, -3e-06, 0.00016),
+        p0=(0.00008, 0.00004, 1),
     )[0]
 
-    print(m[0], m[1], m[2], m[3])
+    print(m[0], m[1], m[2])
 
-    ax[1, 0].plot(np.linspace(0, 80, 40), dQ2dQ2[0, :-1])
+    ax[1, 0].plot(np.linspace(0, 80, 41), dQ2dQ2[0, :-1])
     ax[1, 0].plot(
-        np.linspace(0, 80, 400),
-        explinear(np.linspace(0, 80, 400), m[0], m[1], m[2], m[3]),
+        np.linspace(0, 80, 410), expCos(np.linspace(0, 80, 410), m[0], m[1], m[2])
     )
     ax[1, 0].set_xlabel(r"$R (\mu m)$ ")
-    ax[1, 0].set_ylabel(r"$\langle \delta Q_2 \delta Q_2 \rangle$")
+    ax[1, 0].set_ylabel(r"$\langle \delta Q^{(2)} \delta Q^{(2)} \rangle$")
     ax[1, 0].set_ylim([limMin * 2, limMax * 1.05])
     ax[1, 0].title.set_text(
-        r"$\langle \delta Q_2(r,t) \delta Q_2(r',t) \rangle = Ce^{-aR} + mR + c$"
+        r"$\langle \delta Q^{(2)}(r,t) \delta Q^{(2)}(r',t) \rangle = Ce^{-aR}\cos(\omega R)$"
     )
 
     m = sp.optimize.curve_fit(
@@ -1435,7 +1433,7 @@ if True:
         p0=(0.0003, 0.04, 1),
     )[0]
 
-    # print(m[0], m[1], m[2])
+    print(m[0], m[1], m[2])
 
     ax[1, 1].plot(np.linspace(0, 100, 51), dQ2dQ2[:, 0])
     ax[1, 1].plot(
@@ -1443,10 +1441,10 @@ if True:
         expStretched(np.linspace(0, 100, 510), m[0], m[1], m[2]),
     )
     ax[1, 1].set_xlabel(r"Time (mins)")
-    ax[1, 1].set_ylabel(r"$\langle \delta Q_2 \delta Q_2 \rangle$")
+    ax[1, 1].set_ylabel(r"$\langle \delta Q^{(2)} \delta Q^{(2)} \rangle$")
     ax[1, 1].set_ylim([limMin * 2, limMax * 1.05])
     ax[1, 1].title.set_text(
-        r"$\langle \delta Q_2(r,t) \delta Q_2(r,t') \rangle = Ce^{-aT^\alpha}$"
+        r"$\langle \delta Q^{(2)}(r,t) \delta Q^{(2)}(r,t') \rangle = Ce^{-aT^\alpha}$"
     )
 
     fig.savefig(
@@ -1510,8 +1508,8 @@ if False:
     )
     plt.close("all")
 
-# deltaP1
-if False:
+# deltaP1 (model)
+if True:
     plt.rcParams.update({"font.size": 7})
     grid = 9
     timeGrid = 51
@@ -1566,7 +1564,7 @@ if False:
     )
     plt.close("all")
 
-# deltaP2
+# deltaP2 (model)
 if False:
     grid = 9
     timeGrid = 51
@@ -1624,6 +1622,62 @@ if False:
     ax[1].legend()
     fig.savefig(
         f"results/Correlation P2 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaQ1 (model)
+if False:
+    plt.rcParams.update({"font.size": 7})
+    grid = 9
+    timeGrid = 51
+
+    dfCorrelation = pd.read_pickle(f"databases/dfCorrelation{fileType}.pkl")
+    deltaP1Correlation = dfCorrelation["deltaP1Correlation"].iloc[0]
+    deltaP1Correlation = np.mean(deltaP1Correlation[:, :, :-1], axis=2)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    m = sp.optimize.curve_fit(
+        f=CorR0,
+        xdata=T[1:],
+        ydata=deltaP1Correlation[:, 0][1:],
+        p0=(0.000006, 0.01),
+    )[0]
+
+    fig, ax = plt.subplots(1, 2, figsize=(6, 3))
+    plt.subplots_adjust(wspace=0.3)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax[0].plot(T[1:], deltaP1Correlation[:, 0][1:], label="Data")
+    ax[0].plot(T[1:], CorR0(T[1:], m[0], m[1]), label="Model")
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$P_1$ Correlation")
+    ax[0].set_ylim([-0.000005, 0.000025])
+    ax[0].set_xlim([0, 2 * timeGrid])
+    ax[0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
+    ax[0].legend()
+
+    m = sp.optimize.curve_fit(
+        f=Integral,
+        xdata=R,
+        ydata=deltaP1Correlation[1],
+        p0=0.025,
+        method="lm",
+    )[0]
+
+    ax[1].plot(R, deltaP1Correlation[1], label="Data")
+    ax[1].plot(R, Integral(R, m), label="Model")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$P_1$ Correlation")
+    ax[1].set_ylim([-0.000005, 0.000025])
+    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=2$")
+    ax[1].legend()
+    fig.savefig(
+        f"results/Correlation P1 in T and R {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
