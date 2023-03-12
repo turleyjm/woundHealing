@@ -81,7 +81,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -104,7 +104,7 @@ if True:
 
     ax.set_ylim([0, 0.042])
     ax.legend(loc="upper left", fontsize=12)
-    ax.set(xlabel="Time after wounding (mins)", ylabel=r"$Q^{(1)}$")
+    ax.set(xlabel="Time after wounding (mins)", ylabel=r"$\bar{Q}^{(1)}$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $Q^{(1)}$" + " with \n time " + boldTitle)
     fig.savefig(
@@ -244,7 +244,7 @@ if True:
 
     ax.set_ylim([0.05, 0.1])
     ax.legend(loc="upper left", fontsize=12)
-    ax.set(xlabel="Time after wounding (mins)", ylabel=r"$\rho$")
+    ax.set(xlabel="Time after wounding (mins)", ylabel=r"$\bar{\rho}$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $\rho$" + " with \n time " + boldTitle)
     fig.savefig(
@@ -256,7 +256,7 @@ if True:
     plt.close("all")
 
 # compare: entropy
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]

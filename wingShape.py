@@ -96,7 +96,7 @@ if False:
     plt.close("all")
 
 # Q1 tensor
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     Q1 = []
     Q1std = []
@@ -284,7 +284,7 @@ if False:
     plt.close("all")
 
 # mean rho
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     rho = []
     for t in range(T):
