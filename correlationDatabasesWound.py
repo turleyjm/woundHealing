@@ -95,7 +95,7 @@ if False:
     for k in range(len(filenames)):
         filename = filenames[k]
         dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-        path_to_file = f"databases/correlations/dfCorCloseWound{filename}.pkl"
+        path_to_file = f"databases/correlationsWound/dfCorCloseWound{filename}.pkl"
         if False == exists(path_to_file):
             _df = []
             dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
@@ -204,7 +204,7 @@ if False:
             )
             dfCorrelation = pd.DataFrame(_df)
             dfCorrelation.to_pickle(
-                f"databases/correlations/dfCorCloseWound{filename}.pkl"
+                f"databases/correlationsWound/dfCorCloseWound{filename}.pkl"
             )
 
 # space time cell-cell shape correlation far from wound
@@ -226,7 +226,7 @@ if False:
 
     for k in range(len(filenames)):
         filename = filenames[k]
-        path_to_file = f"databases/correlations/dfCorFarWound{filename}.pkl"
+        path_to_file = f"databases/correlationsWound/dfCorFarWound{filename}.pkl"
         if False == exists(path_to_file):
             _df = []
             dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
@@ -341,7 +341,7 @@ if False:
             )
             dfCorrelation = pd.DataFrame(_df)
             dfCorrelation.to_pickle(
-                f"databases/correlations/dfCorFarWound{filename}.pkl"
+                f"databases/correlationsWound/dfCorFarWound{filename}.pkl"
             )
 
 # --------- velocity ----------

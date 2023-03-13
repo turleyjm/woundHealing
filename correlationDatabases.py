@@ -396,7 +396,7 @@ if False:
 # --------- density ----------
 
 # space time cell density correlation
-if True:
+if False:
     grid = 7
     timeGrid = 18
     gridSize = 10
@@ -956,279 +956,10 @@ if False:
                 f"databases/correlations/dfCorMidway{filename}_1-4.pkl"
             )
 
-# space time cell-cell shape correlation close to wound
-if False:
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
-
-    T = np.linspace(0, (timeGrid - 1), timeGrid)
-    R = np.linspace(0, 2 * (grid - 1), grid)
-    theta = np.linspace(0, 2 * np.pi, 17)
-
-    dfShape["dR"] = list(np.zeros([len(dfShape)]))
-    dfShape["dT"] = list(np.zeros([len(dfShape)]))
-    dfShape["dtheta"] = list(np.zeros([len(dfShape)]))
-
-    dfShape["dq1dq1i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
-
-    for k in range(len(filenames)):
-        filename = filenames[k]
-        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
-        path_to_file = f"databases/correlations/dfCorCloseWound{filename}.pkl"
-        if False == exists(path_to_file):
-            _df = []
-            dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
-            dQ1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            dQ1dQ1total = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2total = np.zeros([len(T), len(R), len(theta)])
-
-            dq1dq1ij = [
-                [[[] for col in range(17)] for col in range(grid)]
-                for col in range(timeGrid)
-            ]
-            dq2dq2ij = [
-                [[[] for col in range(17)] for col in range(grid)]
-                for col in range(timeGrid)
-            ]
-
-            print(datetime.now().strftime("%H:%M:%S ") + filename)
-            dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
-            dfClose = dfShapeF[
-                np.array(dfShapeF["T"] < 20) & np.array(dfShapeF["T"] >= 0)
-            ]
-            n = int(len(dfClose))
-            count = 0
-            for i in range(n):
-                if i % int((n) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S ") + f"{10*count}%")
-                    count += 1
-
-                x = dfClose["X"].iloc[i]
-                y = dfClose["Y"].iloc[i]
-                t = dfClose["T"].iloc[i]
-                r = dist[t, int(512 - y), int(x)]
-                if r * scale < 30:
-                    dp1 = dfClose["dp"].iloc[i][0]
-                    dp2 = dfClose["dp"].iloc[i][1]
-                    dq1 = dfClose["dq"].iloc[i][0, 0]
-                    dq2 = dfClose["dq"].iloc[i][0, 1]
-                    dfShapeF.loc[:, "dR"] = (
-                        (
-                            (dfShapeF.loc[:, "X"] - x) ** 2
-                            + (dfShapeF.loc[:, "Y"] - y) ** 2
-                        )
-                        ** 0.5
-                    ).copy()
-                    df = dfShapeF[
-                        [
-                            "X",
-                            "Y",
-                            "T",
-                            "dp",
-                            "dq",
-                            "dR",
-                            "dT",
-                            "dtheta",
-                            "dq1dq1i",
-                            "dq2dq2i",
-                        ]
-                    ]
-                    df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
-
-                    df["dT"] = df.loc[:, "T"] - t
-                    df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                    if len(df) != 0:
-                        theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                        df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                        df["dq1dq1i"] = list(
-                            dq1 * np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0]
-                        )
-                        df["dq2dq2i"] = list(
-                            dq2 * np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1]
-                        )
-
-                        for j in range(len(df)):
-                            dq1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                                int(8 * df["dtheta"].iloc[j] / np.pi)
-                            ].append(df["dq1dq1i"].iloc[j])
-                            dq2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                                int(8 * df["dtheta"].iloc[j] / np.pi)
-                            ].append(df["dq2dq2i"].iloc[j])
-
-            T = np.linspace(0, (timeGrid - 1), timeGrid)
-            R = np.linspace(0, 2 * (grid - 1), grid)
-            theta = np.linspace(0, 2 * np.pi, 17)
-            for i in range(len(T)):
-                for j in range(len(R)):
-                    for th in range(len(theta)):
-                        dQ1dQ1Correlation[i][j][th] = np.mean(dq1dq1ij[i][j][th])
-                        dQ2dQ2Correlation[i][j][th] = np.mean(dq2dq2ij[i][j][th])
-                        dQ1dQ1Correlation_std[i][j][th] = np.std(dq1dq1ij[i][j][th])
-                        dQ2dQ2Correlation_std[i][j][th] = np.std(dq2dq2ij[i][j][th])
-                        dQ1dQ1total[i][j][th] = len(dq1dq1ij[i][j][th])
-                        dQ2dQ2total[i][j][th] = len(dq2dq2ij[i][j][th])
-
-            _df.append(
-                {
-                    "Filename": filename,
-                    "dQ1dQ1Correlation": dQ1dQ1Correlation,
-                    "dQ2dQ2Correlation": dQ2dQ2Correlation,
-                    "dQ1dQ1Correlation_std": dQ1dQ1Correlation_std,
-                    "dQ2dQ2Correlation_std": dQ2dQ2Correlation_std,
-                    "dQ1dQ1Count": dQ1dQ1total,
-                    "dQ2dQ2Count": dQ2dQ2total,
-                }
-            )
-            dfCorrelation = pd.DataFrame(_df)
-            dfCorrelation.to_pickle(
-                f"databases/correlations/dfCorCloseWound{filename}.pkl"
-            )
-
-# space time cell-cell shape correlation far from wound
-if False:
-    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
-
-    T = np.linspace(0, (timeGrid - 1), timeGrid)
-    R = np.linspace(0, 2 * (grid - 1), grid)
-    theta = np.linspace(0, 2 * np.pi, 17)
-
-    dfShape["dR"] = list(np.zeros([len(dfShape)]))
-    dfShape["dT"] = list(np.zeros([len(dfShape)]))
-    dfShape["dtheta"] = list(np.zeros([len(dfShape)]))
-
-    dfShape["dq1dq1i"] = list(np.zeros([len(dfShape)]))
-    dfShape["dq2dq2i"] = list(np.zeros([len(dfShape)]))
-
-    for k in range(len(filenames)):
-        filename = filenames[k]
-        path_to_file = f"databases/correlations/dfCorFarWound{filename}.pkl"
-        if False == exists(path_to_file):
-            _df = []
-            dQ1dQ1Correlation = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2Correlation = np.zeros([len(T), len(R), len(theta)])
-            dQ1dQ1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-            dQ1dQ1total = np.zeros([len(T), len(R), len(theta)])
-            dQ2dQ2total = np.zeros([len(T), len(R), len(theta)])
-
-            dq1dq1ij = [
-                [[[] for col in range(17)] for col in range(grid)]
-                for col in range(timeGrid)
-            ]
-            dq2dq2ij = [
-                [[[] for col in range(17)] for col in range(grid)]
-                for col in range(timeGrid)
-            ]
-
-            print(datetime.now().strftime("%H:%M:%S ") + filename)
-            dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
-            dfFar = dfShapeF[
-                np.array(dfShapeF["T"] < 20) & np.array(dfShapeF["T"] >= 0)
-            ]
-            n = int(len(dfFar) / 5)
-            random.seed(10)
-            count = 0
-            Is = []
-            for i0 in range(n):
-                i = int(random.random() * n)
-                while i in Is:
-                    i = int(random.random() * n)
-                Is.append(i)
-                if i0 % int((n) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
-                    count += 1
-
-                x = dfClose["X"].iloc[i]
-                y = dfClose["Y"].iloc[i]
-                t = dfClose["T"].iloc[i]
-                r = dist[t, int(512 - y), int(x)]
-                if r * scale < 30:
-                    dp1 = dfClose["dp"].iloc[i][0]
-                    dp2 = dfClose["dp"].iloc[i][1]
-                    dq1 = dfClose["dq"].iloc[i][0, 0]
-                    dq2 = dfClose["dq"].iloc[i][0, 1]
-                    dfShapeF.loc[:, "dR"] = (
-                        (
-                            (dfShapeF.loc[:, "X"] - x) ** 2
-                            + (dfShapeF.loc[:, "Y"] - y) ** 2
-                        )
-                        ** 0.5
-                    ).copy()
-                    df = dfShapeF[
-                        [
-                            "X",
-                            "Y",
-                            "T",
-                            "dp",
-                            "dq",
-                            "dR",
-                            "dT",
-                            "dtheta",
-                            "dq1dq1i",
-                            "dq2dq2i",
-                        ]
-                    ]
-                    df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
-
-                    df["dT"] = df.loc[:, "T"] - t
-                    df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                    if len(df) != 0:
-                        theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                        df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                        df["dq1dq1i"] = list(
-                            dq1 * np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 0]
-                        )
-                        df["dq2dq2i"] = list(
-                            dq2 * np.stack(np.array(df.loc[:, "dq"]), axis=0)[:, 0, 1]
-                        )
-
-                        for j in range(len(df)):
-                            dq1dq1ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                                int(8 * df["dtheta"].iloc[j] / np.pi)
-                            ].append(df["dq1dq1i"].iloc[j])
-                            dq2dq2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
-                                int(8 * df["dtheta"].iloc[j] / np.pi)
-                            ].append(df["dq2dq2i"].iloc[j])
-
-            T = np.linspace(0, (timeGrid - 1), timeGrid)
-            R = np.linspace(0, 2 * (grid - 1), grid)
-            theta = np.linspace(0, 2 * np.pi, 17)
-            for i in range(len(T)):
-                for j in range(len(R)):
-                    for th in range(len(theta)):
-                        dQ1dQ1Correlation[i][j][th] = np.mean(dq1dq1ij[i][j][th])
-                        dQ2dQ2Correlation[i][j][th] = np.mean(dq2dq2ij[i][j][th])
-                        dQ1dQ1Correlation_std[i][j][th] = np.std(dq1dq1ij[i][j][th])
-                        dQ2dQ2Correlation_std[i][j][th] = np.std(dq2dq2ij[i][j][th])
-                        dQ1dQ1total[i][j][th] = len(dq1dq1ij[i][j][th])
-                        dQ2dQ2total[i][j][th] = len(dq2dq2ij[i][j][th])
-
-            _df.append(
-                {
-                    "Filename": filename,
-                    "dQ1dQ1Correlation": dQ1dQ1Correlation,
-                    "dQ2dQ2Correlation": dQ2dQ2Correlation,
-                    "dQ1dQ1Correlation_std": dQ1dQ1Correlation_std,
-                    "dQ2dQ2Correlation_std": dQ2dQ2Correlation_std,
-                    "dQ1dQ1Count": dQ1dQ1total,
-                    "dQ2dQ2Count": dQ2dQ2total,
-                }
-            )
-            dfCorrelation = pd.DataFrame(_df)
-            dfCorrelation.to_pickle(
-                f"databases/correlations/dfCorFarWound{filename}.pkl"
-            )
-
 # --------- velocity ----------
 
-# space time denstiy-velocity correlation
-if False:
+# space time d_r denstiy-velocity correlation
+if True:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -1490,7 +1221,7 @@ if False:
         df.to_pickle(f"databases/correlations/dfCorRhoV{filename}_1-4.pkl")
 
 # space time d_r dQ^1-velocity correlation
-if False:
+if True:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -1752,7 +1483,7 @@ if False:
         df.to_pickle(f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl")
 
 # space time shape-velocity correlation
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 32
@@ -1885,7 +1616,7 @@ if False:
             )
 
 # space time velocity-velocity correlation
-if False:
+if True:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 32
     timeGrid = 51
