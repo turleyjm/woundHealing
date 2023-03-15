@@ -1759,7 +1759,7 @@ if True:
 # --------- collect all ----------
 
 # collect all correlations
-if False:
+if True:
     _df = []
     for filename in filenames:
 
@@ -1775,20 +1775,24 @@ if False:
         dfCorMid_4 = pd.read_pickle(
             f"databases/correlations/dfCorMidway{filename}_4.pkl"
         )
-        dfCorMid_5 = pd.read_pickle(
-            f"databases/correlations/dfCorMidway{filename}_5.pkl"
-        )
-        dfCorMid_6 = pd.read_pickle(
-            f"databases/correlations/dfCorMidway{filename}_6.pkl"
-        )
-        dfCorMid_7 = pd.read_pickle(
-            f"databases/correlations/dfCorMidway{filename}_7.pkl"
-        )
-        dfCorMid_8 = pd.read_pickle(
-            f"databases/correlations/dfCorMidway{filename}_8.pkl"
+        dfCorMid_5_8 = pd.read_pickle(
+            f"databases/correlations/dfCorMidway{filename}_5-8.pkl"
         )
         dfCorRho = pd.read_pickle(f"databases/correlations/dfCorRho{filename}.pkl")
         dfCorRhoQ = pd.read_pickle(f"databases/correlations/dfCorRhoQ{filename}.pkl")
+
+        dfCorRhoV = pd.read_pickle(
+            f"databases/correlations/dfCorRhoV{filename}_1-4.pkl"
+        )
+        dfCordrdQ1V = pd.read_pickle(
+            f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl"
+        )
+        dfCorShapeVel = pd.read_pickle(
+            f"databases/correlations/dfCorShapeVelMidway{filename}_1-2.pkl"
+        )
+        dfCorVel = pd.read_pickle(
+            f"databases/correlations/dfCorVelMidway{filename}_1-2.pkl"
+        )
 
         dP1dP1 = np.nan_to_num(dfCorMid_1["dP1dP1Correlation"].iloc[0])
         dP1dP1_std = np.nan_to_num(dfCorMid_1["dP1dP1Correlation_std"].iloc[0])
@@ -1814,27 +1818,27 @@ if False:
         if np.sum(dQ2dQ2) == 0:
             print("dQ2dQ2")
 
-        dQ1dQ2 = np.nan_to_num(dfCorMid_5["dQ1dQ2Correlation"].iloc[0])
-        dQ1dQ2_std = np.nan_to_num(dfCorMid_5["dQ1dQ2Correlation_std"].iloc[0])
-        dQ1dQ2total = np.nan_to_num(dfCorMid_5["dQ1dQ2Count"].iloc[0])
+        dQ1dQ2 = np.nan_to_num(dfCorMid_5_8["dQ1dQ2Correlation"].iloc[0])
+        dQ1dQ2_std = np.nan_to_num(dfCorMid_5_8["dQ1dQ2Correlation_std"].iloc[0])
+        dQ1dQ2total = np.nan_to_num(dfCorMid_5_8["dQ1dQ2Count"].iloc[0])
         if np.sum(dQ1dQ2) == 0:
             print("dQ1dQ2")
 
-        dP1dQ1 = np.nan_to_num(dfCorMid_6["dP1dQ1Correlation"].iloc[0])
-        dP1dQ1_std = np.nan_to_num(dfCorMid_6["dP1dQ1Correlation_std"].iloc[0])
-        dP1dQ1total = np.nan_to_num(dfCorMid_6["dP1dQ1Count"].iloc[0])
+        dP1dQ1 = np.nan_to_num(dfCorMid_5_8["dP1dQ1Correlation"].iloc[0])
+        dP1dQ1_std = np.nan_to_num(dfCorMid_5_8["dP1dQ1Correlation_std"].iloc[0])
+        dP1dQ1total = np.nan_to_num(dfCorMid_5_8["dP1dQ1Count"].iloc[0])
         if np.sum(dP1dQ1) == 0:
             print("dP1dQ1")
 
-        dP1dQ2 = np.nan_to_num(dfCorMid_7["dP1dQ2Correlation"].iloc[0])
-        dP1dQ2_std = np.nan_to_num(dfCorMid_7["dP1dQ2Correlation_std"].iloc[0])
-        dP1dQ2total = np.nan_to_num(dfCorMid_7["dP1dQ2Count"].iloc[0])
+        dP1dQ2 = np.nan_to_num(dfCorMid_5_8["dP1dQ2Correlation"].iloc[0])
+        dP1dQ2_std = np.nan_to_num(dfCorMid_5_8["dP1dQ2Correlation_std"].iloc[0])
+        dP1dQ2total = np.nan_to_num(dfCorMid_5_8["dP1dQ2Count"].iloc[0])
         if np.sum(dP1dQ2) == 0:
             print("dP1dQ2")
 
-        dP2dQ2 = np.nan_to_num(dfCorMid_8["dP2dQ2Correlation"].iloc[0])
-        dP2dQ2_std = np.nan_to_num(dfCorMid_8["dP2dQ2Correlation_std"].iloc[0])
-        dP2dQ2total = np.nan_to_num(dfCorMid_8["dP2dQ2Count"].iloc[0])
+        dP2dQ2 = np.nan_to_num(dfCorMid_5_8["dP2dQ2Correlation"].iloc[0])
+        dP2dQ2_std = np.nan_to_num(dfCorMid_5_8["dP2dQ2Correlation_std"].iloc[0])
+        dP2dQ2total = np.nan_to_num(dfCorMid_5_8["dP2dQ2Count"].iloc[0])
         if np.sum(dP2dQ2) == 0:
             print("dP2dQ2")
 
@@ -1847,6 +1851,78 @@ if False:
         dQ2dRho = np.nan_to_num(dfCorRhoQ["dRhodQ2Correlation"].iloc[0])
         dQ2dRho_std = np.nan_to_num(dfCorRhoQ["dRhodQ2Correlation_std"].iloc[0])
         count_RhoQ = np.nan_to_num(dfCorRhoQ["Count"].iloc[0])
+
+        dr1dRhodV1 = np.nan_to_num(dfCorRhoV["dr1dRhodV1Correlation"].iloc[0])
+        dr1dRhodV1_std = np.nan_to_num(dfCorRhoV["dr1dRhodV1Correlation_std"].iloc[0])
+        dr1dRhodV1total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        if np.sum(dr1dRhodV1) == 0:
+            print("dr1dRhodV1")
+
+        dr1dRhodV2 = np.nan_to_num(dfCorRhoV["dr1dRhodV2Correlation"].iloc[0])
+        dr1dRhodV2_std = np.nan_to_num(dfCorRhoV["dr1dRhodV2Correlation_std"].iloc[0])
+        dr1dRhodV2total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        if np.sum(dr1dRhodV2) == 0:
+            print("dr1dRhodV2")
+
+        dr2dRhodV1 = np.nan_to_num(dfCorRhoV["dr2dRhodV1Correlation"].iloc[0])
+        dr2dRhodV1_std = np.nan_to_num(dfCorRhoV["dr2dRhodV1Correlation_std"].iloc[0])
+        dr2dRhodV1total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        if np.sum(dr2dRhodV1) == 0:
+            print("dr2dRhodV1")
+
+        dr2dRhodV2 = np.nan_to_num(dfCorRhoV["dr2dRhodV2Correlation"].iloc[0])
+        dr2dRhodV2_std = np.nan_to_num(dfCorRhoV["dr2dRhodV2Correlation_std"].iloc[0])
+        dr2dRhodV2total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        if np.sum(dr2dRhodV2) == 0:
+            print("dr2dRhodV2")
+
+        dr1dQ1dV1 = np.nan_to_num(dfCorRhoV["dr1dQ1dV1Correlation"].iloc[0])
+        dr1dQ1dV1_std = np.nan_to_num(dfCorRhoV["dr1dQ1dV1Correlation_std"].iloc[0])
+        dr1dQ1dV1total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        if np.sum(dr1dQ1dV1) == 0:
+            print("dr1dQ1dV1")
+
+        dr1dQ1dV2 = np.nan_to_num(dfCorRhoV["dr1dQ1dV2Correlation"].iloc[0])
+        dr1dQ1dV2_std = np.nan_to_num(dfCorRhoV["dr1dQ1dV2Correlation_std"].iloc[0])
+        dr1dQ1dV2total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        if np.sum(dr1dQ1dV2) == 0:
+            print("dr1dQ1dV2")
+
+        dr2dQ1dV1 = np.nan_to_num(dfCorRhoV["dr2dQ1dV1Correlation"].iloc[0])
+        dr2dQ1dV1_std = np.nan_to_num(dfCorRhoV["dr2dQ1dV1Correlation_std"].iloc[0])
+        dr2dQ1dV1total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        if np.sum(dr2dQ1dV1) == 0:
+            print("dr2dQ1dV1")
+
+        dr2dQ1dV2 = np.nan_to_num(dfCorRhoV["dr2dQ1dV2Correlation"].iloc[0])
+        dr2dQ1dV2_std = np.nan_to_num(dfCorRhoV["dr2dQ1dV2Correlation_std"].iloc[0])
+        dr2dQ1dV2total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        if np.sum(dr2dQ1dV2) == 0:
+            print("dr2dQ1dV2")
+
+        dP1dV1 = np.nan_to_num(dfCorRhoV["dP1dV1Correlation"].iloc[0])
+        dP1dV1_std = np.nan_to_num(dfCorRhoV["dP1dV1Correlation_std"].iloc[0])
+        dP1dV1total = np.nan_to_num(dfCorRhoV["dP1dV1Count"].iloc[0])
+        if np.sum(dP1dV1) == 0:
+            print("dP1dV1")
+
+        dP2dV2 = np.nan_to_num(dfCorRhoV["dP2dV2Correlation"].iloc[0])
+        dP2dV2_std = np.nan_to_num(dfCorRhoV["dP2dV2Correlation_std"].iloc[0])
+        dP2dV2total = np.nan_to_num(dfCorRhoV["dP2dV2Count"].iloc[0])
+        if np.sum(dP2dV2) == 0:
+            print("dP2dV2")
+
+        dV1dV1 = np.nan_to_num(dfCorRhoV["dV1dV1Correlation"].iloc[0])
+        dV1dV1_std = np.nan_to_num(dfCorRhoV["dV1dV1Correlation_std"].iloc[0])
+        dV1dV1total = np.nan_to_num(dfCorRhoV["dV1dV1Count"].iloc[0])
+        if np.sum(dV1dV1) == 0:
+            print("dV1dV1")
+
+        dV2dV2 = np.nan_to_num(dfCorRhoV["dV2dV2Correlation"].iloc[0])
+        dV2dV2_std = np.nan_to_num(dfCorRhoV["dV2dV2Correlation_std"].iloc[0])
+        dV2dV2total = np.nan_to_num(dfCorRhoV["dV2dV2Count"].iloc[0])
+        if np.sum(dV2dV2) == 0:
+            print("dV2dV2")
 
         _df.append(
             {
@@ -1883,6 +1959,42 @@ if False:
                 "dQ2dRho": dQ2dRho,
                 "dQ2dRho_std": dQ2dRho_std,
                 "Count Rho Q": count_RhoQ,
+                "dr1dRhodV1Correlation": dr1dRhodV1,
+                "dr1dRhodV1Correlation_std": dr1dRhodV1_std,
+                "dr1dRhodV1Count": dr1dRhodV1total,
+                "dr1dRhodV2Correlation": dr1dRhodV2,
+                "dr1dRhodV2Correlation_std": dr1dRhodV2_std,
+                "dr1dRhodV2Count": dr1dRhodV2total,
+                "dr2dRhodV1Correlation": dr2dRhodV1,
+                "dr2dRhodV1Correlation_std": dr2dRhodV1_std,
+                "dr2dRhodV1Count": dr2dRhodV1total,
+                "dr2dRhodV2Correlation": dr2dRhodV2,
+                "dr2dRhodV2Correlation_std": dr2dRhodV2_std,
+                "dr2dRhodV2Count": dr2dRhodV2total,
+                "dr1dQ1dV1Correlation": dr1dQ1dV1,
+                "dr1dQ1dV1Correlation_std": dr1dQ1dV1_std,
+                "dr1dQ1dV1Count": dr1dQ1dV1total,
+                "dr1dQ1dV2Correlation": dr1dQ1dV2,
+                "dr1dQ1dV2Correlation_std": dr1dQ1dV2_std,
+                "dr1dQ1dV2Count": dr1dQ1dV2total,
+                "dr2dQ1dV1Correlation": dr2dQ1dV1,
+                "dr2dQ1dV1Correlation_std": dr2dQ1dV1_std,
+                "dr2dQ1dV1Count": dr2dQ1dV1total,
+                "dr2dQ1dV2Correlation": dr2dQ1dV2,
+                "dr2dQ1dV2Correlation_std": dr2dQ1dV2_std,
+                "dr2dQ1dV2Count": dr2dQ1dV2total,
+                "dP1dV1Correlation": dP1dV1,
+                "dP1dV1Correlation_std": dP1dV1_std,
+                "dP1dV1Count": dP1dV1total,
+                "dP2dV2Correlation": dP2dV2,
+                "dP2dV2Correlation_std": dP2dV2_std,
+                "dP2dV2Count": dP2dV2total,
+                "dV1dV1Correlation": dV1dV1,
+                "dV1dV1Correlation_std": dV1dV1_std,
+                "dV1dV1Count": dV1dV1total,
+                "dV2dV2Correlation": dV2dV2,
+                "dV2dV2Correlation_std": dV2dV2_std,
+                "dV2dV2Count": dV2dV2total,
             }
         )
 
