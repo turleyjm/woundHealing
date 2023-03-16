@@ -1493,7 +1493,7 @@ if False:
         df.to_pickle(f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl")
 
 # space time shape-velocity correlation
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 27
@@ -1723,7 +1723,7 @@ if True:
                         ].append(df["dv1dv1i"].iloc[j])
                         dv2dv2ij[int(df["dT"].iloc[j])][int(df["dR"].iloc[j] / 2)][
                             int(8 * df["dtheta"].iloc[j] / np.pi)
-                        ].append(df["dv1dv2i"].iloc[j])
+                        ].append(df["dv2dv2i"].iloc[j])
 
             T = np.linspace(0, (timeGrid - 1), timeGrid)
             R = np.linspace(0, 2 * (grid - 1), grid)
