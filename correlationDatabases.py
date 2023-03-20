@@ -28,7 +28,6 @@ from datetime import datetime
 import cellProperties as cell
 import utils as util
 
-print(datetime.now().strftime("%H:%M:%S"))
 plt.rcParams.update({"font.size": 8})
 
 
@@ -959,7 +958,7 @@ if False:
 # --------- velocity ----------
 
 # space time d_r denstiy-velocity correlation
-if False:
+if True:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -986,247 +985,289 @@ if False:
     xGrid = int(1 + (xMax - xMin) // gridSize)
     yGrid = int(1 + (yMax - yMin) // gridSize)
 
-    T = np.linspace(0, (timeGrid_df - 1), timeGrid_df)
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid_df - 1), grid_df)
     theta = np.linspace(0, 2 * np.pi, 17)
     for filename in filenames:
-        print(filename + datetime.now().strftime(" %H:%M:%S"))
+        path_to_file = f"databases/correlations/dfCorRhoV{filename}_1-4.pkl"
+        if False == exists(path_to_file):
+            print(filename + datetime.now().strftime(" %H:%M:%S"))
 
-        dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
-        dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
-        heatmapdrho = np.zeros([90, xGrid, yGrid])
-        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+            dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
+            dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
+            heatmapdrho = np.zeros([90, xGrid, yGrid])
+            inPlaneEcad = np.zeros([90, xGrid, yGrid])
 
-        for t in range(90):
+            for t in range(90):
 
-            dft = dfShapeF[dfShapeF["T"] == t]
-            for i in range(xGrid):
+                dft = dfShapeF[dfShapeF["T"] == t]
+                for i in range(xGrid):
+                    for j in range(yGrid):
+                        x = [
+                            xMin + i * gridSize,
+                            xMin + (i + 1) * gridSize,
+                        ]
+                        y = [
+                            yMin + j * gridSize,
+                            yMin + (j + 1) * gridSize,
+                        ]
+
+                        dfg = util.sortGrid(dft, x, y)
+                        if list(dfg["Area"]) != []:
+                            heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(
+                                dfg["Area"]
+                            )
+                            inPlaneEcad[t, i, j] = 1
+
+                heatmapdrho[t] = heatmapdrho[t] - np.mean(
+                    heatmapdrho[t][inPlaneEcad[t] == 1]
+                )
+
+            hm_dr1drho = (heatmapdrho[:, 1:] - heatmapdrho[:, :-1]) / gridSize
+            hm_dr2drho = (heatmapdrho[:, :, 1:] - heatmapdrho[:, :, :-1]) / gridSize
+            inPlaneEcadr1 = (inPlaneEcad[:, 1:] + inPlaneEcad[:, :-1]) / 2
+            inPlaneEcadr2 = (inPlaneEcad[:, :, 1:] + inPlaneEcad[:, :, :-1]) / 2
+            inPlaneEcadr1[inPlaneEcadr1 < 1] = 0
+            inPlaneEcadr2[inPlaneEcadr2 < 1] = 0
+
+            dr1dRhodV1Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr1dRhodV2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr2dRhodV1Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr2dRhodV2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr1dRhodV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr1dRhodV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr2dRhodV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr2dRhodV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            total_dr1 = np.zeros([len(T), len(R), len(theta)])
+            total_dr2 = np.zeros([len(T), len(R), len(theta)])
+            dr1drhodv1ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr1drhodv2ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr2drhodv1ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr2drhodv2ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+
+            count = 0
+            percent_count = 0
+            for i in range(xGrid - 1):
                 for j in range(yGrid):
-                    x = [
-                        xMin + i * gridSize,
-                        xMin + (i + 1) * gridSize,
-                    ]
-                    y = [
-                        yMin + j * gridSize,
-                        yMin + (j + 1) * gridSize,
-                    ]
+                    if count % int(((xGrid - 1) * yGrid) / 10) == 0:
+                        print(
+                            datetime.now().strftime("%H:%M:%S")
+                            + f" {10*percent_count}%"
+                        )
+                        percent_count += 1
+                    count += 1
+                    for t in T:
+                        t = int(t)
+                        if np.sum(inPlaneEcadr1[t : int(t + gridSizeT), i, j]) > 0:
+                            dr1drho = np.mean(
+                                hm_dr1drho[t : int(t + gridSizeT), i, j][
+                                    inPlaneEcadr1[t : int(t + gridSizeT), i, j] > 0
+                                ]
+                            )
+                            x = xMin + (i + 1) * gridSize
+                            y = yMin + (j + 0.5) * gridSize
 
-                    dfg = util.sortGrid(dft, x, y)
-                    if list(dfg["Area"]) != []:
-                        heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
-                        inPlaneEcad[t, i, j] = 1
+                            dfVelocityF.loc[:, "dR"] = (
+                                (
+                                    (dfVelocityF.loc[:, "X"] - x) ** 2
+                                    + (dfVelocityF.loc[:, "Y"] - y) ** 2
+                                )
+                                ** 0.5
+                            ).copy()
+                            df = dfVelocityF[
+                                [
+                                    "X",
+                                    "Y",
+                                    "T",
+                                    "dv",
+                                    "dR",
+                                    "dT",
+                                    "dtheta",
+                                    "dr1drhodv1i",
+                                    "dr1drhodv2i",
+                                ]
+                            ]
+                            df = df[
+                                np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)
+                            ]
 
-            heatmapdrho[t] = heatmapdrho[t] - np.mean(
-                heatmapdrho[t][inPlaneEcad[t] == 1]
+                            df["dT"] = df.loc[:, "T"] - t
+                            df = df[
+                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                            ]
+                            if len(df) != 0:
+                                theta = np.arctan2(
+                                    df.loc[:, "Y"] - y, df.loc[:, "X"] - x
+                                )
+                                df["dtheta"] = np.where(
+                                    theta < 0, 2 * np.pi + theta, theta
+                                )
+                                df["dr1drhodv1i"] = list(
+                                    dr1drho
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
+                                )
+                                df["dr1drhodv2i"] = list(
+                                    dr1drho
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
+                                )
+
+                                for p in range(len(df)):
+                                    dr1drhodv1ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr1drhodv1i"].iloc[p]
+                                    )
+                                    dr1drhodv2ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr1drhodv2i"].iloc[p]
+                                    )
+
+            count = 0
+            percent_count = 0
+            for i in range(xGrid):
+                for j in range(yGrid - 1):
+                    if count % int(((xGrid) * yGrid - 1) / 10) == 0:
+                        print(
+                            datetime.now().strftime("%H:%M:%S")
+                            + f" {10*percent_count}%"
+                        )
+                        percent_count += 1
+                    count += 1
+                    for t in T:
+                        t = int(t)
+                        if np.sum(inPlaneEcadr2[t : int(t + gridSizeT), i, j]) > 0:
+                            dr2drho = np.mean(
+                                hm_dr2drho[t : int(t + gridSizeT), i, j][
+                                    inPlaneEcadr2[t : int(t + gridSizeT), i, j] > 0
+                                ]
+                            )
+                            x = xMin + (i + 0.5) * gridSize
+                            y = yMin + (j + 1) * gridSize
+
+                            dfVelocityF.loc[:, "dR"] = (
+                                (
+                                    (dfVelocityF.loc[:, "X"] - x) ** 2
+                                    + (dfVelocityF.loc[:, "Y"] - y) ** 2
+                                )
+                                ** 0.5
+                            ).copy()
+                            df = dfVelocityF[
+                                [
+                                    "X",
+                                    "Y",
+                                    "T",
+                                    "dv",
+                                    "dR",
+                                    "dT",
+                                    "dtheta",
+                                    "dr2drhodv1i",
+                                    "dr2drhodv2i",
+                                ]
+                            ]
+                            df = df[
+                                np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)
+                            ]
+
+                            df["dT"] = df.loc[:, "T"] - t
+                            df = df[
+                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                            ]
+                            if len(df) != 0:
+                                theta = np.arctan2(
+                                    df.loc[:, "Y"] - y, df.loc[:, "X"] - x
+                                )
+                                df["dtheta"] = np.where(
+                                    theta < 0, 2 * np.pi + theta, theta
+                                )
+                                df["dr2drhodv1i"] = list(
+                                    dr2drho
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
+                                )
+                                df["dr2drhodv2i"] = list(
+                                    dr2drho
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
+                                )
+
+                                for p in range(len(df)):
+                                    dr2drhodv1ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr2drhodv1i"].iloc[p]
+                                    )
+                                    dr2drhodv2ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr2drhodv2i"].iloc[p]
+                                    )
+
+            T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+            R = np.linspace(0, 2 * (grid_df - 1), grid_df)
+            theta = np.linspace(0, 2 * np.pi, 17)
+            for i in range(len(T)):
+                for j in range(len(R)):
+                    for th in range(len(theta)):
+                        dr1dRhodV1Correlation[i][j][th] = np.mean(
+                            dr1drhodv1ij[i][j][th]
+                        )
+                        dr1dRhodV2Correlation[i][j][th] = np.mean(
+                            dr1drhodv2ij[i][j][th]
+                        )
+                        dr2dRhodV1Correlation[i][j][th] = np.mean(
+                            dr2drhodv1ij[i][j][th]
+                        )
+                        dr2dRhodV2Correlation[i][j][th] = np.mean(
+                            dr2drhodv2ij[i][j][th]
+                        )
+                        dr1dRhodV1Correlation_std[i][j][th] = np.std(
+                            dr1drhodv1ij[i][j][th]
+                        )
+                        dr1dRhodV2Correlation_std[i][j][th] = np.std(
+                            dr1drhodv2ij[i][j][th]
+                        )
+                        dr2dRhodV1Correlation_std[i][j][th] = np.std(
+                            dr2drhodv1ij[i][j][th]
+                        )
+                        dr2dRhodV2Correlation_std[i][j][th] = np.std(
+                            dr2drhodv2ij[i][j][th]
+                        )
+                        total_dr1[i][j][th] = len(dr1drhodv1ij[i][j][th])
+                        total_dr2[i][j][th] = len(dr2drhodv1ij[i][j][th])
+
+            _df = []
+            _df.append(
+                {
+                    "Filename": filename,
+                    "dr1dRhodV1Correlation": dr1dRhodV1Correlation,
+                    "dr1dRhodV2Correlation": dr1dRhodV2Correlation,
+                    "dr2dRhodV1Correlation": dr2dRhodV1Correlation,
+                    "dr2dRhodV2Correlation": dr2dRhodV2Correlation,
+                    "dr1dRhodV1Correlation_std": dr1dRhodV1Correlation_std,
+                    "dr1dRhodV2Correlation_std": dr1dRhodV2Correlation_std,
+                    "dr2dRhodV1Correlation_std": dr2dRhodV1Correlation_std,
+                    "dr2dRhodV2Correlation_std": dr2dRhodV2Correlation_std,
+                    "dr1Count": total_dr1,
+                    "dr2Count": total_dr2,
+                }
             )
 
-        hm_dr1drho = (heatmapdrho[:, 1:] - heatmapdrho[:, :-1]) / gridSize
-        hm_dr2drho = (heatmapdrho[:, :, 1:] - heatmapdrho[:, :, :-1]) / gridSize
-        inPlaneEcadr1 = (inPlaneEcad[:, 1:] + inPlaneEcad[:, :-1]) / 2
-        inPlaneEcadr2 = (inPlaneEcad[:, :, 1:] + inPlaneEcad[:, :, :-1]) / 2
-        inPlaneEcadr1[inPlaneEcadr1 < 1] = 0
-        inPlaneEcadr2[inPlaneEcadr2 < 1] = 0
-
-        dr1dRhodV1Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr1dRhodV2Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr2dRhodV1Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr2dRhodV2Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr1dRhodV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr1dRhodV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr2dRhodV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr2dRhodV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        total_dr1 = np.zeros([len(T), len(R), len(theta)])
-        total_dr2 = np.zeros([len(T), len(R), len(theta)])
-        dr1drhodv1ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr1drhodv2ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr2drhodv1ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr2drhodv2ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-
-        count = 0
-        percent_count = 0
-        for i in range(xGrid - 1):
-            for j in range(yGrid):
-                if count % int(((xGrid - 1) * yGrid) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {10*percent_count}%")
-                    percent_count += 1
-                count += 1
-                for t in T:
-                    t = int(t)
-                    if np.sum(inPlaneEcadr1[t : int(t + gridSizeT), i, j]) > 0:
-                        dr1drho = np.mean(
-                            hm_dr1drho[t : int(t + gridSizeT), i, j][
-                                inPlaneEcadr1[t : int(t + gridSizeT), i, j] > 0
-                            ]
-                        )
-                        x = xMin + (i + 1) * gridSize
-                        y = yMin + (j + 0.5) * gridSize
-
-                        dfVelocityF.loc[:, "dR"] = (
-                            (
-                                (dfVelocityF.loc[:, "X"] - x) ** 2
-                                + (dfVelocityF.loc[:, "Y"] - y) ** 2
-                            )
-                            ** 0.5
-                        ).copy()
-                        df = dfVelocityF[
-                            [
-                                "X",
-                                "Y",
-                                "T",
-                                "dv",
-                                "dR",
-                                "dT",
-                                "dtheta",
-                                "dr1drhodv1i",
-                                "dr1drhodv2i",
-                            ]
-                        ]
-                        df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
-
-                        df["dT"] = df.loc[:, "T"] - t
-                        df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                        if len(df) != 0:
-                            theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                            df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                            df["dr1drhodv1i"] = list(
-                                dr1drho
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
-                            )
-                            df["dr1drhodv2i"] = list(
-                                dr1drho
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
-                            )
-
-                            for p in range(len(df)):
-                                dr1drhodv1ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr1drhodv1i"].iloc[p]
-                                )
-                                dr1drhodv2ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr1drhodv2i"].iloc[p]
-                                )
-
-        count = 0
-        percent_count = 0
-        for i in range(xGrid):
-            for j in range(yGrid - 1):
-                if count % int(((xGrid) * yGrid - 1) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {10*percent_count}%")
-                    percent_count += 1
-                count += 1
-                for t in T:
-                    t = int(t)
-                    if np.sum(inPlaneEcadr2[t : int(t + gridSizeT), i, j]) > 0:
-                        dr2drho = np.mean(
-                            hm_dr2drho[t : int(t + gridSizeT), i, j][
-                                inPlaneEcadr2[t : int(t + gridSizeT), i, j] > 0
-                            ]
-                        )
-                        x = xMin + (i + 0.5) * gridSize
-                        y = yMin + (j + 1) * gridSize
-
-                        dfVelocityF.loc[:, "dR"] = (
-                            (
-                                (dfVelocityF.loc[:, "X"] - x) ** 2
-                                + (dfVelocityF.loc[:, "Y"] - y) ** 2
-                            )
-                            ** 0.5
-                        ).copy()
-                        df = dfVelocityF[
-                            [
-                                "X",
-                                "Y",
-                                "T",
-                                "dv",
-                                "dR",
-                                "dT",
-                                "dtheta",
-                                "dr2drhodv1i",
-                                "dr2drhodv2i",
-                            ]
-                        ]
-                        df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
-
-                        df["dT"] = df.loc[:, "T"] - t
-                        df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                        if len(df) != 0:
-                            theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                            df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                            df["dr2drhodv1i"] = list(
-                                dr2drho
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
-                            )
-                            df["dr2drhodv2i"] = list(
-                                dr2drho
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
-                            )
-
-                            for p in range(len(df)):
-                                dr2drhodv1ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr2drhodv1i"].iloc[p]
-                                )
-                                dr2drhodv2ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr2drhodv2i"].iloc[p]
-                                )
-
-        T = np.linspace(0, (timeGrid_df - 1), timeGrid_df)
-        R = np.linspace(0, 2 * (grid_df - 1), grid_df)
-        theta = np.linspace(0, 2 * np.pi, 17)
-        for i in range(len(T)):
-            for j in range(len(R)):
-                for th in range(len(theta)):
-                    dr1dRhodV1Correlation[i][j][th] = np.mean(dr1drhodv1ij[i][j][th])
-                    dr1dRhodV2Correlation[i][j][th] = np.mean(dr1drhodv2ij[i][j][th])
-                    dr2dRhodV1Correlation[i][j][th] = np.mean(dr2drhodv1ij[i][j][th])
-                    dr2dRhodV2Correlation[i][j][th] = np.mean(dr2drhodv2ij[i][j][th])
-                    dr1dRhodV1Correlation_std[i][j][th] = np.std(dr1drhodv1ij[i][j][th])
-                    dr1dRhodV2Correlation_std[i][j][th] = np.std(dr1drhodv2ij[i][j][th])
-                    dr2dRhodV1Correlation_std[i][j][th] = np.std(dr2drhodv1ij[i][j][th])
-                    dr2dRhodV2Correlation_std[i][j][th] = np.std(dr2drhodv2ij[i][j][th])
-                    total_dr1[i][j][th] = len(dr1drhodv1ij[i][j][th])
-                    total_dr2[i][j][th] = len(dr2drhodv1ij[i][j][th])
-
-        _df = []
-        _df.append(
-            {
-                "Filename": filename,
-                "dr1dRhodV1Correlation": dr1dRhodV1Correlation,
-                "dr1dRhodV2Correlation": dr1dRhodV2Correlation,
-                "dr2dRhodV1Correlation": dr2dRhodV1Correlation,
-                "dr2dRhodV2Correlation": dr2dRhodV2Correlation,
-                "dr1dRhodV1Correlation_std": dr1dRhodV1Correlation_std,
-                "dr1dRhodV2Correlation_std": dr1dRhodV2Correlation_std,
-                "dr2dRhodV1Correlation_std": dr2dRhodV1Correlation_std,
-                "dr2dRhodV2Correlation_std": dr2dRhodV2Correlation_std,
-                "dr1Count": total_dr1,
-                "dr2Count": total_dr2,
-            }
-        )
-
-        df = pd.DataFrame(_df)
-        df.to_pickle(f"databases/correlations/dfCorRhoV{filename}_1-4.pkl")
+            df = pd.DataFrame(_df)
+            df.to_pickle(f"databases/correlations/dfCorRhoV{filename}_1-4.pkl")
 
 # space time d_r dQ^1-velocity correlation
-if False:
+if True:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -1242,10 +1283,10 @@ if False:
     dfVelocity["dT"] = list(np.zeros([len(dfVelocity)]))
     dfVelocity["dtheta"] = list(np.zeros([len(dfVelocity)]))
 
-    dfVelocity["dr1dQ1dv1i"] = list(np.zeros([len(dfVelocity)]))
-    dfVelocity["dr1dQ1dv2i"] = list(np.zeros([len(dfVelocity)]))
-    dfVelocity["dr2dQ1dv1i"] = list(np.zeros([len(dfVelocity)]))
-    dfVelocity["dr2dQ1dv2i"] = list(np.zeros([len(dfVelocity)]))
+    dfVelocity["dr1dq1dv1i"] = list(np.zeros([len(dfVelocity)]))
+    dfVelocity["dr1dq1dv2i"] = list(np.zeros([len(dfVelocity)]))
+    dfVelocity["dr2dq1dv1i"] = list(np.zeros([len(dfVelocity)]))
+    dfVelocity["dr2dq1dv2i"] = list(np.zeros([len(dfVelocity)]))
 
     xMax = np.max(dfShape["X"])
     xMin = np.min(dfShape["X"])
@@ -1254,243 +1295,277 @@ if False:
     xGrid = int(1 + (xMax - xMin) // gridSize)
     yGrid = int(1 + (yMax - yMin) // gridSize)
 
-    T = np.linspace(0, (timeGrid_df - 1), timeGrid_df)
+    T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid_df - 1), grid_df)
     for filename in filenames:
-        print(filename + datetime.now().strftime(" %H:%M:%S"))
+        path_to_file = f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl"
+        if False == exists(path_to_file):
+            print(filename + datetime.now().strftime(" %H:%M:%S"))
 
-        dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
-        dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
-        heatmapdQ1 = np.zeros([90, xGrid, yGrid])
-        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+            dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
+            dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
+            heatmapdQ1 = np.zeros([90, xGrid, yGrid])
+            inPlaneEcad = np.zeros([90, xGrid, yGrid])
 
-        for t in range(90):
+            for t in range(90):
 
-            dft = dfShapeF[dfShapeF["T"] == t]
-            for i in range(xGrid):
+                dft = dfShapeF[dfShapeF["T"] == t]
+                for i in range(xGrid):
+                    for j in range(yGrid):
+                        x = [
+                            xMin + i * gridSize,
+                            xMin + (i + 1) * gridSize,
+                        ]
+                        y = [
+                            yMin + j * gridSize,
+                            yMin + (j + 1) * gridSize,
+                        ]
+
+                        dfg = util.sortGrid(dft, x, y)
+                        if list(dfg["dq"]) != []:
+                            heatmapdQ1[t, i, j] = np.mean(
+                                np.stack(np.array(dfg.loc[:, "dq"]), axis=0)[:, 0, 0]
+                            )
+                            inPlaneEcad[t, i, j] = 1
+
+                heatmapdQ1[t] = heatmapdQ1[t] - np.mean(
+                    heatmapdQ1[t][inPlaneEcad[t] == 1]
+                )
+
+            hm_dr1dQ1 = (heatmapdQ1[:, 1:] - heatmapdQ1[:, :-1]) / gridSize
+            hm_dr2dQ1 = (heatmapdQ1[:, :, 1:] - heatmapdQ1[:, :, :-1]) / gridSize
+            inPlaneEcadr1 = (inPlaneEcad[:, 1:] + inPlaneEcad[:, :-1]) / 2
+            inPlaneEcadr2 = (inPlaneEcad[:, :, 1:] + inPlaneEcad[:, :, :-1]) / 2
+            inPlaneEcadr1[inPlaneEcadr1 < 1] = 0
+            inPlaneEcadr2[inPlaneEcadr2 < 1] = 0
+
+            dr1dQ1dV1Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr1dQ1dV2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr2dQ1dV1Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr2dQ1dV2Correlation = np.zeros([len(T), len(R), len(theta)])
+            dr1dQ1dV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr1dQ1dV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr2dQ1dV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            dr2dQ1dV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
+            total_dr1 = np.zeros([len(T), len(R), len(theta)])
+            total_dr2 = np.zeros([len(T), len(R), len(theta)])
+            dr1dq1dv1ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr1dq1dv2ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr2dq1dv1ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+            dr2dq1dv2ij = [
+                [[[] for col in range(17)] for col in range(grid_df)]
+                for col in range(timeGrid)
+            ]
+
+            count = 0
+            percent_count = 0
+            for i in range(xGrid - 1):
                 for j in range(yGrid):
-                    x = [
-                        xMin + i * gridSize,
-                        xMin + (i + 1) * gridSize,
-                    ]
-                    y = [
-                        yMin + j * gridSize,
-                        yMin + (j + 1) * gridSize,
-                    ]
-
-                    dfg = util.sortGrid(dft, x, y)
-                    if list(dfg["dq"]) != []:
-                        heatmapdQ1[t, i, j] = np.mean(
-                            np.stack(np.array(dfg.loc[:, "dq"]), axis=0)[:, 0, 0]
+                    if count % int(((xGrid - 1) * yGrid) / 10) == 0:
+                        print(
+                            datetime.now().strftime("%H:%M:%S")
+                            + f" {10*percent_count}%"
                         )
-                        inPlaneEcad[t, i, j] = 1
+                        percent_count += 1
+                    count += 1
+                    for t in T:
+                        t = int(t)
+                        if np.sum(inPlaneEcadr1[t : int(t + gridSizeT), i, j]) > 0:
+                            dr1dq1 = np.mean(
+                                hm_dr1dQ1[t : int(t + gridSizeT), i, j][
+                                    inPlaneEcadr1[t : int(t + gridSizeT), i, j] > 0
+                                ]
+                            )
+                            x = xMin + (i + 1) * gridSize
+                            y = yMin + (j + 0.5) * gridSize
 
-            heatmapdQ1[t] = heatmapdQ1[t] - np.mean(heatmapdQ1[t][inPlaneEcad[t] == 1])
-
-        hm_dr1dQ1 = (heatmapdQ1[:, 1:] - heatmapdQ1[:, :-1]) / gridSize
-        hm_dr2dQ1 = (heatmapdQ1[:, :, 1:] - heatmapdQ1[:, :, :-1]) / gridSize
-        inPlaneEcadr1 = (inPlaneEcad[:, 1:] + inPlaneEcad[:, :-1]) / 2
-        inPlaneEcadr2 = (inPlaneEcad[:, :, 1:] + inPlaneEcad[:, :, :-1]) / 2
-        inPlaneEcadr1[inPlaneEcadr1 < 1] = 0
-        inPlaneEcadr2[inPlaneEcadr2 < 1] = 0
-
-        dr1dQ1dV1Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr1dQ1dV2Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr2dQ1dV1Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr2dQ1dV2Correlation = np.zeros([len(T), len(R), len(theta)])
-        dr1dQ1dV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr1dQ1dV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr2dQ1dV1Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        dr2dQ1dV2Correlation_std = np.zeros([len(T), len(R), len(theta)])
-        total_dr1 = np.zeros([len(T), len(R), len(theta)])
-        total_dr2 = np.zeros([len(T), len(R), len(theta)])
-        dr1dq1dv1ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr1dq1dv2ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr2dq1dv1ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-        dr2dq1dv2ij = [
-            [[[] for col in range(17)] for col in range(grid_df)]
-            for col in range(timeGrid_df)
-        ]
-
-        count = 0
-        percent_count = 0
-        for i in range(xGrid - 1):
-            for j in range(yGrid):
-                if count % int(((xGrid - 1) * yGrid) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {10*percent_count}%")
-                    percent_count += 1
-                count += 1
-                for t in T:
-                    t = int(t)
-                    if np.sum(inPlaneEcadr1[t : int(t + gridSizeT), i, j]) > 0:
-                        dr1dq1 = np.mean(
-                            hm_dr1dQ1[t : int(t + gridSizeT), i, j][
-                                inPlaneEcadr1[t : int(t + gridSizeT), i, j] > 0
+                            dfVelocityF.loc[:, "dR"] = (
+                                (
+                                    (dfVelocityF.loc[:, "X"] - x) ** 2
+                                    + (dfVelocityF.loc[:, "Y"] - y) ** 2
+                                )
+                                ** 0.5
+                            ).copy()
+                            df = dfVelocityF[
+                                [
+                                    "X",
+                                    "Y",
+                                    "T",
+                                    "dv",
+                                    "dR",
+                                    "dT",
+                                    "dtheta",
+                                    "dr1dq1dv1i",
+                                    "dr1dq1dv2i",
+                                ]
                             ]
+                            df = df[
+                                np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)
+                            ]
+
+                            df["dT"] = df.loc[:, "T"] - t
+                            df = df[
+                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                            ]
+                            if len(df) != 0:
+                                theta = np.arctan2(
+                                    df.loc[:, "Y"] - y, df.loc[:, "X"] - x
+                                )
+                                df["dtheta"] = np.where(
+                                    theta < 0, 2 * np.pi + theta, theta
+                                )
+                                df["dr1dq1dv1i"] = list(
+                                    dr1dq1
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
+                                )
+                                df["dr1dq1dv2i"] = list(
+                                    dr1dq1
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
+                                )
+
+                                for p in range(len(df)):
+                                    dr1dq1dv1ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr1dq1dv1i"].iloc[p]
+                                    )
+                                    dr1dq1dv2ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr1dq1dv2i"].iloc[p]
+                                    )
+
+            count = 0
+            percent_count = 0
+            for i in range(xGrid):
+                for j in range(yGrid - 1):
+                    if count % int(((xGrid) * yGrid - 1) / 10) == 0:
+                        print(
+                            datetime.now().strftime("%H:%M:%S")
+                            + f" {10*percent_count}%"
                         )
-                        x = xMin + (i + 1) * gridSize
-                        y = yMin + (j + 0.5) * gridSize
-
-                        dfVelocityF.loc[:, "dR"] = (
-                            (
-                                (dfVelocityF.loc[:, "X"] - x) ** 2
-                                + (dfVelocityF.loc[:, "Y"] - y) ** 2
+                        percent_count += 1
+                    count += 1
+                    for t in T:
+                        t = int(t)
+                        if np.sum(inPlaneEcadr2[t : int(t + gridSizeT), i, j]) > 0:
+                            dr2dq1 = np.mean(
+                                hm_dr2dQ1[t : int(t + gridSizeT), i, j][
+                                    inPlaneEcadr2[t : int(t + gridSizeT), i, j] > 0
+                                ]
                             )
-                            ** 0.5
-                        ).copy()
-                        df = dfVelocityF[
-                            [
-                                "X",
-                                "Y",
-                                "T",
-                                "dv",
-                                "dR",
-                                "dT",
-                                "dtheta",
-                                "dr1dq1dv1i",
-                                "dr1dq1dv2i",
-                            ]
-                        ]
-                        df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
+                            x = xMin + (i + 0.5) * gridSize
+                            y = yMin + (j + 1) * gridSize
 
-                        df["dT"] = df.loc[:, "T"] - t
-                        df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                        if len(df) != 0:
-                            theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                            df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                            df["dr1dq1dv1i"] = list(
-                                dr1dq1
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
-                            )
-                            df["dr1dq1dv2i"] = list(
-                                dr1dq1
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
-                            )
-
-                            for p in range(len(df)):
-                                dr1dq1dv1ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr1dq1dv1i"].iloc[p]
+                            dfVelocityF.loc[:, "dR"] = (
+                                (
+                                    (dfVelocityF.loc[:, "X"] - x) ** 2
+                                    + (dfVelocityF.loc[:, "Y"] - y) ** 2
                                 )
-                                dr1dq1dv2ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr1dq1dv2i"].iloc[p]
+                                ** 0.5
+                            ).copy()
+                            df = dfVelocityF[
+                                [
+                                    "X",
+                                    "Y",
+                                    "T",
+                                    "dv",
+                                    "dR",
+                                    "dT",
+                                    "dtheta",
+                                    "dr2dq1dv1i",
+                                    "dr2dq1dv2i",
+                                ]
+                            ]
+                            df = df[
+                                np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)
+                            ]
+
+                            df["dT"] = df.loc[:, "T"] - t
+                            df = df[
+                                np.array(df["dT"] < T[-1]) & np.array(df["dT"] >= 0)
+                            ]
+                            if len(df) != 0:
+                                theta = np.arctan2(
+                                    df.loc[:, "Y"] - y, df.loc[:, "X"] - x
+                                )
+                                df["dtheta"] = np.where(
+                                    theta < 0, 2 * np.pi + theta, theta
+                                )
+                                df["dr2dq1dv1i"] = list(
+                                    dr2dq1
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
+                                )
+                                df["dr2dq1dv2i"] = list(
+                                    dr2dq1
+                                    * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
                                 )
 
-        count = 0
-        percent_count = 0
-        for i in range(xGrid):
-            for j in range(yGrid - 1):
-                if count % int(((xGrid) * yGrid - 1) / 10) == 0:
-                    print(datetime.now().strftime("%H:%M:%S") + f" {10*percent_count}%")
-                    percent_count += 1
-                count += 1
-                for t in T:
-                    t = int(t)
-                    if np.sum(inPlaneEcadr2[t : int(t + gridSizeT), i, j]) > 0:
-                        dr2dq1 = np.mean(
-                            hm_dr2dQ1[t : int(t + gridSizeT), i, j][
-                                inPlaneEcadr2[t : int(t + gridSizeT), i, j] > 0
-                            ]
+                                for p in range(len(df)):
+                                    dr2dq1dv1ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr2dq1dv1i"].iloc[p]
+                                    )
+                                    dr2dq1dv2ij[int(df["dT"].iloc[p] / gridSizeT)][
+                                        int(df["dR"].iloc[p] / 2)
+                                    ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
+                                        df["dr2dq1dv2i"].iloc[p]
+                                    )
+
+            T = np.linspace(0, gridSizeT * (timeGrid - 1), timeGrid)
+            R = np.linspace(0, 2 * (grid_df - 1), grid_df)
+            theta = np.linspace(0, 2 * np.pi, 17)
+            for i in range(len(T)):
+                for j in range(len(R)):
+                    for th in range(len(theta)):
+                        dr1dQ1dV1Correlation[i][j][th] = np.mean(dr1dq1dv1ij[i][j][th])
+                        dr1dQ1dV2Correlation[i][j][th] = np.mean(dr1dq1dv2ij[i][j][th])
+                        dr2dQ1dV1Correlation[i][j][th] = np.mean(dr2dq1dv1ij[i][j][th])
+                        dr2dQ1dV2Correlation[i][j][th] = np.mean(dr2dq1dv2ij[i][j][th])
+                        dr1dQ1dV1Correlation_std[i][j][th] = np.std(
+                            dr1dq1dv1ij[i][j][th]
                         )
-                        x = xMin + (i + 0.5) * gridSize
-                        y = yMin + (j + 1) * gridSize
+                        dr1dQ1dV2Correlation_std[i][j][th] = np.std(
+                            dr1dq1dv2ij[i][j][th]
+                        )
+                        dr2dQ1dV1Correlation_std[i][j][th] = np.std(
+                            dr2dq1dv1ij[i][j][th]
+                        )
+                        dr2dQ1dV2Correlation_std[i][j][th] = np.std(
+                            dr2dq1dv2ij[i][j][th]
+                        )
+                        total_dr1[i][j][th] = len(dr1dq1dv1ij[i][j][th])
+                        total_dr2[i][j][th] = len(dr2dq1dv1ij[i][j][th])
 
-                        dfVelocityF.loc[:, "dR"] = (
-                            (
-                                (dfVelocityF.loc[:, "X"] - x) ** 2
-                                + (dfVelocityF.loc[:, "Y"] - y) ** 2
-                            )
-                            ** 0.5
-                        ).copy()
-                        df = dfVelocityF[
-                            [
-                                "X",
-                                "Y",
-                                "T",
-                                "dv",
-                                "dR",
-                                "dT",
-                                "dtheta",
-                                "dr2dq1dv1i",
-                                "dr2dq1dv2i",
-                            ]
-                        ]
-                        df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
+            _df = []
+            _df.append(
+                {
+                    "Filename": filename,
+                    "dr1dQ1dV1Correlation": dr1dQ1dV1Correlation,
+                    "dr1dQ1dV2Correlation": dr1dQ1dV2Correlation,
+                    "dr2dQ1dV1Correlation": dr2dQ1dV1Correlation,
+                    "dr2dQ1dV2Correlation": dr2dQ1dV2Correlation,
+                    "dr1dQ1dV1Correlation_std": dr1dQ1dV1Correlation_std,
+                    "dr1dQ1dV2Correlation_std": dr1dQ1dV2Correlation_std,
+                    "dr2dQ1dV1Correlation_std": dr2dQ1dV1Correlation_std,
+                    "dr2dQ1dV2Correlation_std": dr2dQ1dV2Correlation_std,
+                    "dr1Count": total_dr1,
+                    "dr2Count": total_dr2,
+                }
+            )
 
-                        df["dT"] = df.loc[:, "T"] - t
-                        df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
-                        if len(df) != 0:
-                            theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
-                            df["dtheta"] = np.where(theta < 0, 2 * np.pi + theta, theta)
-                            df["dr2dq1dv1i"] = list(
-                                dr2dq1
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 0]
-                            )
-                            df["dr2dq1dv2i"] = list(
-                                dr2dq1
-                                * np.stack(np.array(df.loc[:, "dv"]), axis=0)[:, 1]
-                            )
-
-                            for p in range(len(df)):
-                                dr2dq1dv1ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr2dq1dv1i"].iloc[p]
-                                )
-                                dr2dq1dv2ij[int(df["dT"].iloc[p])][
-                                    int(df["dR"].iloc[p] / 2)
-                                ][int(8 * df["dtheta"].iloc[p] / np.pi)].append(
-                                    df["dr2dq1dv2i"].iloc[p]
-                                )
-
-        T = np.linspace(0, (timeGrid_df - 1), timeGrid_df)
-        R = np.linspace(0, 2 * (grid_df - 1), grid_df)
-        theta = np.linspace(0, 2 * np.pi, 17)
-        for i in range(len(T)):
-            for j in range(len(R)):
-                for th in range(len(theta)):
-                    dr1dQ1dV1Correlation[i][j][th] = np.mean(dr1dq1dv1ij[i][j][th])
-                    dr1dQ1dV2Correlation[i][j][th] = np.mean(dr1dq1dv2ij[i][j][th])
-                    dr2dQ1dV1Correlation[i][j][th] = np.mean(dr2dq1dv1ij[i][j][th])
-                    dr2dQ1dV2Correlation[i][j][th] = np.mean(dr2dq1dv2ij[i][j][th])
-                    dr1dQ1dV1Correlation_std[i][j][th] = np.std(dr1dq1dv1ij[i][j][th])
-                    dr1dQ1dV2Correlation_std[i][j][th] = np.std(dr1dq1dv2ij[i][j][th])
-                    dr2dQ1dV1Correlation_std[i][j][th] = np.std(dr2dq1dv1ij[i][j][th])
-                    dr2dQ1dV2Correlation_std[i][j][th] = np.std(dr2dq1dv2ij[i][j][th])
-                    total_dr1[i][j][th] = len(dr1dq1dv1ij[i][j][th])
-                    total_dr2[i][j][th] = len(dr2dq1dv1ij[i][j][th])
-
-        _df = []
-        _df.append(
-            {
-                "Filename": filename,
-                "dr1dQ1dV1Correlation": dr1dQ1dV1Correlation,
-                "dr1dQ1dV2Correlation": dr1dQ1dV2Correlation,
-                "dr2dQ1dV1Correlation": dr2dQ1dV1Correlation,
-                "dr2dQ1dV2Correlation": dr2dQ1dV2Correlation,
-                "dr1dQ1dV1Correlation_std": dr1dQ1dV1Correlation_std,
-                "dr1dQ1dV2Correlation_std": dr1dQ1dV2Correlation_std,
-                "dr2dQ1dV1Correlation_std": dr2dQ1dV1Correlation_std,
-                "dr2dQ1dV2Correlation_std": dr2dQ1dV2Correlation_std,
-                "dr1Count": total_dr1,
-                "dr2Count": total_dr2,
-            }
-        )
-
-        df = pd.DataFrame(_df)
-        df.to_pickle(f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl")
+            df = pd.DataFrame(_df)
+            df.to_pickle(f"databases/correlations/dfCordrdQ1V{filename}_1-4.pkl")
 
 # space time shape-velocity correlation
 if False:
@@ -1626,7 +1701,7 @@ if False:
             )
 
 # space time velocity-velocity correlation
-if True:
+if False:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -1876,51 +1951,51 @@ if True:
         if np.sum(dr2dRhodV2) == 0:
             print("dr2dRhodV2")
 
-        dr1dQ1dV1 = np.nan_to_num(dfCorRhoV["dr1dQ1dV1Correlation"].iloc[0])
-        dr1dQ1dV1_std = np.nan_to_num(dfCorRhoV["dr1dQ1dV1Correlation_std"].iloc[0])
-        dr1dQ1dV1total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        dr1dQ1dV1 = np.nan_to_num(dfCordrdQ1V["dr1dQ1dV1Correlation"].iloc[0])
+        dr1dQ1dV1_std = np.nan_to_num(dfCordrdQ1V["dr1dQ1dV1Correlation_std"].iloc[0])
+        dr1dQ1dV1total = np.nan_to_num(dfCordrdQ1V["dr1Count"].iloc[0])
         if np.sum(dr1dQ1dV1) == 0:
             print("dr1dQ1dV1")
 
-        dr1dQ1dV2 = np.nan_to_num(dfCorRhoV["dr1dQ1dV2Correlation"].iloc[0])
-        dr1dQ1dV2_std = np.nan_to_num(dfCorRhoV["dr1dQ1dV2Correlation_std"].iloc[0])
-        dr1dQ1dV2total = np.nan_to_num(dfCorRhoV["dr1Count"].iloc[0])
+        dr1dQ1dV2 = np.nan_to_num(dfCordrdQ1V["dr1dQ1dV2Correlation"].iloc[0])
+        dr1dQ1dV2_std = np.nan_to_num(dfCordrdQ1V["dr1dQ1dV2Correlation_std"].iloc[0])
+        dr1dQ1dV2total = np.nan_to_num(dfCordrdQ1V["dr1Count"].iloc[0])
         if np.sum(dr1dQ1dV2) == 0:
             print("dr1dQ1dV2")
 
-        dr2dQ1dV1 = np.nan_to_num(dfCorRhoV["dr2dQ1dV1Correlation"].iloc[0])
-        dr2dQ1dV1_std = np.nan_to_num(dfCorRhoV["dr2dQ1dV1Correlation_std"].iloc[0])
-        dr2dQ1dV1total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        dr2dQ1dV1 = np.nan_to_num(dfCordrdQ1V["dr2dQ1dV1Correlation"].iloc[0])
+        dr2dQ1dV1_std = np.nan_to_num(dfCordrdQ1V["dr2dQ1dV1Correlation_std"].iloc[0])
+        dr2dQ1dV1total = np.nan_to_num(dfCordrdQ1V["dr2Count"].iloc[0])
         if np.sum(dr2dQ1dV1) == 0:
             print("dr2dQ1dV1")
 
-        dr2dQ1dV2 = np.nan_to_num(dfCorRhoV["dr2dQ1dV2Correlation"].iloc[0])
-        dr2dQ1dV2_std = np.nan_to_num(dfCorRhoV["dr2dQ1dV2Correlation_std"].iloc[0])
-        dr2dQ1dV2total = np.nan_to_num(dfCorRhoV["dr2Count"].iloc[0])
+        dr2dQ1dV2 = np.nan_to_num(dfCordrdQ1V["dr2dQ1dV2Correlation"].iloc[0])
+        dr2dQ1dV2_std = np.nan_to_num(dfCordrdQ1V["dr2dQ1dV2Correlation_std"].iloc[0])
+        dr2dQ1dV2total = np.nan_to_num(dfCordrdQ1V["dr2Count"].iloc[0])
         if np.sum(dr2dQ1dV2) == 0:
             print("dr2dQ1dV2")
 
-        dP1dV1 = np.nan_to_num(dfCorRhoV["dP1dV1Correlation"].iloc[0])
-        dP1dV1_std = np.nan_to_num(dfCorRhoV["dP1dV1Correlation_std"].iloc[0])
-        dP1dV1total = np.nan_to_num(dfCorRhoV["dP1dV1Count"].iloc[0])
+        dP1dV1 = np.nan_to_num(dfCorShapeVel["dP1dV1Correlation"].iloc[0])
+        dP1dV1_std = np.nan_to_num(dfCorShapeVel["dP1dV1Correlation_std"].iloc[0])
+        dP1dV1total = np.nan_to_num(dfCorShapeVel["dP1dV1Count"].iloc[0])
         if np.sum(dP1dV1) == 0:
             print("dP1dV1")
 
-        dP2dV2 = np.nan_to_num(dfCorRhoV["dP2dV2Correlation"].iloc[0])
-        dP2dV2_std = np.nan_to_num(dfCorRhoV["dP2dV2Correlation_std"].iloc[0])
-        dP2dV2total = np.nan_to_num(dfCorRhoV["dP2dV2Count"].iloc[0])
+        dP2dV2 = np.nan_to_num(dfCorShapeVel["dP2dV2Correlation"].iloc[0])
+        dP2dV2_std = np.nan_to_num(dfCorShapeVel["dP2dV2Correlation_std"].iloc[0])
+        dP2dV2total = np.nan_to_num(dfCorShapeVel["dP2dV2Count"].iloc[0])
         if np.sum(dP2dV2) == 0:
             print("dP2dV2")
 
-        dV1dV1 = np.nan_to_num(dfCorRhoV["dV1dV1Correlation"].iloc[0])
-        dV1dV1_std = np.nan_to_num(dfCorRhoV["dV1dV1Correlation_std"].iloc[0])
-        dV1dV1total = np.nan_to_num(dfCorRhoV["dV1dV1Count"].iloc[0])
+        dV1dV1 = np.nan_to_num(dfCorVel["dV1dV1Correlation"].iloc[0])
+        dV1dV1_std = np.nan_to_num(dfCorVel["dV1dV1Correlation_std"].iloc[0])
+        dV1dV1total = np.nan_to_num(dfCorVel["dV1dV1Count"].iloc[0])
         if np.sum(dV1dV1) == 0:
             print("dV1dV1")
 
-        dV2dV2 = np.nan_to_num(dfCorRhoV["dV2dV2Correlation"].iloc[0])
-        dV2dV2_std = np.nan_to_num(dfCorRhoV["dV2dV2Correlation_std"].iloc[0])
-        dV2dV2total = np.nan_to_num(dfCorRhoV["dV2dV2Count"].iloc[0])
+        dV2dV2 = np.nan_to_num(dfCorVel["dV2dV2Correlation"].iloc[0])
+        dV2dV2_std = np.nan_to_num(dfCorVel["dV2dV2Correlation_std"].iloc[0])
+        dV2dV2total = np.nan_to_num(dfCorVel["dV2dV2Count"].iloc[0])
         if np.sum(dV2dV2) == 0:
             print("dV2dV2")
 
