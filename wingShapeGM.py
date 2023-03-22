@@ -81,7 +81,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]

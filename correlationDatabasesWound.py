@@ -76,7 +76,7 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
 # --------- shape ----------
 
 # space time cell-cell shape correlation close to wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -119,10 +119,16 @@ if False:
             dfClose = dfShapeF[
                 np.array(dfShapeF["T"] < 20) & np.array(dfShapeF["T"] >= 0)
             ]
-            n = int(len(dfClose))
+            n = int(len(dfClose) / 2)
+            random.seed(10)
             count = 0
-            for i in range(n):
-                if i % int((n) / 10) == 0:
+            Is = []
+            for i0 in range(n):
+                i = int(random.random() * n)
+                while i in Is:
+                    i = int(random.random() * n)
+                Is.append(i)
+                if i0 % int((n) / 10) == 0:
                     print(datetime.now().strftime("%H:%M:%S ") + f"{10*count}%")
                     count += 1
 
@@ -250,7 +256,7 @@ if False:
             dfFar = dfShapeF[
                 np.array(dfShapeF["T"] < 20) & np.array(dfShapeF["T"] >= 0)
             ]
-            n = int(len(dfFar) / 5)
+            n = int(len(dfFar) / 10)
             random.seed(10)
             count = 0
             Is = []
@@ -478,4 +484,4 @@ if False:
         )
 
     df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/dfCorrelations{fileType}.pkl")
+    df.to_pickle(f"databases/dfCorrelationWound{fileType}.pkl")

@@ -1834,7 +1834,7 @@ if False:
 # --------- collect all ----------
 
 # collect all correlations
-if True:
+if False:
     _df = []
     for filename in filenames:
 
@@ -1868,6 +1868,7 @@ if True:
         dfCorVel = pd.read_pickle(
             f"databases/correlations/dfCorVelMidway{filename}_1-2.pkl"
         )
+        print(dP1dP1.shape)
 
         dP1dP1 = np.nan_to_num(dfCorMid_1["dP1dP1Correlation"].iloc[0])
         dP1dP1_std = np.nan_to_num(dfCorMid_1["dP1dP1Correlation_std"].iloc[0])
@@ -2026,26 +2027,26 @@ if True:
                 "dP2dQ2Correlation": dP2dQ2,
                 "dP2dQ2Correlation_std": dP2dQ2_std,
                 "dP2dQ2Count": dP2dQ2total,
-                "dRhodRho": dRhodRho,
-                "dRhodRho_std": dRhodRho_std,
-                "Count Rho": count_Rho,
-                "dQ1dRho": dQ1dRho,
-                "dQ1dRho_std": dQ1dRho_std,
-                "dQ2dRho": dQ2dRho,
-                "dQ2dRho_std": dQ2dRho_std,
-                "Count Rho Q": count_RhoQ,
-                "dr1dRhodV1Correlation": dr1dRhodV1,
-                "dr1dRhodV1Correlation_std": dr1dRhodV1_std,
-                "dr1dRhodV1Count": dr1dRhodV1total,
-                "dr1dRhodV2Correlation": dr1dRhodV2,
-                "dr1dRhodV2Correlation_std": dr1dRhodV2_std,
-                "dr1dRhodV2Count": dr1dRhodV2total,
-                "dr2dRhodV1Correlation": dr2dRhodV1,
-                "dr2dRhodV1Correlation_std": dr2dRhodV1_std,
-                "dr2dRhodV1Count": dr2dRhodV1total,
-                "dr2dRhodV2Correlation": dr2dRhodV2,
-                "dr2dRhodV2Correlation_std": dr2dRhodV2_std,
-                "dr2dRhodV2Count": dr2dRhodV2total,
+                "dRho_SdRho_S": dRhodRho,
+                "dRho_SdRho_S_std": dRhodRho_std,
+                "Count Rho_S": count_Rho,
+                "dQ1dRho_S": dQ1dRho,
+                "dQ1dRho_S_std": dQ1dRho_std,
+                "dQ2dRho_S": dQ2dRho,
+                "dQ2dRho_S_std": dQ2dRho_std,
+                "Count Rho Q_S": count_RhoQ,
+                "dr1dRho_SdV1Correlation": dr1dRhodV1,
+                "dr1dRho_SdV1Correlation_std": dr1dRhodV1_std,
+                "dr1dRho_SdV1Count": dr1dRhodV1total,
+                "dr1dRho_SdV2Correlation": dr1dRhodV2,
+                "dr1dRho_SdV2Correlation_std": dr1dRhodV2_std,
+                "dr1dRho_SdV2Count": dr1dRhodV2total,
+                "dr2dRho_SdV1Correlation": dr2dRhodV1,
+                "dr2dRho_SdV1Correlation_std": dr2dRhodV1_std,
+                "dr2dRho_SdV1Count": dr2dRhodV1total,
+                "dr2dRho_SdV2Correlation": dr2dRhodV2,
+                "dr2dRho_SdV2Correlation_std": dr2dRhodV2_std,
+                "dr2dRho_SdV2Count": dr2dRhodV2total,
                 "dr1dQ1dV1Correlation": dr1dQ1dV1,
                 "dr1dQ1dV1Correlation_std": dr1dQ1dV1_std,
                 "dr1dQ1dV1Count": dr1dQ1dV1total,
