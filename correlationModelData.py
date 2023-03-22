@@ -42,37 +42,66 @@ T = 90
 scale = 123.26 / 512
 
 
-def Corr_R0(t, c, D):
-    return D * -sc.expi(-c * t)
+def OLSfit(x, y, dy=None):
+    """Find the best fitting parameters of a linear fit to the data through the
+    method of ordinary least squares estimation. (i.e. find m and b for
+    y = m*x + b)
+
+    Args:
+        x: Numpy array of independent variable data
+        y: Numpy array of dependent variable data. Must have same size as x.
+        dy: Numpy array of dependent variable standard deviations. Must be same
+            size as y.
+
+    Returns: A list with four floating point values. [m, dm, b, db]
+    """
+    if dy is None:
+        # if no error bars, weight every point the same
+        dy = np.ones(x.size)
+    denom = np.sum(1 / dy**2) * np.sum((x / dy) ** 2) - (np.sum(x / dy**2)) ** 2
+    m = (
+        np.sum(1 / dy**2) * np.sum(x * y / dy**2)
+        - np.sum(x / dy**2) * np.sum(y / dy**2)
+    ) / denom
+    b = (
+        np.sum(x**2 / dy**2) * np.sum(y / dy**2)
+        - np.sum(x / dy**2) * np.sum(x * y / dy**2)
+    ) / denom
+    dm = np.sqrt(np.sum(1 / dy**2) / denom)
+    db = np.sqrt(np.sum(x / dy**2) / denom)
+    return [m, b]
 
 
-def forIntegral(y, R, T, c, D, L):
+def Corr_R0(t, B, C):
+    return C * -sc.expi(-B * t)
+
+
+def forIntegral(y, R, T, B, C, L):
     y, R, T = np.meshgrid(y, R, T, indexing="ij")
-    return D * np.exp(-y) * sc.jv(0, R * ((y - c * T) / (L * T)) ** 0.5) / y
-
-
-def Corr_dP1(R, T):
-    c = 0.014231800277153952
-    D = 0.02502418
-    L = 8.06377854e-06
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
-
-
-def Corr_dP2(R, T):
-    c = 0.014231800277153952
-    D = 0.02502418
-    L = 8.06377854e-06
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
+    return (C / L) * np.exp(-y) * sc.jv(0, R * ((y - B * T) / (L * T)) ** 0.5) / y
 
 
 # -------------------
 
 grid = 26
 timeGrid = 51
+
+# B^(2)
+if False:
+
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    q1 = np.zeros([len(filenames), T])
+    for i in range(len(filenames)):
+        filename = filenames[i]
+        df = dfShape[dfShape["Filename"] == filename]
+        for t in range(T):
+            q1[i, t] = np.mean(df["q"][df["T"] == t])[0, 0]
+
+    time = 2 * np.array(range(T))
+
+    Q1 = np.mean(q1, axis=0)
+    bestfit = OLSfit(time, Q1)
+    (m, c) = (bestfit[0], bestfit[1])
 
 # display all correlations shape
 if False:
@@ -646,7 +675,7 @@ if False:
     plt.close("all")
 
 # display all correlations velocity
-if True:
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     fig, ax = plt.subplots(4, 3, figsize=(16, 16))
@@ -1226,30 +1255,91 @@ if False:
     )
     plt.close("all")
 
-# -------------------
+# deltaQ1 (model)
+if False:
 
+    def Corr_dQ1_Integral_T2(R, L):
+        B = 0.003365326982876073
+        C = 0.00012983912538617597
 
-def Corr_dQ2_Integral_T2(R, L):
-    c = 0.005710229096088735
-    D = 0.0001453973391906898
+        T = 2
+        y = np.linspace(B * T, B * T * 200, 200000)
+        h = y[1] - y[0]
+        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
 
-    T = 2
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0][:, :-1, :-1].shape
 
-def Corr_dQ2(R, T):
-    c = 0.005710229096088735
-    D = 0.0001453973391906898
-    L = 0.3836950539434937
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
+    dQ1dQ1 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
 
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    plt.subplots_adjust(wspace=0.4)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_R0,
+        xdata=T[1:],
+        ydata=dQ1dQ1[:, 0][1:],
+        p0=(0.006, 0.0001),
+    )[0]
+
+    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
+    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[0].set_ylim([0, 6e-04])
+    ax[0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
+    ax[0].legend()
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dQ1_Integral_T2,
+        xdata=R[3:],
+        ydata=dQ1dQ1[1][3:26],
+        p0=0.4,
+        method="lm",
+    )[0]
+
+    ax[1].plot(R, dQ1dQ1[1][:26], label="Data")
+    ax[1].plot(R, Corr_dQ1_Integral_T2(R, m), label="Model")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[1].set_ylim([0, 6e-04])
+    ax[1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=2$")
+    ax[1].legend()
+    fig.savefig(
+        f"results/Correlation dQ1 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
 
 # deltaQ2 (model)
 if False:
+
+    def Corr_dQ2_Integral_T2(R):
+        B = 0.005710235333896519
+        C = 0.00014539741827046364
+        L = 2.341600455179316 * 0.07125876326265877
+
+        T = 2
+        y = np.linspace(B * T, B * T * 200, 200000)
+        h = y[1] - y[0]
+        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1285,25 +1375,18 @@ if False:
     ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[0].set_ylim([-0.00003, 0.0007])
+    ax[0].set_ylim([0, 6e-04])
     ax[0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
     ax[0].legend()
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ2_Integral_T0,
-        xdata=R[5:],
-        ydata=dQ2dQ2[0][5:26],
-        p0=0.4,
-        method="lm",
-    )[0]
-
-    ax[1].plot(R, dQ2dQ2[0][:26], label="Data")
-    ax[1].plot(R, Corr_dQ2_Integral_T0(R, m), label="Model")
+    ax[1].plot(R, dQ2dQ2[1][:26], label="Data")
+    ax[1].plot(R, Corr_dQ2_Integral_T2(R), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[1].set_ylim([-0.00003, 0.0007])
-    ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=0$")
+    ax[1].set_ylim([0, 6e-04])
+    ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=2$")
     ax[1].legend()
+
     fig.savefig(
         f"results/Correlation dQ2 in T and R {fileType}",
         dpi=300,
@@ -1312,30 +1395,95 @@ if False:
     )
     plt.close("all")
 
-# -------------------
+# deltaP1 (model)
+if False:
 
+    def Corr_dP1_Integral_T2(R, L):
+        B = 0.020119498379811963
+        C = 7.014820702873665e-06
 
-def Corr_dP2_Integral_T2(R, L):
-    c = 0.020993205571310774
-    D = 4.3738688812044245e-06
+        T = 2
+        y = np.linspace(B * T, B * T * 200, 200000)
+        h = y[1] - y[0]
+        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
 
-    T = 2
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
+    T, R, Theta = dfCor["dP1dP1Correlation"].iloc[0][:, :-1, :-1].shape
 
-def Corr_dP2(R, T):
-    c = 0.020993205571310774
-    D = 4.3738688812044245e-06
-    L = 0.0003688151928231921
-    y = np.linspace(c * T, c * T * 200, 200000)
-    h = y[1] - y[0]
-    return np.sum(forIntegral(y, R, T, c, D, L) * h, axis=0)[:, 0]
+    dP1dP1 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
 
+        dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
+        dP1dP1[i] = np.sum(
+            dfCor["dP1dP1Correlation"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
+        ) / np.sum(dP1dP1total, axis=2)
+
+    dfCor = 0
+
+    dP1dP1 = np.mean(dP1dP1, axis=0)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    plt.subplots_adjust(wspace=0.4)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_R0,
+        xdata=T[1:],
+        ydata=dP1dP1[:, 0][1:],
+        p0=(0.006, 0.0001),
+    )[0]
+
+    ax[0].plot(T[1:], dP1dP1[:, 0][1:], label="Data")
+    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta P_1$ Correlation")
+    ax[0].set_ylim([-2e-06, 2e-05])
+    ax[0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
+    ax[0].legend()
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dP1_Integral_T2,
+        xdata=R[3:],
+        ydata=dP1dP1[1][3:26],
+        p0=0.4,
+        method="lm",
+    )[0]
+
+    ax[1].plot(R, dP1dP1[1][:26], label="Data")
+    ax[1].plot(R, Corr_dP1_Integral_T2(R, m), label="Model")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta P_1$ Correlation")
+    ax[1].set_ylim([-2e-06, 2e-05])
+    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=2$")
+    ax[1].legend()
+    fig.savefig(
+        f"results/Correlation dP1 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
 
 # deltaP2 (model)
-if True:
+if False:
+
+    def Corr_R0_dP2(t, C):
+        B = 0.020119498379811963
+        return C * -sc.expi(-B * t)
+
+    def Corr_dP2_Integral_T2(R):
+        B = 0.020119498379811963
+        C = 4.259307775964823e-06
+        L = 0.016284092877659546
+
+        T = 2
+        y = np.linspace(B * T, B * T * 200, 200000)
+        h = y[1] - y[0]
+        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1361,37 +1509,99 @@ if True:
     plt.gcf().subplots_adjust(bottom=0.15)
 
     m = sp.optimize.curve_fit(
-        f=Corr_R0,
+        f=Corr_R0_dP2,
         xdata=T[1:],
         ydata=dP2dP2[:, 0][1:],
-        p0=(0.006, 0.0001),
+        p0=(0.0001),
     )[0]
 
     ax[0].plot(T[1:], dP2dP2[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].plot(T[1:], Corr_R0_dP2(T[1:], m[0]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[0].set_ylim([-2e-06, 1.3e-05])
+    ax[0].set_ylim([-2e-06, 2e-05])
     ax[0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
     ax[0].legend()
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dP2_Integral_T2,
-        xdata=R[:10],
-        ydata=dP2dP2[1][:10],
-        p0=0.4,
-        method="lm",
-    )[0]
-
     ax[1].plot(R, dP2dP2[1][:26], label="Data")
-    ax[1].plot(R, Corr_dP2_Integral_T2(R, m), label="Model")
+    ax[1].plot(R, Corr_dP2_Integral_T2(R), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[1].set_ylim([-2e-06, 1.3e-05])
+    ax[1].set_ylim([-2e-06, 2e-05])
     ax[1].title.set_text(r"Correlation of $\delta P_2$, $T=2$")
     ax[1].legend()
     fig.savefig(
         f"results/Correlation dP2 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaRho (model)
+if False:
+
+    def Corr_Rho_T(T, C):
+        return C / T
+
+    def Corr_Rho_R(R, D):
+        C = 0.008226129102387299
+        T = 55
+        return C / T * np.exp(-(R**2) / (4 * D * T))
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+
+    dRho_SdRho_S = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        Rho_SCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
+        dRho_SdRho_S[i] = np.sum(
+            dfCor["dRhodRho"].iloc[i][:, :, :-1] * Rho_SCount, axis=2
+        ) / np.sum(Rho_SCount, axis=2)
+
+    dfCor = 0
+
+    dRho_SdRho_S = np.mean(dRho_SdRho_S, axis=0)
+
+    dRhodRho = dRho_SdRho_S - dRho_SdRho_S[-1]
+
+    R = np.linspace(0, 60, 7)
+    T = np.linspace(10, 170, 17)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_Rho_T,
+        xdata=T[4:],
+        ydata=dRhodRho[5:, 0],
+        p0=0.003,
+    )[0]
+    print(m[0])
+
+    ax[0].plot(T, dRhodRho[1:, 0])
+    ax[0].plot(T, Corr_Rho_T(T, m[0]))
+    ax[0].set_xlabel(r"Time (mins)")
+    ax[0].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylim([-2e-5, 6e-4])
+    ax[0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$, $R=0$")
+
+    m = sp.optimize.curve_fit(
+        f=Corr_Rho_R,
+        xdata=R[1:],
+        ydata=dRhodRho[1][1:],
+        p0=(10),
+    )[0]
+
+    ax[1].plot(R, dRhodRho[1])
+    ax[1].plot(R, Corr_Rho_R(R, m[0]))
+    ax[1].set_xlabel(r"$R (\mu m)$ ")
+    ax[1].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[1].set_ylim([-2e-5, 6e-4])
+    ax[1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$, $T=55$")
+
+    fig.savefig(
+        f"results/fit dRhodRho model",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
