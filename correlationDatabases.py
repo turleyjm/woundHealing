@@ -958,7 +958,7 @@ if False:
 # --------- velocity ----------
 
 # space time d_r denstiy-velocity correlation
-if True:
+if False:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -1267,7 +1267,7 @@ if True:
             df.to_pickle(f"databases/correlations/dfCorRhoV{filename}_1-4.pkl")
 
 # space time d_r dQ^1-velocity correlation
-if True:
+if False:
     grid = 9
     timeGrid = 18
     gridSize = 10
@@ -1834,7 +1834,7 @@ if False:
 # --------- collect all ----------
 
 # collect all correlations
-if False:
+if True:
     _df = []
     for filename in filenames:
 
@@ -1868,29 +1868,28 @@ if False:
         dfCorVel = pd.read_pickle(
             f"databases/correlations/dfCorVelMidway{filename}_1-2.pkl"
         )
-        print(dP1dP1.shape)
 
-        dP1dP1 = np.nan_to_num(dfCorMid_1["dP1dP1Correlation"].iloc[0])
-        dP1dP1_std = np.nan_to_num(dfCorMid_1["dP1dP1Correlation_std"].iloc[0])
-        dP1dP1total = np.nan_to_num(dfCorMid_1["dP1dP1Count"].iloc[0])
+        dP1dP1 = np.nan_to_num(dfCorMid_1["dP1dP1Correlation"].iloc[0])[:, :27]
+        dP1dP1_std = np.nan_to_num(dfCorMid_1["dP1dP1Correlation_std"].iloc[0])[:, :27]
+        dP1dP1total = np.nan_to_num(dfCorMid_1["dP1dP1Count"].iloc[0])[:, :27]
         if np.sum(dP1dP1) == 0:
             print("dP1dP1")
 
-        dP2dP2 = np.nan_to_num(dfCorMid_2["dP2dP2Correlation"].iloc[0])
-        dP2dP2_std = np.nan_to_num(dfCorMid_2["dP2dP2Correlation_std"].iloc[0])
-        dP2dP2total = np.nan_to_num(dfCorMid_2["dP2dP2Count"].iloc[0])
+        dP2dP2 = np.nan_to_num(dfCorMid_2["dP2dP2Correlation"].iloc[0])[:, :27]
+        dP2dP2_std = np.nan_to_num(dfCorMid_2["dP2dP2Correlation_std"].iloc[0])[:, :27]
+        dP2dP2total = np.nan_to_num(dfCorMid_2["dP2dP2Count"].iloc[0])[:, :27]
         if np.sum(dP2dP2) == 0:
             print("dP2dP2")
 
-        dQ1dQ1 = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation"].iloc[0])
-        dQ1dQ1_std = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation_std"].iloc[0])
-        dQ1dQ1total = np.nan_to_num(dfCorMid_3["dQ1dQ1Count"].iloc[0])
+        dQ1dQ1 = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation"].iloc[0])[:, :27]
+        dQ1dQ1_std = np.nan_to_num(dfCorMid_3["dQ1dQ1Correlation_std"].iloc[0])[:, :27]
+        dQ1dQ1total = np.nan_to_num(dfCorMid_3["dQ1dQ1Count"].iloc[0])[:, :27]
         if np.sum(dQ1dQ1) == 0:
             print("dQ1dQ1")
 
-        dQ2dQ2 = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation"].iloc[0])
-        dQ2dQ2_std = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation_std"].iloc[0])
-        dQ2dQ2total = np.nan_to_num(dfCorMid_4["dQ2dQ2Count"].iloc[0])
+        dQ2dQ2 = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation"].iloc[0])[:, :27]
+        dQ2dQ2_std = np.nan_to_num(dfCorMid_4["dQ2dQ2Correlation_std"].iloc[0])[:, :27]
+        dQ2dQ2total = np.nan_to_num(dfCorMid_4["dQ2dQ2Count"].iloc[0])[:, :27]
         if np.sum(dQ2dQ2) == 0:
             print("dQ2dQ2")
 
@@ -2034,7 +2033,7 @@ if False:
                 "dQ1dRho_S_std": dQ1dRho_std,
                 "dQ2dRho_S": dQ2dRho,
                 "dQ2dRho_S_std": dQ2dRho_std,
-                "Count Rho Q_S": count_RhoQ,
+                "Count Rho_S Q": count_RhoQ,
                 "dr1dRho_SdV1Correlation": dr1dRhodV1,
                 "dr1dRho_SdV1Correlation_std": dr1dRhodV1_std,
                 "dr1dRho_SdV1Count": dr1dRhodV1total,

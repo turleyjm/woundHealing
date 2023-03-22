@@ -109,22 +109,22 @@ if False:
 
     fig, ax = plt.subplots(4, 3, figsize=(16, 16))
 
-    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
 
     dRhodRho = np.zeros([len(filenames), T, R])
     dQ1dRho = np.zeros([len(filenames), T, R])
     dQ2dRho = np.zeros([len(filenames), T, R])
     for i in range(len(filenames)):
-        RhoCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
+        RhoCount = dfCor["Count Rho_S"].iloc[i][:, :, :-1]
         dRhodRho[i] = np.sum(
-            dfCor["dRhodRho"].iloc[i][:, :, :-1] * RhoCount, axis=2
+            dfCor["dRho_SdRho_S"].iloc[i][:, :, :-1] * RhoCount, axis=2
         ) / np.sum(RhoCount, axis=2)
-        RhoQCount = dfCor["Count Rho Q"].iloc[i][:, :, :-1]
+        RhoQCount = dfCor["Count Rho_S Q"].iloc[i][:, :, :-1]
         dQ1dRho[i] = np.sum(
-            dfCor["dQ1dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
+            dfCor["dQ1dRho_S"].iloc[i][:, :, :-1] * RhoQCount, axis=2
         ) / np.sum(RhoQCount, axis=2)
         dQ2dRho[i] = np.sum(
-            dfCor["dQ2dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
+            dfCor["dQ2dRho_S"].iloc[i][:, :, :-1] * RhoQCount, axis=2
         ) / np.sum(RhoQCount, axis=2)
 
     dRhodRho = np.mean(dRhodRho, axis=0)
@@ -132,7 +132,7 @@ if False:
     dQ2dRho = np.mean(dQ2dRho, axis=0)
 
     maxCorr = np.max([dRhodRho, -dRhodRho])
-    t, r = np.mgrid[0:180:10, 0:90:10]
+    t, r = np.mgrid[0:180:10, 0:70:10]
     c = ax[0, 0].pcolor(
         t,
         r,
@@ -145,7 +145,9 @@ if False:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 0].title.set_text(
+        r"$\langle (\delta \rho_s + \delta \rho) (\delta \rho_s + \delta \rho) \rangle$"
+    )
 
     c = ax[0, 1].pcolor(
         t,
@@ -159,7 +161,7 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ nosie")
+    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
 
     maxCorr = np.max([dQ1dRho, -dQ1dRho])
     c = ax[0, 2].pcolor(
@@ -251,7 +253,7 @@ if False:
     dP1dQ2 = np.mean(dP1dQ2, axis=0)
     dP2dQ2 = np.mean(dP2dQ2, axis=0)
 
-    t, r = np.mgrid[0:102:2, 0:82:2]
+    t, r = np.mgrid[0:102:2, 0:52:2]
     maxCorr = np.max([dP1dP1, -dP1dP1])
     c = ax[1, 1].pcolor(
         t,
@@ -392,22 +394,22 @@ if False:
 
     fig, ax = plt.subplots(4, 3, figsize=(16, 16))
 
-    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
 
     dRhodRho = np.zeros([len(filenames), T, R])
     dQ1dRho = np.zeros([len(filenames), T, R])
     dQ2dRho = np.zeros([len(filenames), T, R])
     for i in range(len(filenames)):
-        RhoCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
+        RhoCount = dfCor["Count Rho_S"].iloc[i][:, :, :-1]
         dRhodRho[i] = np.sum(
-            dfCor["dRhodRho"].iloc[i][:, :, :-1] * RhoCount, axis=2
+            dfCor["dRho_SdRho_S"].iloc[i][:, :, :-1] * RhoCount, axis=2
         ) / np.sum(RhoCount, axis=2)
-        RhoQCount = dfCor["Count Rho Q"].iloc[i][:, :, :-1]
+        RhoQCount = dfCor["Count Rho_S Q"].iloc[i][:, :, :-1]
         dQ1dRho[i] = np.sum(
-            dfCor["dQ1dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
+            dfCor["dQ1dRho_S"].iloc[i][:, :, :-1] * RhoQCount, axis=2
         ) / np.sum(RhoQCount, axis=2)
         dQ2dRho[i] = np.sum(
-            dfCor["dQ2dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
+            dfCor["dQ2dRho_S"].iloc[i][:, :, :-1] * RhoQCount, axis=2
         ) / np.sum(RhoQCount, axis=2)
 
     std_dq = np.std(np.stack(np.array(df.loc[:, "dq"]), axis=0), axis=0)
@@ -421,7 +423,7 @@ if False:
     dQ2dRho = dQ2dRho / (std_dq[0, 1] * std_rho)
 
     maxCorr = np.max([1, -1])
-    t, r = np.mgrid[0:180:10, 0:90:10]
+    t, r = np.mgrid[0:180:10, 0:70:10]
     c = ax[0, 0].pcolor(
         t,
         r,
@@ -434,7 +436,9 @@ if False:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 0].title.set_text(
+        r"$\langle (\delta \rho_s + \delta \rho) (\delta \rho_s + \delta \rho) \rangle$"
+    )
 
     c = ax[0, 1].pcolor(
         t,
@@ -448,7 +452,7 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ nosie")
+    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
 
     c = ax[0, 2].pcolor(
         t,
@@ -548,7 +552,7 @@ if False:
     dP1dQ2 = dP1dQ2 / (std_dp[0] * std_dq[0, 1])
     dP2dQ2 = dP2dQ2 / (std_dp[1] * std_dq[0, 1])
 
-    t, r = np.mgrid[0:102:2, 0:82:2]
+    t, r = np.mgrid[0:102:2, 0:52:2]
     c = ax[1, 1].pcolor(
         t,
         r,
@@ -680,27 +684,27 @@ if False:
 
     fig, ax = plt.subplots(4, 3, figsize=(16, 16))
 
-    T, R, Theta = dfCor["dr1dRhodV1Correlation"].iloc[0].shape
+    T, R, Theta = dfCor["dr1dRho_SdV1Correlation"].iloc[0].shape
 
-    dr1dRhodV1 = np.zeros([len(filenames), T, R])
-    dr1dRhodV2 = np.zeros([len(filenames), T, R])
-    dr2dRhodV1 = np.zeros([len(filenames), T, R])
-    dr2dRhodV2 = np.zeros([len(filenames), T, R])
+    dr1dRhodV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr1dRhodV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dRhodV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dRhodV2 = np.zeros([len(filenames), T - 1, R - 1])
     for i in range(len(filenames)):
-        dr1Total = dfCor["dr1dRhodV1Count"].iloc[i][:, :, :-1]
+        dr1Total = dfCor["dr1dRho_SdV1Count"].iloc[i][:-1, :-1, :-1]
         dr1dRhodV1[i] = np.sum(
-            dfCor["dr1dRhodV1Correlation"].iloc[i][:, :, :-1] * dr1Total, axis=2
+            dfCor["dr1dRho_SdV1Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
         ) / np.sum(dr1Total, axis=2)
         dr1dRhodV2[i] = np.sum(
-            dfCor["dr1dRhodV2Correlation"].iloc[i][:, :, :-1] * dr1Total, axis=2
+            dfCor["dr1dRho_SdV2Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
         ) / np.sum(dr1Total, axis=2)
 
-        dr2Total = dfCor["dr1dRhodV1Count"].iloc[i][:, :, :-1]
+        dr2Total = dfCor["dr1dRho_SdV1Count"].iloc[i][:-1, :-1, :-1]
         dr2dRhodV1[i] = np.sum(
-            dfCor["dr2dRhodV1Correlation"].iloc[i][:, :, :-1] * dr2Total, axis=2
+            dfCor["dr2dRho_SdV1Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
         ) / np.sum(dr2Total, axis=2)
         dr2dRhodV2[i] = np.sum(
-            dfCor["dr2dRhodV2Correlation"].iloc[i][:, :, :-1] * dr2Total, axis=2
+            dfCor["dr2dRho_SdV2Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
         ) / np.sum(dr2Total, axis=2)
 
     dr1dRhodV1 = np.mean(dr1dRhodV1, axis=0)
@@ -708,10 +712,9 @@ if False:
     dr2dRhodV1 = np.mean(dr2dRhodV1, axis=0)
     dr2dRhodV2 = np.mean(dr2dRhodV2, axis=0)
 
-    t, r = np.mgrid[0:100:2, 0:50:2]
+    t, r = np.mgrid[0:170:10, 0:52:2]
 
     maxCorr = np.max([dr1dRhodV1[:50, :25], -dr1dRhodV1[:50, :25]])
-    print(maxCorr)
     c = ax[0, 0].pcolor(
         t,
         r,
@@ -724,7 +727,9 @@ if False:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(r"$\langle \partial_{r_1} \delta \rho \delta V_1 \rangle$")
+    ax[0, 0].title.set_text(
+        r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
+    )
 
     maxCorr = np.max([dr1dRhodV2, -dr1dRhodV2])
     c = ax[0, 1].pcolor(
@@ -739,7 +744,9 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \partial_{r_1} \delta \rho \delta V_2 \rangle$")
+    ax[0, 1].title.set_text(
+        r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
+    )
 
     maxCorr = np.max([dr2dRhodV1, -dr2dRhodV1])
     c = ax[0, 2].pcolor(
@@ -754,7 +761,9 @@ if False:
     fig.colorbar(c, ax=ax[0, 2])
     ax[0, 2].set_xlabel("Time (mins)")
     ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 2].title.set_text(r"$\langle \partial_{r_2} \delta \rho \delta V_1 \rangle$")
+    ax[0, 2].title.set_text(
+        r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
+    )
 
     maxCorr = np.max([dr2dRhodV2, -dr2dRhodV2])
     c = ax[1, 0].pcolor(
@@ -769,27 +778,29 @@ if False:
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time (mins)")
     ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \partial_{r_2} \delta \rho \delta V_2 \rangle$")
+    ax[1, 0].title.set_text(
+        r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
+    )
 
-    dr1dQ1dV1 = np.zeros([len(filenames), T, R])
-    dr1dQ1dV2 = np.zeros([len(filenames), T, R])
-    dr2dQ1dV1 = np.zeros([len(filenames), T, R])
-    dr2dQ1dV2 = np.zeros([len(filenames), T, R])
+    dr1dQ1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr1dQ1dV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dQ1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dQ1dV2 = np.zeros([len(filenames), T - 1, R - 1])
     for i in range(len(filenames)):
-        dr1Total = dfCor["dr1dQ1dV1Count"].iloc[i][:, :, :-1]
+        dr1Total = dfCor["dr1dQ1dV1Count"].iloc[i][:-1, :-1, :-1]
         dr1dQ1dV1[i] = np.sum(
-            dfCor["dr1dQ1dV1Correlation"].iloc[i][:, :, :-1] * dr1Total, axis=2
+            dfCor["dr1dQ1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
         ) / np.sum(dr1Total, axis=2)
         dr1dQ1dV2[i] = np.sum(
-            dfCor["dr1dQ1dV2Correlation"].iloc[i][:, :, :-1] * dr1Total, axis=2
+            dfCor["dr1dQ1dV2Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
         ) / np.sum(dr1Total, axis=2)
 
-        dr2Total = dfCor["dr2dQ1dV1Count"].iloc[i][:, :, :-1]
+        dr2Total = dfCor["dr2dQ1dV1Count"].iloc[i][:-1, :-1, :-1]
         dr2dQ1dV1[i] = np.sum(
-            dfCor["dr2dQ1dV1Correlation"].iloc[i][:, :, :-1] * dr2Total, axis=2
+            dfCor["dr2dQ1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
         ) / np.sum(dr2Total, axis=2)
         dr2dQ1dV2[i] = np.sum(
-            dfCor["dr2dQ1dV2Correlation"].iloc[i][:, :, :-1] * dr2Total, axis=2
+            dfCor["dr2dQ1dV2Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
         ) / np.sum(dr2Total, axis=2)
 
     dr1dQ1dV1 = np.mean(dr1dQ1dV1, axis=0)
@@ -865,27 +876,29 @@ if False:
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
     )
 
-    dP1dV1 = np.zeros([len(filenames), T, R])
-    dP2dV2 = np.zeros([len(filenames), T, R])
-    dV1dV1 = np.zeros([len(filenames), T, R])
-    dV2dV2 = np.zeros([len(filenames), T, R])
+    T, R, Theta = dfCor["dP1dV1Correlation"].iloc[0].shape
+
+    dP1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dP2dV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dV1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dV2dV2 = np.zeros([len(filenames), T - 1, R - 1])
     for i in range(len(filenames)):
-        dP1dV1total = dfCor["dP1dV1Count"].iloc[i][:, :, :-1]
+        dP1dV1total = dfCor["dP1dV1Count"].iloc[i][:-1, :-1, :-1]
         dP1dV1[i] = np.sum(
-            dfCor["dP1dV1Correlation"].iloc[i][:, :, :-1] * dP1dV1total, axis=2
+            dfCor["dP1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dP1dV1total, axis=2
         ) / np.sum(dP1dV1total, axis=2)
-        dP2dV2total = dfCor["dP2dV2Count"].iloc[i][:, :, :-1]
+        dP2dV2total = dfCor["dP2dV2Count"].iloc[i][:-1, :-1, :-1]
         dP2dV2[i] = np.sum(
-            dfCor["dP2dV2Correlation"].iloc[i][:, :, :-1] * dP2dV2total, axis=2
+            dfCor["dP2dV2Correlation"].iloc[i][:-1, :-1, :-1] * dP2dV2total, axis=2
         ) / np.sum(dP2dV2total, axis=2)
 
-        dV1dV1total = dfCor["dV1dV1Count"].iloc[i][:, :, :-1]
+        dV1dV1total = dfCor["dV1dV1Count"].iloc[i][:-1, :-1, :-1]
         dV1dV1[i] = np.sum(
-            dfCor["dV1dV1Correlation"].iloc[i][:, :, :-1] * dV1dV1total, axis=2
+            dfCor["dV1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dV1dV1total, axis=2
         ) / np.sum(dV1dV1total, axis=2)
-        dV2dV2total = dfCor["dV2dV2Count"].iloc[i][:, :, :-1]
+        dV2dV2total = dfCor["dV2dV2Count"].iloc[i][:-1, :-1, :-1]
         dV2dV2[i] = np.sum(
-            dfCor["dV2dV2Correlation"].iloc[i][:, :, :-1] * dV2dV2total, axis=2
+            dfCor["dV2dV2Correlation"].iloc[i][:-1, :-1, :-1] * dV2dV2total, axis=2
         ) / np.sum(dV2dV2total, axis=2)
 
     dP1dV1 = np.mean(dP1dV1, axis=0)
@@ -893,6 +906,7 @@ if False:
     dV1dV1 = np.mean(dV1dV1, axis=0)
     dV2dV2 = np.mean(dV2dV2, axis=0)
 
+    t, r = np.mgrid[0:100:2, 0:52:2]
     maxCorr = np.max([dP1dV1, -dP1dV1])
     c = ax[2, 2].pcolor(
         t,
@@ -966,47 +980,176 @@ if False:
     )
     plt.close("all")
 
-# display all norm correlations shape
+# std d_rRho and d_rdQ1
 if False:
+    grid = 9
+    timeGrid = 18
+    gridSize = 10
+    gridSizeT = 5
+    grid_df = 27
+    timeGrid_df = 51
+
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+    xGrid = int(1 + (xMax - xMin) // gridSize)
+    yGrid = int(1 + (yMax - yMin) // gridSize)
+
+    k = 0
+    std_dr1drho = np.zeros([len(filenames)])
+    std_dr2drho = np.zeros([len(filenames)])
+    for filename in filenames:
+
+        dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
+        heatmapdrho = np.zeros([90, xGrid, yGrid])
+        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+
+        for t in range(90):
+
+            dft = dfShapeF[dfShapeF["T"] == t]
+            for i in range(xGrid):
+                for j in range(yGrid):
+                    x = [
+                        xMin + i * gridSize,
+                        xMin + (i + 1) * gridSize,
+                    ]
+                    y = [
+                        yMin + j * gridSize,
+                        yMin + (j + 1) * gridSize,
+                    ]
+
+                    dfg = util.sortGrid(dft, x, y)
+                    if list(dfg["Area"]) != []:
+                        heatmapdrho[t, i, j] = len(dfg["Area"]) / np.sum(dfg["Area"])
+                        inPlaneEcad[t, i, j] = 1
+
+            heatmapdrho[t] = heatmapdrho[t] - np.mean(
+                heatmapdrho[t][inPlaneEcad[t] == 1]
+            )
+
+        hm_dr1drho = (heatmapdrho[:, 1:] - heatmapdrho[:, :-1]) / gridSize
+        std_dr1drho[k] = np.std(hm_dr1drho[hm_dr1drho != 0])
+        hm_dr2drho = (heatmapdrho[:, :, 1:] - heatmapdrho[:, :, :-1]) / gridSize
+        std_dr2drho[k] = np.std(hm_dr2drho[hm_dr2drho != 0])
+        k += 1
+
+    xMax = np.max(dfShape["X"])
+    xMin = np.min(dfShape["X"])
+    yMax = np.max(dfShape["Y"])
+    yMin = np.min(dfShape["Y"])
+    xGrid = int(1 + (xMax - xMin) // gridSize)
+    yGrid = int(1 + (yMax - yMin) // gridSize)
+
+    k = 0
+    std_dr1dQ1 = np.zeros([len(filenames)])
+    std_dr2dQ1 = np.zeros([len(filenames)])
+    for filename in filenames:
+        dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
+        heatmapdQ1 = np.zeros([90, xGrid, yGrid])
+        inPlaneEcad = np.zeros([90, xGrid, yGrid])
+
+        for t in range(90):
+
+            dft = dfShapeF[dfShapeF["T"] == t]
+            for i in range(xGrid):
+                for j in range(yGrid):
+                    x = [
+                        xMin + i * gridSize,
+                        xMin + (i + 1) * gridSize,
+                    ]
+                    y = [
+                        yMin + j * gridSize,
+                        yMin + (j + 1) * gridSize,
+                    ]
+
+                    dfg = util.sortGrid(dft, x, y)
+                    if list(dfg["dq"]) != []:
+                        heatmapdQ1[t, i, j] = np.mean(
+                            np.stack(np.array(dfg.loc[:, "dq"]), axis=0)[:, 0, 0]
+                        )
+                        inPlaneEcad[t, i, j] = 1
+
+            heatmapdQ1[t] = heatmapdQ1[t] - np.mean(heatmapdQ1[t][inPlaneEcad[t] == 1])
+
+        hm_dr1dQ1 = (heatmapdQ1[:, 1:] - heatmapdQ1[:, :-1]) / gridSize
+        std_dr1dQ1[k] = np.std(hm_dr1dQ1[hm_dr1dQ1 != 0])
+        hm_dr2dQ1 = (heatmapdQ1[:, :, 1:] - heatmapdQ1[:, :, :-1]) / gridSize
+        std_dr2dQ1[k] = np.std(hm_dr2dQ1[hm_dr2dQ1 != 0])
+        k += 1
+
+    std_dr1drho = np.mean(std_dr1drho)
+    std_dr2drho = np.mean(std_dr2drho)
+    std_dr1dQ1 = np.mean(std_dr1dQ1)
+    std_dr2dQ1 = np.mean(std_dr2dQ1)
+
+    _df = []
+
+    _df.append(
+        {
+            "std_dr1drho": std_dr1drho,
+            "std_dr2drho": std_dr2drho,
+            "std_dr1dQ1": std_dr1dQ1,
+            "std_dr2dQ1": std_dr2dQ1,
+        }
+    )
+
+    df = pd.DataFrame(_df)
+    df.to_pickle(f"databases/correlations/dfstd_dr{fileType}.pkl")
+
+# display all norm correlations shape
+if True:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
-    df = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    df = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    dfstd_dr = pd.read_pickle(f"databases/correlations/dfstd_dr{fileType}.pkl")
 
     fig, ax = plt.subplots(4, 3, figsize=(16, 16))
 
-    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+    T, R, Theta = dfCor["dr1dRho_SdV1Correlation"].iloc[0].shape
 
-    dRhodRho = np.zeros([len(filenames), T, R])
-    dQ1dRho = np.zeros([len(filenames), T, R])
-    dQ2dRho = np.zeros([len(filenames), T, R])
+    dr1dRhodV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr1dRhodV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dRhodV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dRhodV2 = np.zeros([len(filenames), T - 1, R - 1])
     for i in range(len(filenames)):
-        RhoCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
-        dRhodRho[i] = np.sum(
-            dfCor["dRhodRho"].iloc[i][:, :, :-1] * RhoCount, axis=2
-        ) / np.sum(RhoCount, axis=2)
-        RhoQCount = dfCor["Count Rho Q"].iloc[i][:, :, :-1]
-        dQ1dRho[i] = np.sum(
-            dfCor["dQ1dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
-        ) / np.sum(RhoQCount, axis=2)
-        dQ2dRho[i] = np.sum(
-            dfCor["dQ2dRho"].iloc[i][:, :, :-1] * RhoQCount, axis=2
-        ) / np.sum(RhoQCount, axis=2)
+        dr1Total = dfCor["dr1dRho_SdV1Count"].iloc[i][:-1, :-1, :-1]
+        dr1dRhodV1[i] = np.sum(
+            dfCor["dr1dRho_SdV1Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
+        ) / np.sum(dr1Total, axis=2)
+        dr1dRhodV2[i] = np.sum(
+            dfCor["dr1dRho_SdV2Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
+        ) / np.sum(dr1Total, axis=2)
 
-    std_dq = np.std(np.stack(np.array(df.loc[:, "dq"]), axis=0), axis=0)
+        dr2Total = dfCor["dr1dRho_SdV1Count"].iloc[i][:-1, :-1, :-1]
+        dr2dRhodV1[i] = np.sum(
+            dfCor["dr2dRho_SdV1Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
+        ) / np.sum(dr2Total, axis=2)
+        dr2dRhodV2[i] = np.sum(
+            dfCor["dr2dRho_SdV2Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
+        ) / np.sum(dr2Total, axis=2)
 
-    dRhodRho = np.mean(dRhodRho, axis=0)
-    std_rho = dRhodRho[0, 0] ** 0.5
-    dRhodRho = dRhodRho / dRhodRho[0, 0]
-    dQ1dRho = np.mean(dQ1dRho, axis=0)
-    dQ1dRho = dQ1dRho / (std_dq[0, 0] * std_rho)
-    dQ2dRho = np.mean(dQ2dRho, axis=0)
-    dQ2dRho = dQ2dRho / (std_dq[0, 1] * std_rho)
+    std_dv = np.std(np.stack(np.array(df.loc[:, "dv"]), axis=0), axis=0)
+    std_dr1drho = dfstd_dr["std_dr1drho"].iloc[0]
+    std_dr2drho = dfstd_dr["std_dr2drho"].iloc[0]
+
+    dr1dRhodV1 = np.mean(dr1dRhodV1, axis=0)
+    dr1dRhodV1 = dr1dRhodV1 / (std_dr1drho * std_dv[0])
+    dr1dRhodV2 = np.mean(dr1dRhodV2, axis=0)
+    dr1dRhodV2 = dr1dRhodV2 / (std_dr1drho * std_dv[1])
+    dr2dRhodV1 = np.mean(dr2dRhodV1, axis=0)
+    dr2dRhodV1 = dr2dRhodV1 / (std_dr2drho * std_dv[0])
+    dr2dRhodV2 = np.mean(dr2dRhodV2, axis=0)
+    dr2dRhodV2 = dr2dRhodV2 / (std_dr2drho * std_dv[1])
 
     maxCorr = np.max([1, -1])
-    t, r = np.mgrid[0:180:10, 0:90:10]
+    t, r = np.mgrid[0:170:10, 0:52:2]
     c = ax[0, 0].pcolor(
         t,
         r,
-        dRhodRho,
+        dr1dRhodV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1015,12 +1158,14 @@ if False:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 0].title.set_text(
+        r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
+    )
 
     c = ax[0, 1].pcolor(
         t,
         r,
-        dRhodRho - dRhodRho[-1],
+        dr1dRhodV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1029,12 +1174,14 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$ nosie")
+    ax[0, 1].title.set_text(
+        r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
+    )
 
     c = ax[0, 2].pcolor(
         t,
         r,
-        dQ1dRho,
+        dr2dRhodV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1043,12 +1190,14 @@ if False:
     fig.colorbar(c, ax=ax[0, 2])
     ax[0, 2].set_xlabel("Time (mins)")
     ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 2].title.set_text(r"$\langle \delta Q^1 \delta \rho \rangle$")
+    ax[0, 2].title.set_text(
+        r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
+    )
 
     c = ax[1, 0].pcolor(
         t,
         r,
-        dQ2dRho,
+        dr2dRhodV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1057,83 +1206,47 @@ if False:
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time (mins)")
     ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
+    ax[1, 0].title.set_text(
+        r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
+    )
 
-    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
-
-    dP1dP1 = np.zeros([len(filenames), T, R - 1])
-    dP2dP2 = np.zeros([len(filenames), T, R - 1])
-    dQ1dQ1 = np.zeros([len(filenames), T, R - 1])
-    dQ2dQ2 = np.zeros([len(filenames), T, R - 1])
-    dQ1dQ2 = np.zeros([len(filenames), T, R - 1])
-    dP1dQ1 = np.zeros([len(filenames), T, R - 1])
-    dP1dQ2 = np.zeros([len(filenames), T, R - 1])
-    dP2dQ2 = np.zeros([len(filenames), T, R - 1])
+    dr1dQ1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr1dQ1dV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dQ1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dr2dQ1dV2 = np.zeros([len(filenames), T - 1, R - 1])
     for i in range(len(filenames)):
-        dP1dP1total = dfCor["dP1dP1Count"].iloc[i][:, :-1, :-1]
-        dP1dP1[i] = np.sum(
-            dfCor["dP1dP1Correlation"].iloc[i][:, :-1, :-1] * dP1dP1total, axis=2
-        ) / np.sum(dP1dP1total, axis=2)
+        dr1Total = dfCor["dr1dQ1dV1Count"].iloc[i][:-1, :-1, :-1]
+        dr1dQ1dV1[i] = np.sum(
+            dfCor["dr1dQ1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
+        ) / np.sum(dr1Total, axis=2)
+        dr1dQ1dV2[i] = np.sum(
+            dfCor["dr1dQ1dV2Correlation"].iloc[i][:-1, :-1, :-1] * dr1Total, axis=2
+        ) / np.sum(dr1Total, axis=2)
 
-        dP2dP2total = dfCor["dP2dP2Count"].iloc[i][:, :-1, :-1]
-        dP2dP2[i] = np.sum(
-            dfCor["dP2dP2Correlation"].iloc[i][:, :-1, :-1] * dP2dP2total, axis=2
-        ) / np.sum(dP2dP2total, axis=2)
+        dr2Total = dfCor["dr2dQ1dV1Count"].iloc[i][:-1, :-1, :-1]
+        dr2dQ1dV1[i] = np.sum(
+            dfCor["dr2dQ1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
+        ) / np.sum(dr2Total, axis=2)
+        dr2dQ1dV2[i] = np.sum(
+            dfCor["dr2dQ1dV2Correlation"].iloc[i][:-1, :-1, :-1] * dr2Total, axis=2
+        ) / np.sum(dr2Total, axis=2)
 
-        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
-        dQ1dQ1[i] = np.sum(
-            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
-        ) / np.sum(dQ1dQ1total, axis=2)
+    std_dr1dQ1 = dfstd_dr["std_dr1dQ1"].iloc[0]
+    std_dr2dQ1 = dfstd_dr["std_dr2dQ1"].iloc[0]
 
-        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
-        dQ2dQ2[i] = np.sum(
-            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
-        ) / np.sum(dQ2dQ2total, axis=2)
+    dr1dQ1dV1 = np.mean(dr1dQ1dV1, axis=0)
+    dr1dQ1dV1 = dr1dQ1dV1 / (std_dr1dQ1 * std_dv[0])
+    dr1dQ1dV2 = np.mean(dr1dQ1dV2, axis=0)
+    dr1dQ1dV2 = dr1dQ1dV2 / (std_dr1dQ1 * std_dv[1])
+    dr2dQ1dV1 = np.mean(dr2dQ1dV1, axis=0)
+    dr2dQ1dV1 = dr2dQ1dV1 / (std_dr2dQ1 * std_dv[0])
+    dr2dQ1dV2 = np.mean(dr2dQ1dV2, axis=0)
+    dr2dQ1dV2 = dr2dQ1dV2 / (std_dr2dQ1 * std_dv[1])
 
-        dQ1dQ2total = dfCor["dQ1dQ2Count"].iloc[i][:, :-1, :-1]
-        dQ1dQ2[i] = np.sum(
-            dfCor["dQ1dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ2total, axis=2
-        ) / np.sum(dQ1dQ2total, axis=2)
-
-        dP1dQ1total = dfCor["dP1dQ1Count"].iloc[i][:, :-1, :-1]
-        dP1dQ1[i] = np.sum(
-            dfCor["dP1dQ1Correlation"].iloc[i][:, :-1, :-1] * dP1dQ1total, axis=2
-        ) / np.sum(dP1dQ1total, axis=2)
-
-        dP1dQ2total = dfCor["dP1dQ2Count"].iloc[i][:, :-1, :-1]
-        dP1dQ2[i] = np.sum(
-            dfCor["dP1dQ2Correlation"].iloc[i][:, :-1, :-1] * dP1dQ2total, axis=2
-        ) / np.sum(dP1dQ2total, axis=2)
-
-        dP2dQ2total = dfCor["dP2dQ2Count"].iloc[i][:, :-1, :-1]
-        dP2dQ2[i] = np.sum(
-            dfCor["dP2dQ2Correlation"].iloc[i][:, :-1, :-1] * dP2dQ2total, axis=2
-        ) / np.sum(dP2dQ2total, axis=2)
-
-    dP1dP1 = np.mean(dP1dP1, axis=0)
-    dP2dP2 = np.mean(dP2dP2, axis=0)
-    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
-    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
-    dQ1dQ2 = np.mean(dQ1dQ2, axis=0)
-    dP1dQ1 = np.mean(dP1dQ1, axis=0)
-    dP1dQ2 = np.mean(dP1dQ2, axis=0)
-    dP2dQ2 = np.mean(dP2dQ2, axis=0)
-
-    std_dp = np.std(np.stack(np.array(df.loc[:, "dp"]), axis=0), axis=0)
-    dP1dP1 = dP1dP1 / (std_dp[0] * std_dp[0])
-    dP2dP2 = dP2dP2 / (std_dp[1] * std_dp[1])
-    dQ1dQ1 = dQ1dQ1 / (std_dq[0, 0] * std_dq[0, 0])
-    dQ2dQ2 = dQ2dQ2 / (std_dq[0, 1] * std_dq[0, 1])
-    dQ1dQ2 = dQ1dQ2 / (std_dq[0, 0] * std_dq[0, 1])
-    dP1dQ1 = dP1dQ1 / (std_dp[0] * std_dq[0, 0])
-    dP1dQ2 = dP1dQ2 / (std_dp[0] * std_dq[0, 1])
-    dP2dQ2 = dP2dQ2 / (std_dp[1] * std_dq[0, 1])
-
-    t, r = np.mgrid[0:102:2, 0:82:2]
     c = ax[1, 1].pcolor(
         t,
         r,
-        dP1dP1,
+        dr1dQ1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1142,12 +1255,14 @@ if False:
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set_xlabel("Time (mins)")
     ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    ax[1, 1].title.set_text(
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
+    )
 
     c = ax[1, 2].pcolor(
         t,
         r,
-        dP2dP2,
+        dr1dQ1dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1156,12 +1271,14 @@ if False:
     fig.colorbar(c, ax=ax[1, 2])
     ax[1, 2].set_xlabel("Time (mins)")
     ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    ax[1, 2].title.set_text(
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
+    )
 
     c = ax[2, 0].pcolor(
         t,
         r,
-        dQ1dQ1,
+        dr2dQ1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1170,12 +1287,14 @@ if False:
     fig.colorbar(c, ax=ax[2, 0])
     ax[2, 0].set_xlabel("Time (mins)")
     ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
+    ax[2, 0].title.set_text(
+        r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_1 \rangle$"
+    )
 
     c = ax[2, 1].pcolor(
         t,
         r,
-        dQ2dQ2,
+        dr2dQ1dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1184,12 +1303,52 @@ if False:
     fig.colorbar(c, ax=ax[2, 1])
     ax[2, 1].set_xlabel("Time (mins)")
     ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
+    ax[2, 1].title.set_text(
+        r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
+    )
 
+    T, R, Theta = dfCor["dP1dV1Correlation"].iloc[0].shape
+
+    dP1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dP2dV2 = np.zeros([len(filenames), T - 1, R - 1])
+    dV1dV1 = np.zeros([len(filenames), T - 1, R - 1])
+    dV2dV2 = np.zeros([len(filenames), T - 1, R - 1])
+    for i in range(len(filenames)):
+        dP1dV1total = dfCor["dP1dV1Count"].iloc[i][:-1, :-1, :-1]
+        dP1dV1[i] = np.sum(
+            dfCor["dP1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dP1dV1total, axis=2
+        ) / np.sum(dP1dV1total, axis=2)
+        dP2dV2total = dfCor["dP2dV2Count"].iloc[i][:-1, :-1, :-1]
+        dP2dV2[i] = np.sum(
+            dfCor["dP2dV2Correlation"].iloc[i][:-1, :-1, :-1] * dP2dV2total, axis=2
+        ) / np.sum(dP2dV2total, axis=2)
+
+        dV1dV1total = dfCor["dV1dV1Count"].iloc[i][:-1, :-1, :-1]
+        dV1dV1[i] = np.sum(
+            dfCor["dV1dV1Correlation"].iloc[i][:-1, :-1, :-1] * dV1dV1total, axis=2
+        ) / np.sum(dV1dV1total, axis=2)
+        dV2dV2total = dfCor["dV2dV2Count"].iloc[i][:-1, :-1, :-1]
+        dV2dV2[i] = np.sum(
+            dfCor["dV2dV2Correlation"].iloc[i][:-1, :-1, :-1] * dV2dV2total, axis=2
+        ) / np.sum(dV2dV2total, axis=2)
+
+    std_dp = np.std(np.stack(np.array(dfShape.loc[:, "dp"]), axis=0), axis=0)
+    print(std_dp)
+
+    dP1dV1 = np.mean(dP1dV1, axis=0)
+    dP1dV1 = dP1dV1 / (std_dp[0] * std_dv[0])
+    dP2dV2 = np.mean(dP2dV2, axis=0)
+    dP2dV2 = dP2dV2 / (std_dp[1] * std_dv[1])
+    dV1dV1 = np.mean(dV1dV1, axis=0)
+    dV1dV1 = dV1dV1 / (std_dv[0] * std_dv[0])
+    dV2dV2 = np.mean(dV2dV2, axis=0)
+    dV2dV2 = dV2dV2 / (std_dv[1] * std_dv[1])
+
+    t, r = np.mgrid[0:100:2, 0:52:2]
     c = ax[2, 2].pcolor(
         t,
         r,
-        dQ1dQ2,
+        dP1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1198,12 +1357,12 @@ if False:
     fig.colorbar(c, ax=ax[2, 2])
     ax[2, 2].set_xlabel("Time (mins)")
     ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
+    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
 
     c = ax[3, 0].pcolor(
         t,
         r,
-        dP1dQ1,
+        dP2dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1212,12 +1371,12 @@ if False:
     fig.colorbar(c, ax=ax[3, 0])
     ax[3, 0].set_xlabel("Time (mins)")
     ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
+    ax[3, 0].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
 
     c = ax[3, 1].pcolor(
         t,
         r,
-        dP1dQ2,
+        dV1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1226,12 +1385,12 @@ if False:
     fig.colorbar(c, ax=ax[3, 1])
     ax[3, 1].set_xlabel("Time (mins)")
     ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
+    ax[3, 1].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
 
     c = ax[3, 2].pcolor(
         t,
         r,
-        dP2dQ2,
+        dV2dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1240,7 +1399,7 @@ if False:
     fig.colorbar(c, ax=ax[3, 2])
     ax[3, 2].set_xlabel("Time (mins)")
     ax[3, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 2].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
+    ax[3, 2].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -1331,10 +1490,14 @@ if False:
 # deltaQ2 (model)
 if False:
 
+    def Corr_R0_dQ2(t, C):
+        B = 0.003365326982876073
+        return C * -sc.expi(-B * t)
+
     def Corr_dQ2_Integral_T2(R):
-        B = 0.005710235333896519
-        C = 0.00014539741827046364
-        L = 2.341600455179316 * 0.07125876326265877
+        B = 0.003365326982876073
+        C = 0.00011286299224745804
+        L = 2.341600455179316
 
         T = 2
         y = np.linspace(B * T, B * T * 200, 200000)
@@ -1365,14 +1528,14 @@ if False:
     plt.gcf().subplots_adjust(bottom=0.15)
 
     m = sp.optimize.curve_fit(
-        f=Corr_R0,
+        f=Corr_R0_dQ2,
         xdata=T[1:],
         ydata=dQ2dQ2[:, 0][1:],
-        p0=(0.006, 0.0001),
+        p0=(0.0001),
     )[0]
 
     ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].plot(T[1:], Corr_R0_dQ2(T[1:], m[0]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[0].set_ylim([0, 6e-04])
