@@ -1100,7 +1100,7 @@ if False:
     df.to_pickle(f"databases/correlations/dfstd_dr{fileType}.pkl")
 
 # display all norm correlations shape
-if True:
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
     df = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1333,7 +1333,6 @@ if True:
         ) / np.sum(dV2dV2total, axis=2)
 
     std_dp = np.std(np.stack(np.array(dfShape.loc[:, "dp"]), axis=0), axis=0)
-    print(std_dp)
 
     dP1dV1 = np.mean(dP1dV1, axis=0)
     dP1dV1 = dP1dV1 / (std_dp[0] * std_dv[0])
@@ -1714,7 +1713,7 @@ if False:
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
     T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
 
@@ -1764,7 +1763,7 @@ if False:
     ax[1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$, $T=55$")
 
     fig.savefig(
-        f"results/fit dRhodRho model",
+        f"results/Correlation dRho in T and R model",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
