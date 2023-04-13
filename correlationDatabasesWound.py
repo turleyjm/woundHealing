@@ -343,7 +343,7 @@ if False:
 # --------- shape ----------
 
 # space time cell-cell shape correlation close to wound
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -534,7 +534,6 @@ if False:
                 x = dfFar["X"].iloc[i]
                 y = dfFar["Y"].iloc[i]
                 t = dfFar["T"].iloc[i]
-                r = dfFar["R"].iloc[i]
                 dp1 = dfFar["dp"].iloc[i][0]
                 dp2 = dfFar["dp"].iloc[i][1]
                 dq1 = dfFar["dq"].iloc[i][0, 0]
@@ -881,15 +880,15 @@ if False:
 # --------- collect all ----------
 
 # collect all correlations
-if False:
+if True:
     _df = []
     for filename in filenames:
 
         dfCorRhoClose = pd.read_pickle(
-            f"databases/correlations/dfCorRhoClose{filename}.pkl"
+            f"databases/correlationsWound/dfCorRhoClose{filename}.pkl"
         )
         dfCorRhoFar = pd.read_pickle(
-            f"databases/correlations/dfCorRhoFar{filename}.pkl"
+            f"databases/correlationsWound/dfCorRhoFar{filename}.pkl"
         )
         dfCorCloseWound = pd.read_pickle(
             f"databases/correlationsWound/dfCorCloseWound{filename}.pkl"
@@ -898,10 +897,10 @@ if False:
             f"databases/correlationsWound/dfCorFarWound{filename}.pkl"
         )
         dfCorVelClose = pd.read_pickle(
-            f"databases/correlations/dfCorVelClose{filename}.pkl"
+            f"databases/correlationsWound/dfCorVelClose{filename}.pkl"
         )
         dfCorVelFar = pd.read_pickle(
-            f"databases/correlations/dfCorVelFar{filename}.pkl"
+            f"databases/correlationsWound/dfCorVelFar{filename}.pkl"
         )
 
         dRhodRhoClose = np.nan_to_num(dfCorRhoClose["dRhodRhoCorrelation"].iloc[0])
@@ -946,9 +945,9 @@ if False:
         if np.sum(dQ2dQ2Fartotal) == 0:
             print("dQ2dQ2Fartotal")
 
-        dV1dV1Close = np.nan_to_num(dfCorVelClose["dP1dQ2Correlation"].iloc[0])
-        dV1dV1Close_std = np.nan_to_num(dfCorVelClose["dP1dQ2Correlation_std"].iloc[0])
-        dV1dV1Closetotal = np.nan_to_num(dfCorVelClose["dP1dQ2Count"].iloc[0])
+        dV1dV1Close = np.nan_to_num(dfCorVelClose["dV1dV1Correlation"].iloc[0])
+        dV1dV1Close_std = np.nan_to_num(dfCorVelClose["dV1dV1Correlation_std"].iloc[0])
+        dV1dV1Closetotal = np.nan_to_num(dfCorVelClose["dV1dV1Count"].iloc[0])
         if np.sum(dV1dV1Closetotal) == 0:
             print("dV1dV1Closetotal")
 
@@ -958,9 +957,9 @@ if False:
         if np.sum(dV2dV2Closetotal) == 0:
             print("dV2dV2Closetotal")
 
-        dV1dV1Far = np.nan_to_num(dfCorVelFar["dP1dQ2Correlation"].iloc[0])
-        dV1dV1Far_std = np.nan_to_num(dfCorVelFar["dP1dQ2Correlation_std"].iloc[0])
-        dV1dV1Fartotal = np.nan_to_num(dfCorVelFar["dP1dQ2Count"].iloc[0])
+        dV1dV1Far = np.nan_to_num(dfCorVelFar["dV1dV1Correlation"].iloc[0])
+        dV1dV1Far_std = np.nan_to_num(dfCorVelFar["dV1dV1Correlation_std"].iloc[0])
+        dV1dV1Fartotal = np.nan_to_num(dfCorVelFar["dV1dV1Count"].iloc[0])
         if np.sum(dV1dV1Fartotal) == 0:
             print("dV1dV1Fartotal")
 
@@ -999,7 +998,7 @@ if False:
                 "dV2dV2Closetotal": dV2dV2Closetotal,
                 "dV1dV1Far": dV1dV1Far,
                 "dV1dV1Far_std": dV1dV1Far_std,
-                "Count dV1dV1Fartotal": dV1dV1Fartotal,
+                "dV1dV1Fartotal": dV1dV1Fartotal,
                 "dV2dV2Far": dV2dV2Far,
                 "dV2dV2Far_std": dV2dV2Far_std,
                 "dV2dV2Fartotal": dV2dV2Fartotal,

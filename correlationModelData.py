@@ -72,13 +72,13 @@ def OLSfit(x, y, dy=None):
     return [m, b]
 
 
-def Corr_R0(t, B, C):
-    return C * -sc.expi(-B * t)
+def Corr_R0(t, B, D):
+    return D * -sc.expi(-B * t)
 
 
-def forIntegral(y, R, T, B, C, L):
-    y, R, T = np.meshgrid(y, R, T, indexing="ij")
-    return (C / L) * np.exp(-y) * sc.jv(0, R * ((y - B * T) / (L * T)) ** 0.5) / y
+def forIntegral(k, R, T, B, C, L):
+    k, R, T = np.meshgrid(k, R, T, indexing="ij")
+    return C * k * np.exp(-(B + L * k**2) * T) * sc.jv(0, R * k) / (B + L * k**2)
 
 
 # -------------------
@@ -1416,14 +1416,30 @@ if False:
 # deltaQ1 (model)
 if False:
 
-    def Corr_dQ1_Integral_T2(R, L):
-        B = 0.003365326982876073
-        C = 0.00012983912538617597
-
+    def Corr_dQ1_Integral_T(R, L):
+        B = 0.006533824439392692
+        C = 0.00055
         T = 2
-        y = np.linspace(B * T, B * T * 200, 200000)
-        h = y[1] - y[0]
-        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+
+    def Corr_dQ1_Integral_R(T, L):
+        B = 0.006533824439392692
+        C = 0.00055
+        R = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+
+    def Corr_dQ1(R, T):
+        B = 0.006533824439392692
+        C = 0.00055
+        L = 2.1
+
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1444,40 +1460,77 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
-    plt.subplots_adjust(wspace=0.4)
-    plt.gcf().subplots_adjust(bottom=0.15)
+    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_R0,
-        xdata=T[1:],
-        ydata=dQ1dQ1[:, 0][1:],
-        p0=(0.006, 0.0001),
-    )[0]
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_dQ1_Integral_R,
+    #     xdata=T[1:],
+    #     ydata=dQ1dQ1[:, 0][1:],
+    #     p0=(4),
+    # )[0]
+    # print(m)
 
     ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
+    # ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0]), label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[0].set_ylim([0, 6e-04])
+    ax[0].set_ylim([0, 5.9e-04])
     ax[0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
     ax[0].legend()
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ1_Integral_T2,
-        xdata=R[3:],
-        ydata=dQ1dQ1[1][3:26],
-        p0=0.4,
-        method="lm",
-    )[0]
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_dQ1_Integral_T,
+    #     xdata=R[1:],
+    #     ydata=dQ1dQ1[1][1:26],
+    #     p0=(4),
+    #     method="lm",
+    # )[0]
+    # print(m)
 
     ax[1].plot(R, dQ1dQ1[1][:26], label="Data")
-    ax[1].plot(R, Corr_dQ1_Integral_T2(R, m), label="Model")
+    ax[1].plot(R, Corr_dQ1(R, 2), label="Model")
+    # ax[1].plot(R, Corr_dQ1_Integral_T(R, m[0]), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[1].set_ylim([0, 6e-04])
+    ax[1].set_ylim([0, 5.9e-04])
     ax[1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=2$")
     ax[1].legend()
+
+    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
+    c = ax[2].pcolor(
+        T,
+        R,
+        dQ1dQ1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (mins)")
+    ax[2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2].title.set_text(r"Experiment $\langle \delta Q^1 \delta Q^1 \rangle$")
+
+    c = ax[3].pcolor(
+        T,
+        R,
+        Corr_dQ1dQ1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[3])
+    ax[3].set_xlabel("Time (mins)")
+    ax[3].set_ylabel(r"$R (\mu m)$ ")
+    ax[3].title.set_text(r"Model $\langle \delta Q^1 \delta Q^1 \rangle$")
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
     fig.savefig(
         f"results/Correlation dQ1 in T and R {fileType}",
         dpi=300,
@@ -1489,19 +1542,22 @@ if False:
 # deltaQ2 (model)
 if False:
 
-    def Corr_R0_dQ2(t, C):
-        B = 0.003365326982876073
-        return C * -sc.expi(-B * t)
-
-    def Corr_dQ2_Integral_T2(R):
-        B = 0.003365326982876073
-        C = 0.00011286299224745804
-        L = 2.341600455179316
-
+    def Corr_dQ2_Integral_T(R, C):
+        B = 0.006533824439392692
+        L = 2.1
         T = 2
-        y = np.linspace(B * T, B * T * 200, 200000)
-        h = y[1] - y[0]
-        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+
+    def Corr_dQ2(R, T):
+        B = 0.006533824439392692
+        C = 0.00045
+        L = 2.1
+
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1522,32 +1578,73 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    m = sp.optimize.curve_fit(
-        f=Corr_R0_dQ2,
-        xdata=T[1:],
-        ydata=dQ2dQ2[:, 0][1:],
-        p0=(0.0001),
-    )[0]
-
     ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0_dQ2(T[1:], m[0]), label="Model")
+    ax[0].plot(
+        T[1:],
+        Corr_dQ2(0, T[1:])[0],
+        label="Model",
+    )
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[0].set_ylim([0, 6e-04])
     ax[0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
     ax[0].legend()
 
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_dQ2_Integral_T,
+    #     xdata=R[1:],
+    #     ydata=dQ2dQ2[1][1:26],
+    #     p0=(4),
+    #     method="lm",
+    # )[0]
+    # print(m)
+
     ax[1].plot(R, dQ2dQ2[1][:26], label="Data")
-    ax[1].plot(R, Corr_dQ2_Integral_T2(R), label="Model")
+    ax[1].plot(R, Corr_dQ2(R, 2), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[1].set_ylim([0, 6e-04])
     ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=2$")
     ax[1].legend()
+
+    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
+    c = ax[2].pcolor(
+        T,
+        R,
+        dQ2dQ2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (mins)")
+    ax[2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2].title.set_text(r"Experiment $\langle \delta Q^2 \delta Q^2 \rangle$")
+
+    c = ax[3].pcolor(
+        T,
+        R,
+        Corr_dQ2dQ2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[3])
+    ax[3].set_xlabel("Time (mins)")
+    ax[3].set_ylabel(r"$R (\mu m)$ ")
+    ax[3].title.set_text(r"Model $\langle \delta Q^2 \delta Q^2 \rangle$")
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
 
     fig.savefig(
         f"results/Correlation dQ2 in T and R {fileType}",
@@ -1560,14 +1657,29 @@ if False:
 # deltaP1 (model)
 if False:
 
-    def Corr_dP1_Integral_T2(R, L):
+    def Corr_dP1_Integral_T(R, L):
         B = 0.020119498379811963
-        C = 7.014820702873665e-06
+        C = 7.01482259e-06 * 2 * L
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
 
-        T = 2
-        y = np.linspace(B * T, B * T * 200, 200000)
-        h = y[1] - y[0]
-        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
+    def Corr_dP1_Integral_R(T, L, C):
+        B = 0.020119498379811963
+        R = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+
+    def Corr_dP1(R, T):
+        B = 0.020119498379811963
+        L = 0.1062963
+        C = 1.491299372946834e-06
+
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1588,40 +1700,79 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    m = sp.optimize.curve_fit(
-        f=Corr_R0,
-        xdata=T[1:],
-        ydata=dP1dP1[:, 0][1:],
-        p0=(0.006, 0.0001),
-    )[0]
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_R0,
+    #     xdata=T[1:],
+    #     ydata=dP1dP1[:, 0][1:],
+    #     p0=(4, 0.00001),
+    # )[0]
+    # print(m)
+    # B, D = m[0], m[1]
 
-    ax[0].plot(T[1:], dP1dP1[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0(T[1:], m[0], m[1]), label="Model")
+    ax[0].plot(T, dP1dP1[:, 0], label="Data")
+    ax[0].plot(T, Corr_dP1(0, T)[0], label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta P_1$ Correlation")
-    ax[0].set_ylim([-2e-06, 2e-05])
+    ax[0].set_ylim([-2e-06, 4e-05])
     ax[0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
     ax[0].legend()
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dP1_Integral_T2,
-        xdata=R[3:],
-        ydata=dP1dP1[1][3:26],
-        p0=0.4,
-        method="lm",
-    )[0]
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_dP1_Integral_T,
+    #     xdata=R,
+    #     ydata=dP1dP1[0][:26],
+    #     p0=(4),
+    #     method="lm",
+    # )[0]
+    # print(m)
 
-    ax[1].plot(R, dP1dP1[1][:26], label="Data")
-    ax[1].plot(R, Corr_dP1_Integral_T2(R, m), label="Model")
+    ax[1].plot(R, dP1dP1[0][:26], label="Data")
+    ax[1].plot(R, Corr_dP1(R, 0), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta P_1$ Correlation")
-    ax[1].set_ylim([-2e-06, 2e-05])
-    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=2$")
+    ax[1].set_ylim([-2e-06, 4e-05])
+    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=0$")
     ax[1].legend()
+
+    Corr_dP1dP1 = np.swapaxes(Corr_dP1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dP1dP1, -dP1dP1])
+    c = ax[2].pcolor(
+        T,
+        R,
+        dP1dP1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (mins)")
+    ax[2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2].title.set_text(r"Exp. $\langle \delta P_1 \delta P_1 \rangle$")
+
+    c = ax[3].pcolor(
+        T,
+        R,
+        Corr_dP1dP1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[3])
+    ax[3].set_xlabel("Time (mins)")
+    ax[3].set_ylabel(r"$R (\mu m)$ ")
+    ax[3].title.set_text(r"Model $\langle \delta P_1 \delta P_1 \rangle$", y=1)
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
+    )
+
     fig.savefig(
         f"results/Correlation dP1 in T and R {fileType}",
         dpi=300,
@@ -1631,21 +1782,24 @@ if False:
     plt.close("all")
 
 # deltaP2 (model)
-if False:
+if True:
 
-    def Corr_R0_dP2(t, C):
+    def Corr_dP2_Integral_R(T, C):
         B = 0.020119498379811963
-        return C * -sc.expi(-B * t)
+        L = 0.1062963
+        R = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
 
-    def Corr_dP2_Integral_T2(R):
+    def Corr_dP2(R, T):
         B = 0.020119498379811963
-        C = 4.259307775964823e-06
-        L = 0.016284092877659546
+        L = 0.1062963
+        C = 1.0340398305600548e-06
 
-        T = 2
-        y = np.linspace(B * T, B * T * 200, 200000)
-        h = y[1] - y[0]
-        return np.sum(forIntegral(y, R, T, B, C, L) * h, axis=0)[:, 0]
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -1666,32 +1820,68 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    m = sp.optimize.curve_fit(
-        f=Corr_R0_dP2,
-        xdata=T[1:],
-        ydata=dP2dP2[:, 0][1:],
-        p0=(0.0001),
-    )[0]
+    # m = sp.optimize.curve_fit(
+    #     f=Corr_dP2_Integral_R,
+    #     xdata=T,
+    #     ydata=dP2dP2[:, 0],
+    #     p0=(0.0001),
+    # )[0]
 
-    ax[0].plot(T[1:], dP2dP2[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_R0_dP2(T[1:], m[0]), label="Model")
+    ax[0].plot(T, dP2dP2[:, 0], label="Data")
+    ax[0].plot(T, Corr_dP2(0, T)[0], label="Model")
     ax[0].set_xlabel("Time (min)")
     ax[0].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[0].set_ylim([-2e-06, 2e-05])
+    ax[0].set_ylim([-2e-06, 2.7e-05])
     ax[0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
     ax[0].legend()
 
-    ax[1].plot(R, dP2dP2[1][:26], label="Data")
-    ax[1].plot(R, Corr_dP2_Integral_T2(R), label="Model")
+    ax[1].plot(R, dP2dP2[0][:26], label="Data")
+    ax[1].plot(R, Corr_dP2(R, 0), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[1].set_ylim([-2e-06, 2e-05])
-    ax[1].title.set_text(r"Correlation of $\delta P_2$, $T=2$")
+    ax[1].set_ylim([-2e-06, 2.7e-05])
+    ax[1].title.set_text(r"Correlation of $\delta P_2$, $T=0$")
     ax[1].legend()
+
+    Corr_dP2dP2 = np.swapaxes(Corr_dP2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dP2dP2, -dP2dP2])
+    c = ax[2].pcolor(
+        T,
+        R,
+        dP2dP2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (mins)")
+    ax[2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2].title.set_text(r"Exp. $\langle \delta P_2 \delta P_2 \rangle$")
+
+    c = ax[3].pcolor(
+        T,
+        R,
+        Corr_dP2dP2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[3])
+    ax[3].set_xlabel("Time (mins)")
+    ax[3].set_ylabel(r"$R (\mu m)$ ")
+    ax[3].title.set_text(r"Model $\langle \delta P_2 \delta P_2 \rangle$")
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
+    )
+
     fig.savefig(
         f"results/Correlation dP2 in T and R {fileType}",
         dpi=300,
@@ -1708,20 +1898,23 @@ if False:
 
     def Corr_Rho_R(R, D):
         C = 0.008226129102387299
-        T = 55
+        T = 50
+        return C / T * np.exp(-(R**2) / (4 * D * T))
+
+    def Corr_Rho(R, T):
+        C = 0.008226129102387299
+        D = 2.935490027205022
         return C / T * np.exp(-(R**2) / (4 * D * T))
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
-
-    T, R, Theta = dfCor["dRhodRho"].iloc[0].shape
+    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
 
     dRho_SdRho_S = np.zeros([len(filenames), T, R])
     for i in range(len(filenames)):
-        Rho_SCount = dfCor["Count Rho"].iloc[i][:, :, :-1]
+        Rho_SCount = dfCor["Count Rho_S"].iloc[i][:, :, :-1]
         dRho_SdRho_S[i] = np.sum(
-            dfCor["dRhodRho"].iloc[i][:, :, :-1] * Rho_SCount, axis=2
+            dfCor["dRho_SdRho_S"].iloc[i][:, :, :-1] * Rho_SCount, axis=2
         ) / np.sum(Rho_SCount, axis=2)
 
     dfCor = 0
@@ -1732,6 +1925,10 @@ if False:
 
     R = np.linspace(0, 60, 7)
     T = np.linspace(10, 170, 17)
+
+    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    plt.subplots_adjust(wspace=0.4)
+    plt.gcf().subplots_adjust(bottom=0.15)
 
     m = sp.optimize.curve_fit(
         f=Corr_Rho_T,
@@ -1744,23 +1941,58 @@ if False:
     ax[0].plot(T, dRhodRho[1:, 0])
     ax[0].plot(T, Corr_Rho_T(T, m[0]))
     ax[0].set_xlabel(r"Time (mins)")
-    ax[0].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[0].set_ylabel(r"$\delta \rho_s$ Correlation")
     ax[0].set_ylim([-2e-5, 6e-4])
-    ax[0].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$, $R=0$")
+    ax[0].title.set_text(r"$\langle \delta \rho_s \delta \rho_s \rangle$, $R=0$")
 
     m = sp.optimize.curve_fit(
         f=Corr_Rho_R,
         xdata=R[1:],
-        ydata=dRhodRho[1][1:],
+        ydata=dRhodRho[4][1:],
         p0=(10),
     )[0]
+    print(m[0])
 
     ax[1].plot(R, dRhodRho[1])
     ax[1].plot(R, Corr_Rho_R(R, m[0]))
     ax[1].set_xlabel(r"$R (\mu m)$ ")
-    ax[1].set_ylabel(r"$\delta\rho$ Correlation")
+    ax[1].set_ylabel(r"$\delta \rho_s$ Correlation")
     ax[1].set_ylim([-2e-5, 6e-4])
-    ax[1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$, $T=55$")
+    ax[1].title.set_text(r"$\langle \delta \rho_s \delta \rho_s \rangle$, $T=50$")
+
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])
+    c = ax[2].pcolor(
+        T,
+        R,
+        dRhodRho[1:],
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[2])
+    ax[2].set_xlabel("Time (mins)")
+    ax[2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2].title.set_text(r"Experiment $\langle \delta \rho_s \delta \rho_s \rangle$")
+
+    c = ax[3].pcolor(
+        T,
+        R,
+        Corr_Rho(R, T),
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[3])
+    ax[3].set_xlabel("Time (mins)")
+    ax[3].set_ylabel(r"$R (\mu m)$ ")
+    ax[3].title.set_text(r"Model $\langle \delta \rho_s \delta \rho_s \rangle$")
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
+    )
 
     fig.savefig(
         f"results/Correlation dRho in T and R model",
