@@ -343,7 +343,7 @@ if False:
 # --------- shape ----------
 
 # space time cell-cell shape correlation close to wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -426,7 +426,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = df.loc[:, "T"] - t
+                df["dT"] = (df.loc[:, "T"] - t)/2
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -476,7 +476,7 @@ if False:
             )
 
 # space time cell-cell shape correlation far from wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -558,7 +558,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = df.loc[:, "T"] - t
+                df["dT"] = (df.loc[:, "T"] - t)/2
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -610,7 +610,7 @@ if False:
 # --------- velocity ----------
 
 # space time velocity-velocity correlation Close to wound
-if False:
+if True:
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -692,7 +692,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = df.loc[:, "T"] - t
+                df["dT"] = (df.loc[:, "T"] - t)/2
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -744,7 +744,7 @@ if False:
             )
 
 # space time velocity-velocity correlation far from wound
-if False:
+if True:
     dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
     grid = 27
     timeGrid = 51
@@ -826,7 +826,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = df.loc[:, "T"] - t
+                df["dT"] = (df.loc[:, "T"] - t)/2
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -880,7 +880,7 @@ if False:
 # --------- collect all ----------
 
 # collect all correlations
-if True:
+if False:
     _df = []
     for filename in filenames:
 
