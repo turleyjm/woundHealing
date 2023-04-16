@@ -131,7 +131,7 @@ if False:
         V1Cont[meanArea < 500] = np.nan
 
         t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-        fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
         c = ax.pcolor(
             t,
             r,
@@ -157,7 +157,7 @@ if False:
         )
         plt.close("all")
 
-        if True:
+        if False:
             controlType = util.controlType(fileType)
             dfCont = pd.read_pickle(f"databases/dfVelocityWound{controlType}.pkl")
             dV1Cont = np.mean(dfCont["dv"] ** 2, axis=0)[0] ** 0.5
@@ -227,8 +227,8 @@ if True:
         for fileType in fileTypes[1:3]:
             filenames = util.getFilesType(fileType)[0]
             dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
-            dV1 = [[] for col in range(20)]
-            dV1_nor = [[] for col in range(20)]
+            dV1 = [[] for col in range(10)]
+            dV1_nor = [[] for col in range(10)]
             for k in range(len(filenames)):
                 filename = filenames[k]
                 dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
@@ -238,7 +238,7 @@ if True:
                 time = []
                 dv1 = []
                 dv1_std = []
-                for t in range(20):
+                for t in range(10):
                     dft = dfVel[
                         (dfVel["T"] >= timeStep * t) & (dfVel["T"] < timeStep * (t + 1))
                     ]
@@ -263,7 +263,7 @@ if True:
             dV1_nor_mu = []
             dV1_std = []
             dV1_nor_std = []
-            for t in range(20):
+            for t in range(10):
                 if len(dV1[t]) > 0:
                     dV1_mu.append(np.mean(dV1[t]))
                     dV1_nor_mu.append(np.mean(dV1_nor[t]))

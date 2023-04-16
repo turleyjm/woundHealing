@@ -32,7 +32,7 @@ plt.rcParams.update({"font.size": 20})
 
 
 # fileType = "Unwound18h"
-fileType = "WoundL18h"
+# fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
 # fileType = "UnwoundJNK"
@@ -53,7 +53,8 @@ fileType = "WoundL18h"
 # fileType = "AllTypes"
 # fileType = "AllWound"
 
-# fileType = "18h"
+fileType = "18h"
+# fileType = "wt"
 # fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"

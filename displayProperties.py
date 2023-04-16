@@ -601,6 +601,7 @@ if False:
 if False:
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
 
         (T, X, Y, rgb) = focus.shape
         gray = rgb2gray(focus)
@@ -608,8 +609,8 @@ if False:
         # gray = np.asarray(gray, "uint8")
         # tifffile.imwrite(f"results/gray{filename}.tif", gray)
 
-        directorNorm = np.zeros([T, 552, 552, 3])
-        director = np.zeros([T, 552, 552, 3])
+        directorNorm = np.zeros([T, 572, 572, 3])
+        director = np.zeros([T, 572, 572, 3])
 
         dfShape = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
 
@@ -624,22 +625,24 @@ if False:
                 q_0 = 0.4
 
             rr0, cc0, val = sm.draw.line_aa(
-                int(551 - (y + 60 * q_0 * np.sin(ori) + 20)),
-                int(x + 60 * q_0 * np.cos(ori) + 20),
-                int(551 - (y - 60 * q_0 * np.sin(ori) + 20)),
-                int(x - 60 * q_0 * np.cos(ori) + 20),
+                int(571 - (y + 100 * q_0 * np.sin(ori) + 30)),
+                int(x + 100 * q_0 * np.cos(ori) + 30),
+                int(571 - (y - 100 * q_0 * np.sin(ori) + 30)),
+                int(x - 100 * q_0 * np.cos(ori) + 30),
             )
             director[t][rr0, cc0, 0] = 255
 
             rr0, cc0, val = sm.draw.line_aa(
-                int(551 - (y + 6 * np.sin(ori) + 20)),
-                int(x + 6 * np.cos(ori) + 20),
-                int(551 - (y - 6 * np.sin(ori) + 20)),
-                int(x - 6 * np.cos(ori) + 20),
+                int(571 - (y + 6 * np.sin(ori) + 30)),
+                int(x + 6 * np.cos(ori) + 30),
+                int(571 - (y - 6 * np.sin(ori) + 30)),
+                int(x - 6 * np.cos(ori) + 30),
             )
             directorNorm[t][rr0, cc0, 0] = 255
 
-        director = director[:, 20:532, 20:532]
+        director = director[:, 30:542, 30:542]
+
+        director[:, :, :, 1][binary == 255] = 200
 
         mask = np.all((director - np.zeros(3)) == 0, axis=3)
 
@@ -650,7 +653,8 @@ if False:
         director = np.asarray(director, "uint8")
         tifffile.imwrite(f"results/displayProperties/director{filename}.tif", director)
 
-        directorNorm = directorNorm[:, 20:532, 20:532]
+        directorNorm = directorNorm[:, 30:542, 30:542]
+        directorNorm[:, :, :, 1][binary == 255] = 200
 
         mask = np.all((directorNorm - np.zeros(3)) == 0, axis=3)
 
@@ -662,6 +666,57 @@ if False:
         tifffile.imwrite(
             f"results/displayProperties/directorNorm{filename}.tif", directorNorm
         )
+
+# Polar field
+if False:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        polar = np.zeros([T, 552, 552, 3])
+
+        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+
+        for i in range(len(df)):
+            [x, y] = [
+                df["Centroid"].iloc[i][0],
+                df["Centroid"].iloc[i][1],
+            ]
+            t = int(df["Time"].iloc[i])
+            p = df["Polar"].iloc[i]
+            ori = np.arctan2(p[1], p[0])
+            p_0 = (p[0] ** 2 + p[1] ** 2) ** 0.5
+            if p_0 > 0.015:
+                p_0 = 0.015
+
+            rr0, cc0, val = sm.draw.line_aa(
+                int(531 - (y + 400 * p_0 * np.sin(ori))),
+                int(x + 400 * p_0 * np.cos(ori) + 20),
+                int(531 - y),
+                int(x + 20),
+            )
+            rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 2)
+            polar[t][rr0, cc0, 0] = 255
+            polar[t][rr1, cc1, 2] = 255
+            polar[t][rr0, cc0, 2] = 0
+
+        polar = polar[:, 20:532, 20:532]
+        polar[:, :, :, 1][binary == 255] = 200
+
+        mask = np.all((polar - np.zeros(3)) == 0, axis=3)
+
+        polar[:, :, :, 0][mask] = gray[mask]
+        polar[:, :, :, 1][mask] = gray[mask]
+        polar[:, :, :, 2][mask] = gray[mask]
+
+        polar = np.asarray(polar, "uint8")
+        tifffile.imwrite(f"results/displayProperties/polar{filename}.tif", polar)
 
 # Velocity field
 if False:
@@ -728,6 +783,61 @@ if False:
         velocityNorm = np.asarray(velocityNorm, "uint8")
         tifffile.imwrite(
             f"results/displayProperties/velocityNorm{filename}.tif", velocityNorm
+        )
+
+# dv field
+if False:
+    for filename in filenames:
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+
+        (T, X, Y, rgb) = focus.shape
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        velocity = np.zeros([T, 552, 552, 3])
+
+        dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
+        dfVelocity = pd.read_pickle(f"dat/{filename}/nucleusVelocity{filename}.pkl")
+
+        if "Wound" in filename:
+            for t in range(T):
+                dft = dfVelocity[dfVelocity["T"] == t]
+
+                xw, yw = dfWound["Position"].iloc[t]
+                V = np.mean(dft["Velocity"])
+
+                for i in range(len(dft)):
+                    x = dft["X"].iloc[i]
+                    y = dft["Y"].iloc[i]
+                    dv = dft["Velocity"].iloc[i] - V
+
+                    ori = np.arctan2(dv[1], dv[0])
+                    v_0 = (dv[0] ** 2 + dv[1] ** 2) ** 0.5
+
+                    rr0, cc0, val = sm.draw.line_aa(
+                        int(531 - (y + 2 * v_0 * np.sin(ori))),
+                        int(x + 2 * v_0 * np.cos(ori) + 20),
+                        int(531 - y),
+                        int(x + 20),
+                    )
+                    rr1, cc1 = sm.draw.disk([551 - (y + 20), x + 20], 2)
+                    velocity[t][rr0, cc0, 0] = 255
+                    velocity[t][rr1, cc1, 2] = 255
+                    velocity[t][rr0, cc0, 2] = 0
+
+        velocity = velocity[:, 20:532, 20:532]
+
+        mask = np.all((velocity - np.zeros(3)) == 0, axis=3)
+
+        velocity[:, :, :, 0][mask] = gray[mask]
+        velocity[:, :, :, 1][mask] = gray[mask]
+        velocity[:, :, :, 2][mask] = gray[mask]
+
+        velocity = np.asarray(velocity, "uint8")
+        tifffile.imwrite(
+            f"results/displayProperties/deltaVelocity{filename}.tif", velocity
         )
 
 # T1s display
@@ -853,7 +963,71 @@ if False:
     filters = np.asarray(filters, "uint16")
     tifffile.imwrite(f"results/myFilter.tif", filters)
 
-# Director Q field
+# Director dQ field heatmap
+if False:
+    cm = plt.get_cmap("RdBu_r")
+    for filename in filenames:
+        t0 = util.findStartTime(filename)
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        (T, X, Y, rgb) = focus.shape
+        binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
+        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+
+        Q = np.mean(df["q"])
+        theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
+        R = util.rotation_matrix(-theta0)
+
+        imgLabel = np.zeros([T, 512, 512])
+        for t in range(T):
+            img = 255 - binary[t]
+
+            # find and labels cells
+            imgLabel[t] = sm.measure.label(img, background=0, connectivity=1)
+
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        # gray = np.asarray(gray, "uint8")
+        # tifffile.imwrite(f"results/gray{filename}.tif", gray)
+
+        dQ1 = np.zeros([T, 512, 512, 3])
+
+        for t in range(T):
+            dft = df[df["Time"] == t]
+            Q = np.matmul(R, np.matmul(np.mean(dft["q"]), np.matrix.transpose(R)))
+            for i in range(len(dft)):
+                [x, y] = [
+                    dft["Centroid"].iloc[i][0],
+                    dft["Centroid"].iloc[i][1],
+                ]
+                q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
+                dq = q - Q
+                col = (dq[0, 0] + 0.05) / 0.1
+                if col > 0.999:
+                    col = 0.999
+                elif col < 0:
+                    col = 0
+                colour = cm(col)
+
+                label = imgLabel[t, int(512 - y), int(x)]
+                if label != 0:
+                    dQ1[t, :, :, 0][imgLabel[t] == label] = colour[0] * 255
+                    dQ1[t, :, :, 1][imgLabel[t] == label] = colour[1] * 255
+                    dQ1[t, :, :, 2][imgLabel[t] == label] = colour[2] * 255
+
+        dQ1[:, :, :, 1][binary == 255] = 200
+
+        mask = np.all((dQ1 - np.zeros(3)) == 0, axis=3)
+
+        dQ1[:, :, :, 0][mask] = gray[mask]
+        dQ1[:, :, :, 1][mask] = gray[mask]
+        dQ1[:, :, :, 2][mask] = gray[mask]
+
+        # imgLabel = np.asarray(imgLabel, "uint16")
+        # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
+        dQ1 = np.asarray(dQ1, "uint8")
+        tifffile.imwrite(f"results/displayProperties/tissue_dq1{filename}.tif", dQ1)
+
+# Director dQ field heatmap wound
 if True:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     cm = plt.get_cmap("RdBu_r")
@@ -946,7 +1120,64 @@ if True:
         dQ1[:, :, :, 1][mask] = gray[mask]
         dQ1[:, :, :, 2][mask] = gray[mask]
 
+        # imgLabel = np.asarray(imgLabel, "uint16")
+        # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
         dQ1 = np.asarray(dQ1, "uint8")
         tifffile.imwrite(f"results/displayProperties/dq1{filename}.tif", dQ1)
+
+# Heatmap area
+if False:
+    cm = plt.get_cmap("Reds")
+    for filename in filenames:
+        df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
+        t0 = util.findStartTime(filename)
+        focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        (T, X, Y, rgb) = focus.shape
+        binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)
+
+        imgLabel = np.zeros([T, 512, 512])
+        for t in range(T):
+            img = 255 - binary[t]
+
+            # find and labels cells
+            imgLabel[t] = sm.measure.label(img, background=0, connectivity=1)
+
+        gray = rgb2gray(focus)
+        gray = gray * (255 / np.max(gray))
+        gray = np.asarray(gray, "uint8")
+        tifffile.imwrite(f"results/displayProperties/gray{filename}.tif", gray)
+
+        Area = np.zeros([T, 512, 512, 3])
+
+        for i in range(len(df)):
+            [x, y] = [
+                df["Centroid"].iloc[i][0],
+                df["Centroid"].iloc[i][1],
+            ]
+            t = df["Time"].iloc[i]
+            area = df["Area"].iloc[i] * scale**2
+            col = area / 35
+            if col > 0.999:
+                col = 0.999
+            elif col < 0:
+                col = 0
+            colour = cm(col)
+
+            label = imgLabel[t, int(512 - y), int(x)]
+            if label != 0:
+                Area[t, :, :, 0][imgLabel[t] == label] = colour[0] * 255
+                Area[t, :, :, 1][imgLabel[t] == label] = colour[1] * 255
+                Area[t, :, :, 2][imgLabel[t] == label] = colour[2] * 255
+
+        Area[:, :, :, 1][binary == 255] = 200
+
+        mask = np.all((Area - np.zeros(3)) == 0, axis=3)
+
+        Area[:, :, :, 0][mask] = gray[mask]
+        Area[:, :, :, 1][mask] = gray[mask]
+        Area[:, :, :, 2][mask] = gray[mask]
+
+        Area = np.asarray(Area, "uint8")
+        tifffile.imwrite(f"results/displayProperties/Area{filename}.tif", Area)
         # imgLabel = np.asarray(imgLabel, "uint16")
         # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)

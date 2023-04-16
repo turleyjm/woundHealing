@@ -46,7 +46,7 @@ scale = 123.26 / 512
 # -------------------
 
 # compare: Mean migration of cells in tissue in x snd y
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -94,7 +94,7 @@ if True:
 
 # compare: Mean migration of cells in tissue in r
 if True:
-    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -120,7 +120,7 @@ if True:
 
     ax.set(xlabel="Time (mins)", ylabel=r"r ($\mu m$)")
     boldTitle = util.getBoldTitle(groupTitle)
-    ax.title.set_text(f"Migration magnitude of cells in tissue \n {boldTitle}")
+    ax.title.set_text(f"Migration magnitude of cells \n in tissue {boldTitle}")
     ax.set_ylim([0, 60])
     ax.legend(loc="upper left", fontsize=12)
 

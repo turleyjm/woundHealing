@@ -55,8 +55,8 @@ rStep = 10
 if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
-        count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        areaCell = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
         for k in range(len(filenames)):
             filename = filenames[k]
@@ -67,13 +67,14 @@ if False:
                 t0 = 0
             t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
 
-            for r in range(count.shape[2]):
-                for t in range(count.shape[1]):
+            for r in range(areaCell.shape[2]):
+                for t in range(areaCell.shape[1]):
                     df1 = dfFile[dfFile["T"] > timeStep * t]
                     df2 = df1[df1["T"] <= timeStep * (t + 1)]
                     df3 = df2[df2["R"] > rStep * r]
                     df = df3[df3["R"] <= rStep * (r + 1)]
-                    count[k, t, r] = len(df)
+                    if len(df) > 0:
+                        areaCell[k, t, r] = np.mean(df["Area"])
 
             inPlane = 1 - (
                 sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
@@ -102,35 +103,36 @@ if False:
                         * scale**2
                     )
 
-        rho = np.zeros([int(T / timeStep), int(R / rStep)])
+        AreaCell = np.zeros([int(T / timeStep), int(R / rStep)])
         std = np.zeros([int(T / timeStep), int(R / rStep)])
         meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
 
         for r in range(area.shape[2]):
             for t in range(area.shape[1]):
-                _area = area[:, t, r][area[:, t, r] > 800]
-                _count = count[:, t, r][area[:, t, r] > 800]
+                _areaCell = areaCell[:, t, r][areaCell[:, t, r] != 0]
+                _area = area[:, t, r][areaCell[:, t, r] != 0]
                 if len(_area) > 0:
-                    _dd, _std = weighted_avg_and_std(_count / _area, _area)
-                    rho[t, r] = _dd
+                    _dd, _std = weighted_avg_and_std(_areaCell, _area)
+                    AreaCell[t, r] = _dd
                     std[t, r] = _std
                     meanArea[t, r] = np.mean(_area)
                 else:
-                    rho[t, r] = np.nan
+                    AreaCell[t, r] = np.nan
                     std[t, r] = np.nan
 
-        rho[meanArea < 500] = np.nan
+        AreaCell[meanArea < 500] = np.nan
 
         t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-        fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
         c = ax.pcolor(
             t,
             r,
-            rho,
-            vmin=0.04,
-            vmax=0.08,
+            AreaCell,
+            vmin=10,
+            vmax=20,
             cmap="Reds",
         )
+        fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
             ylabel=r"Distance from wound edge $(\mu m)$",
@@ -140,7 +142,7 @@ if False:
         ax.title.set_text(f"Density distance and" + f"\n time {boldTitle}")
 
         fig.savefig(
-            f"results/Density heatmap {fileTitle}",
+            f"results/Area heatmap {fileTitle}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,
@@ -255,7 +257,7 @@ if False:
         )
         plt.close("all")
 
-        if True:
+        if False:
             controlType = util.controlType(fileType)
             dfCont = pd.read_pickle(f"databases/dfShapeWound{controlType}.pkl")
             dQ1Cont = np.mean(dfCont["dq"] ** 2, axis=0)[0, 0] ** 0.5
@@ -313,7 +315,7 @@ if False:
             plt.close("all")
 
 # Compare: Rescale Q1 relative to Wound
-if True:
+if False:
     if (
         groupTitle == "wild type"
         or groupTitle == "JNK DN"
@@ -325,8 +327,8 @@ if True:
         for fileType in fileTypes[1:3]:
             filenames = util.getFilesType(fileType)[0]
             dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
-            dQ1 = [[] for col in range(20)]
-            dQ1_nor = [[] for col in range(20)]
+            dQ1 = [[] for col in range(10)]
+            dQ1_nor = [[] for col in range(10)]
             for k in range(len(filenames)):
                 filename = filenames[k]
                 dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
@@ -336,7 +338,7 @@ if True:
                 time = []
                 dq1 = []
                 dq1_std = []
-                for t in range(20):
+                for t in range(10):
                     dft = dfSh[
                         (dfSh["T"] >= timeStep * t) & (dfSh["T"] < timeStep * (t + 1))
                     ]
@@ -361,7 +363,7 @@ if True:
             dQ1_nor_mu = []
             dQ1_std = []
             dQ1_nor_std = []
-            for t in range(20):
+            for t in range(10):
                 if len(dQ1[t]) > 0:
                     dQ1_mu.append(np.mean(dQ1[t]))
                     dQ1_nor_mu.append(np.mean(dQ1_nor[t]))
