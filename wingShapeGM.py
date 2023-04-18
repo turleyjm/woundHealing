@@ -81,7 +81,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -116,7 +116,7 @@ if True:
     plt.close("all")
 
 # compare: Mean Q2 tensor
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -151,7 +151,7 @@ if True:
     plt.close("all")
 
 # compare: Mean P1
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -186,7 +186,7 @@ if True:
     plt.close("all")
 
 # compare: Mean P2
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -221,7 +221,7 @@ if True:
     plt.close("all")
 
 # compare: Mean rho
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -256,7 +256,8 @@ if True:
     plt.close("all")
 
 # compare: entropy
-if False:
+if True:
+    times = [0, 40, 80]
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -270,12 +271,52 @@ if False:
                 heatmap, xedges, yedges = np.histogram2d(
                     q[:, 0, 0],
                     q[:, 1, 0],
-                    range=[[-0.3, 0.3], [-0.15, 0.15]],
-                    bins=(30, 15),
+                    range=[[-0.1, 0.11], [-0.1, 0.11]],
+                    bins=(21, 21),
                 )
 
                 prob = heatmap / q.shape[0]
                 p = prob[prob != 0]
+                if True:
+                    if i == 0:
+                        if t in times:
+                            x, y = np.mgrid[-0.1:0.11:0.01, -0.1:0.11:0.01]
+                            fig2, ax2 = plt.subplots(1, 1, figsize=(4, 3))
+                            c = ax2.pcolor(
+                                x,
+                                y,
+                                prob,
+                                vmin=0,
+                                vmax=0.04,
+                                cmap="Reds",
+                            )
+                            plt.axvline(
+                                np.mean(df["q"][(df["T"] == t)], axis=0)[0, 0],
+                                linewidth=1,
+                            )
+                            plt.axhline(
+                                np.mean(df["q"][(df["T"] == t)], axis=0)[0, 1],
+                                linewidth=1,
+                            )
+                            fig2.colorbar(c, ax=ax2)
+                            ax2.set(
+                                xlabel=r"$q^{(1)}$",
+                                ylabel=r"$q^{(2)}$",
+                            )
+                            fileTitle = util.getFileTitle(fileType)
+                            boldTitle = util.getBoldTitle(fileTitle)
+                            ax2.title.set_text(
+                                r"$\mathbf{q}$ distribution at time"
+                                + f" {t*2}mins"
+                                + f"\n - {boldTitle}"
+                            )
+
+                            fig2.savefig(
+                                f"results/dQ heatmap time {t*2} {fileTitle}",
+                                transparent=True,
+                                bbox_inches="tight",
+                                dpi=300,
+                            )
 
                 entropy = p * np.log(p)
                 ent[i, t] = -sum(entropy)
@@ -289,11 +330,11 @@ if False:
         ax.plot(time, ent, label=fileTitle, color=colour, marker=mark, markevery=10)
         ax.fill_between(time, ent - std, ent + std, alpha=0.15, color=colour)
 
-    ax.set_ylim([2.6, 3.7])
+    ax.set_ylim([3.85, 4.65])
     ax.legend(loc="lower left", fontsize=12)
-    ax.set(xlabel="Time after wounding (mins)", ylabel="Shannon entropy")
+    ax.set(xlabel="Time (mins)", ylabel="Shannon entropy")
     boldTitle = util.getBoldTitle(groupTitle)
-    ax.title.set_text("Mean Shannon entropy with \n time " + boldTitle)
+    ax.title.set_text("Mean Shannon entropy \n with time " + boldTitle)
     fig.savefig(
         f"results/mean entropy {groupTitle}",
         dpi=300,

@@ -31,7 +31,7 @@ plt.rcParams.update({"font.size": 20})
 # ---- individual conditions ----
 
 
-# fileType = "Unwound18h"
+fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
@@ -53,7 +53,7 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "AllTypes"
 # fileType = "AllWound"
 
-fileType = "18h"
+# fileType = "18h"
 # fileType = "wt"
 # fileType = "JNK"
 # fileType = "Ca"

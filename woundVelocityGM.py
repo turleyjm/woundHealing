@@ -51,7 +51,7 @@ rStep = 10
 # -------------------
 
 # Individual: v with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -147,7 +147,7 @@ if False:
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(r"$\delta v_1$ distance and" + f"\ntime {boldTitle}")
+        ax.title.set_text(r"$\delta V_1$ distance and" + f"\ntime {boldTitle}")
 
         fig.savefig(
             f"results/v heatmap {fileTitle}",
@@ -215,7 +215,7 @@ if False:
             plt.close("all")
 
 # Compare: Rescale Speed Towards Wound
-if True:
+if False:
     if (
         groupTitle == "wild type"
         or groupTitle == "JNK DN"

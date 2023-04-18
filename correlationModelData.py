@@ -1782,7 +1782,7 @@ if False:
     plt.close("all")
 
 # deltaP2 (model)
-if True:
+if False:
 
     def Corr_dP2_Integral_R(T, C):
         B = 0.020119498379811963
@@ -1890,7 +1890,7 @@ if True:
     )
     plt.close("all")
 
-# deltaRho (model)
+# deltaRho_n (model)
 if False:
 
     def Corr_Rho_T(T, C):
@@ -1921,7 +1921,7 @@ if False:
 
     dRho_SdRho_S = np.mean(dRho_SdRho_S, axis=0)
 
-    dRhodRho = dRho_SdRho_S - dRho_SdRho_S[-1]
+    dRhodRho = dRho_SdRho_S - np.mean(dRho_SdRho_S[10:-1], axis=0)
 
     R = np.linspace(0, 60, 7)
     T = np.linspace(10, 170, 17)
@@ -1955,7 +1955,7 @@ if False:
 
     ax[1].plot(R, dRhodRho[1])
     ax[1].plot(R, Corr_Rho_R(R, m[0]))
-    ax[1].set_xlabel(r"$R (\mu m)$ ")
+    ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta \rho_s$ Correlation")
     ax[1].set_ylim([-2e-5, 6e-4])
     ax[1].title.set_text(r"$\langle \delta \rho_s \delta \rho_s \rangle$, $T=50$")
@@ -1996,6 +1996,136 @@ if False:
 
     fig.savefig(
         f"results/Correlation dRho in T and R model",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaRho_s (model)
+if False:
+
+    def Corr_dRho_S(r, C, lamdba):
+        return C * np.exp(-lamdba * r)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
+
+    dRho_SdRho_S = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        Rho_SCount = dfCor["Count Rho_S"].iloc[i][:, :, :-1]
+        dRho_SdRho_S[i] = np.sum(
+            dfCor["dRho_SdRho_S"].iloc[i][:, :, :-1] * Rho_SCount, axis=2
+        ) / np.sum(Rho_SCount, axis=2)
+
+    dfCor = 0
+
+    dRho_SdRho_S = np.mean(dRho_SdRho_S, axis=0)
+
+    dRho_SdRho_S = np.mean(dRho_SdRho_S[10:-1], axis=0)
+
+    R = np.linspace(0, 60, 7)
+
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dRho_S,
+        xdata=R,
+        ydata=dRho_SdRho_S,
+        p0=(0.0003, 0.04),
+    )[0]
+    print(m)
+
+    ax.plot(R, dRho_SdRho_S, label="Data")
+    ax.plot(R, Corr_dRho_S(R, m[0], m[1]), label="Model")
+    ax.set_xlabel(r"$R (\mu m)$")
+    ax.set_ylabel(r"$\delta \rho_s$ Correlation")
+    ax.set_ylim([0, 4.5e-04])
+    ax.title.set_text(r"Correlation of $\delta \rho_s$")
+    ax.legend()
+
+    # plt.subplots_adjust(
+    #     left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    # )
+    fig.savefig(
+        f"results/Correlation rho_s in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaV (model)
+if False:
+
+    def Corr_dV(r, C, lamdba):
+        return C * np.exp(-lamdba * r)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    T, R, Theta = dfCor["dV1dV1Correlation"].iloc[0].shape
+
+    dV1dV1 = np.zeros([len(filenames), T, R])
+    dV2dV2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        dV1dV1Count = dfCor["dV1dV1Count"].iloc[i][:, :, :-1]
+        dV1dV1[i] = np.sum(
+            dfCor["dV1dV1Correlation"].iloc[i][:, :, :-1] * dV1dV1Count, axis=2
+        ) / np.sum(dV1dV1Count, axis=2)
+        dV2dV2[i] = np.sum(
+            dfCor["dV2dV2Correlation"].iloc[i][:, :, :-1] * dV1dV1Count, axis=2
+        ) / np.sum(dV1dV1Count, axis=2)
+
+    dfCor = 0
+
+    dV1dV1 = np.mean(dV1dV1, axis=0)
+    dV2dV2 = np.mean(dV2dV2, axis=0)
+
+    dV1dV1_r = dV1dV1[0][0:-1]
+    dV2dV2_r = dV2dV2[0][0:-1]
+
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(2, 1, figsize=(4, 8))
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[3:],
+        ydata=dV1dV1_r[3:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[0].plot(R, dV1dV1_r, label="Data")
+    ax[0].plot(R, Corr_dV(R, m[0], m[1]), label="Model")
+    ax[0].set_xlabel(r"$R (\mu m)$")
+    ax[0].set_ylabel(r"$\delta V_1$ Correlation")
+    # ax[0].set_ylim([0, 4.5e-04])
+    ax[0].title.set_text(r"Correlation of $\delta V_1$")
+    ax[0].legend()
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[3:],
+        ydata=dV2dV2_r[3:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[1].plot(R, dV2dV2_r, label="Data")
+    ax[1].plot(R, Corr_dV(R, m[0], m[1]), label="Model")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta V_2$ Correlation")
+    # ax[1].set_ylim([0, 4.5e-04])
+    ax[1].title.set_text(r"Correlation of $\delta V_2$")
+    ax[1].legend()
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
+    fig.savefig(
+        f"results/Correlation dV in T and R {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
