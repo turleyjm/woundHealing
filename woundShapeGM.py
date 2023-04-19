@@ -150,7 +150,7 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -308,6 +308,171 @@ if True:
 
             fig.savefig(
                 f"results/Q1 heatmap heterogeneity {fileTitle}",
+                transparent=True,
+                bbox_inches="tight",
+                dpi=300,
+            )
+            plt.close("all")
+
+# Individual: P1 with distance from wound edge and time
+if True:
+    for fileType in fileTypes:
+        filenames = util.getFilesType(fileType)[0]
+        p1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        p1Cont = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            dfFile = dfShape[dfShape["Filename"] == filename]
+            dP1Cont = np.mean(dfFile["dp"] ** 2, axis=0)[0] ** 0.5
+
+            if "Wound" in filename:
+                t0 = util.findStartTime(filename)
+            else:
+                t0 = 0
+            t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+            for r in range(p1.shape[2]):
+                for t in range(p1.shape[1]):
+                    df1 = dfFile[dfFile["T"] > timeStep * t]
+                    df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                    df3 = df2[df2["R"] > rStep * r]
+                    df = df3[df3["R"] <= rStep * (r + 1)]
+                    if len(df) > 0:
+                        p1[k, t, r] = np.mean(df["dp"], axis=0)[0]
+                        p1Cont[k, t, r] = np.mean(df["dp"], axis=0)[0] / dP1Cont
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+                / 255
+            )
+            dist = (
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+                * scale
+            )
+
+            for r in range(area.shape[2]):
+                for t in range(area.shape[1]):
+                    t1 = int(timeStep / 2 * t - t0 / 2)
+                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                    if t1 < 0:
+                        t1 = 0
+                    if t2 < 0:
+                        t2 = 0
+                    area[k, t, r] = (
+                        np.sum(
+                            inPlane[t1:t2][
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
+                            ]
+                        )
+                        * scale**2
+                    )
+
+        P1 = np.zeros([int(T / timeStep), int(R / rStep)])
+        P1Cont = np.zeros([int(T / timeStep), int(R / rStep)])
+        std = np.zeros([int(T / timeStep), int(R / rStep)])
+        meanArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                _P1 = p1[:, t, r][p1[:, t, r] != 0]
+                _area = area[:, t, r][p1[:, t, r] != 0]
+                _P1Cont = p1Cont[:, t, r][p1Cont[:, t, r] != 0]
+                if (len(_area) > 0) & (np.sum(_area) > 0):
+                    _dd, _std = weighted_avg_and_std(_P1, _area)
+                    P1[t, r] = _dd
+                    std[t, r] = _std
+                    meanArea[t, r] = np.mean(_area)
+                    _dd, _std = weighted_avg_and_std(_P1Cont, _area)
+                    P1Cont[t, r] = _dd
+                else:
+                    P1[t, r] = np.nan
+                    std[t, r] = np.nan
+                    P1Cont[t, r] = np.nan
+
+        P1[meanArea < 500] = np.nan
+        P1Cont[meanArea < 500] = np.nan
+
+        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+        c = ax.pcolor(
+            t,
+            r,
+            P1,
+            vmin=-0.001,
+            vmax=0.001,
+            cmap="RdBu_r",
+        )
+        fig.colorbar(c, ax=ax)
+        ax.set(
+            xlabel="Time after wounding (mins)",
+            ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+        )
+        fileTitle = util.getFileTitle(fileType)
+        boldTitle = util.getBoldTitle(fileTitle)
+        ax.title.set_text(r"$\delta P_1$ distance and" + f"\n time {boldTitle}")
+
+        fig.savefig(
+            f"results/P1 heatmap {fileTitle}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
+        if False:
+            controlType = util.controlType(fileType)
+            dfCont = pd.read_pickle(f"databases/dfShapeWound{controlType}.pkl")
+            dP1Cont = np.mean(dfCont["dp"] ** 2, axis=0)[0, 0] ** 0.5
+
+            fig, ax = plt.subplots(2, 1, figsize=(6, 6))
+            c = ax[0].pcolor(
+                t,
+                r,
+                P1 / dP1Cont,
+                vmin=-1.2,
+                vmax=1.2,
+                cmap="RdBu_r",
+            )
+            fig.colorbar(c, ax=ax[0])
+            ax[0].set(
+                xlabel="Time after wounding (mins)",
+                ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            )
+            fileTitle = util.getFileTitle(fileType)
+            boldTitle = util.getBoldTitle(fileTitle)
+            controlTitle = util.getFileTitle(controlType)
+            controlTitle = util.getBoldTitle(controlTitle)
+            ax[0].title.set_text(
+                r"$\delta P_1$"
+                + f"{boldTitle} heterogeneity \n compared to {controlTitle}"
+            )
+
+            c = ax[1].pcolor(
+                t,
+                r,
+                P1Cont,
+                vmin=-1.2,
+                vmax=1.2,
+                cmap="RdBu_r",
+            )
+            fig.colorbar(c, ax=ax[1])
+            ax[1].set(
+                xlabel="Time after wounding (mins)",
+                ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            )
+            fileTitle = util.getFileTitle(fileType)
+            boldTitle = util.getBoldTitle(fileTitle)
+            ax[1].title.set_text(r"$\delta P_1$" + f"{boldTitle} heterogeneity")
+
+            plt.subplots_adjust(
+                left=0.12, bottom=0.11, right=0.9, top=0.88, wspace=0.2, hspace=0.55
+            )
+
+            fig.savefig(
+                f"results/P1 heatmap heterogeneity {fileTitle}",
                 transparent=True,
                 bbox_inches="tight",
                 dpi=300,

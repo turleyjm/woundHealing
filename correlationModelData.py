@@ -1924,7 +1924,9 @@ if False:
     dRhodRho = dRho_SdRho_S - np.mean(dRho_SdRho_S[10:-1], axis=0)
 
     R = np.linspace(0, 60, 7)
+    R_ = np.linspace(0, 60, 61)
     T = np.linspace(10, 170, 17)
+    T_ = np.linspace(10, 170, 170)
 
     fig, ax = plt.subplots(2, 2, figsize=(10, 8))
     plt.subplots_adjust(wspace=0.4)
@@ -1938,12 +1940,13 @@ if False:
     )[0]
     print(m[0])
 
-    ax[0, 0].plot(T, dRhodRho[1:, 0])
-    ax[0, 0].plot(T, Corr_Rho_T(T, m[0]))
+    ax[0, 0].plot(T, dRhodRho[1:, 0], label="Data")
+    ax[0, 0].plot(T_, Corr_Rho_T(T_, m[0]), label="Model")
     ax[0, 0].set_xlabel(r"Time (mins)")
     ax[0, 0].set_ylabel(r"$\delta \rho_n$ Correlation")
     ax[0, 0].set_ylim([-2e-5, 6e-4])
     ax[0, 0].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $R=0$")
+    ax[0, 0].legend()
 
     m = sp.optimize.curve_fit(
         f=Corr_Rho_R,
@@ -1953,12 +1956,13 @@ if False:
     )[0]
     print(m[0])
 
-    ax[0, 1].plot(R, dRhodRho[3])
-    ax[0, 1].plot(R, Corr_Rho_R(R, m[0]))
+    ax[0, 1].plot(R, dRhodRho[3], label="Data")
+    ax[0, 1].plot(R_, Corr_Rho_R(R_, m[0]), label="Model")
     ax[0, 1].set_xlabel(r"$R (\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta \rho_n$ Correlation")
     ax[0, 1].set_ylim([-2e-5, 6e-4])
     ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $T=30$")
+    ax[0, 1].legend()
 
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])
@@ -1976,10 +1980,11 @@ if False:
     ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 0].title.set_text(r"Experiment $\langle \delta \rho_n \delta \rho_n \rangle$")
 
+    R_, T_ = np.meshgrid(R_, T_)
     c = ax[1, 1].pcolor(
-        T,
-        R,
-        Corr_Rho(R, T),
+        T_,
+        R_,
+        Corr_Rho(R_, T_),
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -2026,6 +2031,7 @@ if False:
     dRho_SdRho_S = np.mean(dRho_SdRho_S[10:-1], axis=0)
 
     R = np.linspace(0, 60, 7)
+    R_ = np.linspace(0, 60, 61)
 
     fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -2038,7 +2044,7 @@ if False:
     print(m)
 
     ax.plot(R, dRho_SdRho_S, label="Data")
-    ax.plot(R, Corr_dRho_S(R, m[0], m[1]), label="Model")
+    ax.plot(R_, Corr_dRho_S(R_, m[0], m[1]), label="Model")
     ax.set_xlabel(r"$R (\mu m)$")
     ax.set_ylabel(r"$\delta \rho_s$ Correlation")
     ax.set_ylim([0, 4.5e-04])
