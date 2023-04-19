@@ -577,7 +577,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divisions and Shape changes
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -626,7 +626,6 @@ if True:
 
                 if A1 > 1500:
                     finished = True
-                    colourD = getSecondColour(track, colour)
 
                 if t_i == T - 1:
                     finished = True

@@ -107,7 +107,7 @@ if False:
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
-    fig, ax = plt.subplots(4, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(3, 4, figsize=(20, 12))
 
     T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
 
@@ -146,13 +146,13 @@ if False:
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 0].title.set_text(
-        r"$\langle (\delta \rho_s + \delta \rho) (\delta \rho_s + \delta \rho) \rangle$"
+        r"$\langle (\delta \rho_s + \delta \rho_n) (\delta \rho_s + \delta \rho_n) \rangle$"
     )
 
     c = ax[0, 1].pcolor(
         t,
         r,
-        dRhodRho - dRhodRho[-1],
+        dRhodRho - np.mean(dRhodRho[10:-1], axis=0),
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -161,7 +161,7 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$")
 
     maxCorr = np.max([dQ1dRho, -dQ1dRho])
     c = ax[0, 2].pcolor(
@@ -179,7 +179,7 @@ if False:
     ax[0, 2].title.set_text(r"$\langle \delta Q^1 \delta \rho \rangle$")
 
     maxCorr = np.max([dQ2dRho, -dQ2dRho])
-    c = ax[1, 0].pcolor(
+    c = ax[0, 3].pcolor(
         t,
         r,
         dQ2dRho,
@@ -188,10 +188,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
+    fig.colorbar(c, ax=ax[0, 3])
+    ax[0, 3].set_xlabel("Time (mins)")
+    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
 
     T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
@@ -255,7 +255,7 @@ if False:
 
     t, r = np.mgrid[0:102:2, 0:52:2]
     maxCorr = np.max([dP1dP1, -dP1dP1])
-    c = ax[1, 1].pcolor(
+    c = ax[1, 0].pcolor(
         t,
         r,
         dP1dP1,
@@ -264,13 +264,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
     maxCorr = np.max([dP2dP2, -dP2dP2])
-    c = ax[1, 2].pcolor(
+    c = ax[1, 1].pcolor(
         t,
         r,
         dP2dP2,
@@ -279,13 +279,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
     maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
-    c = ax[2, 0].pcolor(
+    c = ax[1, 2].pcolor(
         t,
         r,
         dQ1dQ1,
@@ -294,13 +294,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 2])
+    ax[1, 2].set_xlabel("Time (mins)")
+    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
     maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
-    c = ax[2, 1].pcolor(
+    c = ax[1, 3].pcolor(
         t,
         r,
         dQ2dQ2,
@@ -309,13 +309,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 3])
+    ax[1, 3].set_xlabel("Time (mins)")
+    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dQ1dQ2, -dQ1dQ2])
-    c = ax[2, 2].pcolor(
+    c = ax[2, 0].pcolor(
         t,
         r,
         dQ1dQ2,
@@ -324,13 +324,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 0])
+    ax[2, 0].set_xlabel("Time (mins)")
+    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dP1dQ1, -dP1dQ1])
-    c = ax[3, 0].pcolor(
+    c = ax[2, 1].pcolor(
         t,
         r,
         dP1dQ1,
@@ -339,13 +339,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 0])
-    ax[3, 0].set_xlabel("Time (mins)")
-    ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 1])
+    ax[2, 1].set_xlabel("Time (mins)")
+    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
 
     maxCorr = np.max([dP1dQ2, -dP1dQ2])
-    c = ax[3, 1].pcolor(
+    c = ax[2, 2].pcolor(
         t,
         r,
         dP1dQ2,
@@ -354,13 +354,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 1])
-    ax[3, 1].set_xlabel("Time (mins)")
-    ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 2])
+    ax[2, 2].set_xlabel("Time (mins)")
+    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dP2dQ2, -dP2dQ2])
-    c = ax[3, 2].pcolor(
+    c = ax[2, 3].pcolor(
         t,
         r,
         dP2dQ2,
@@ -369,10 +369,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 2])
-    ax[3, 2].set_xlabel("Time (mins)")
-    ax[3, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 2].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 3])
+    ax[2, 3].set_xlabel("Time (mins)")
+    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -392,7 +392,7 @@ if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
     df = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
 
-    fig, ax = plt.subplots(4, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(3, 4, figsize=(20, 12))
 
     T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
 
@@ -437,13 +437,13 @@ if False:
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 0].title.set_text(
-        r"$\langle (\delta \rho_s + \delta \rho) (\delta \rho_s + \delta \rho) \rangle$"
+        r"$\langle (\delta \rho_s + \delta \rho_n) (\delta \rho_s + \delta \rho_n) \rangle$"
     )
 
     c = ax[0, 1].pcolor(
         t,
         r,
-        dRhodRho - dRhodRho[-1],
+        dRhodRho - np.mean(dRhodRho[10:-1], axis=0),
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -452,7 +452,7 @@ if False:
     fig.colorbar(c, ax=ax[0, 1])
     ax[0, 1].set_xlabel("Time (mins)")
     ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"$\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$")
 
     c = ax[0, 2].pcolor(
         t,
@@ -468,7 +468,7 @@ if False:
     ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 2].title.set_text(r"$\langle \delta Q^1 \delta \rho \rangle$")
 
-    c = ax[1, 0].pcolor(
+    c = ax[0, 3].pcolor(
         t,
         r,
         dQ2dRho,
@@ -477,10 +477,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
+    fig.colorbar(c, ax=ax[0, 3])
+    ax[0, 3].set_xlabel("Time (mins)")
+    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
 
     T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
@@ -553,7 +553,7 @@ if False:
     dP2dQ2 = dP2dQ2 / (std_dp[1] * std_dq[0, 1])
 
     t, r = np.mgrid[0:102:2, 0:52:2]
-    c = ax[1, 1].pcolor(
+    c = ax[1, 0].pcolor(
         t,
         r,
         dP1dP1,
@@ -562,12 +562,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
-    c = ax[1, 2].pcolor(
+    c = ax[1, 1].pcolor(
         t,
         r,
         dP2dP2,
@@ -576,12 +576,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
-    c = ax[2, 0].pcolor(
+    c = ax[1, 2].pcolor(
         t,
         r,
         dQ1dQ1,
@@ -590,12 +590,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 2])
+    ax[1, 2].set_xlabel("Time (mins)")
+    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
-    c = ax[2, 1].pcolor(
+    c = ax[1, 3].pcolor(
         t,
         r,
         dQ2dQ2,
@@ -604,12 +604,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 3])
+    ax[1, 3].set_xlabel("Time (mins)")
+    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
 
-    c = ax[2, 2].pcolor(
+    c = ax[2, 0].pcolor(
         t,
         r,
         dQ1dQ2,
@@ -618,12 +618,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 0])
+    ax[2, 0].set_xlabel("Time (mins)")
+    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
-    c = ax[3, 0].pcolor(
+    c = ax[2, 1].pcolor(
         t,
         r,
         dP1dQ1,
@@ -632,12 +632,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 0])
-    ax[3, 0].set_xlabel("Time (mins)")
-    ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 1])
+    ax[2, 1].set_xlabel("Time (mins)")
+    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
 
-    c = ax[3, 1].pcolor(
+    c = ax[2, 2].pcolor(
         t,
         r,
         dP1dQ2,
@@ -646,12 +646,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 1])
-    ax[3, 1].set_xlabel("Time (mins)")
-    ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 2])
+    ax[2, 2].set_xlabel("Time (mins)")
+    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
 
-    c = ax[3, 2].pcolor(
+    c = ax[2, 3].pcolor(
         t,
         r,
         dP2dQ2,
@@ -660,10 +660,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 2])
-    ax[3, 2].set_xlabel("Time (mins)")
-    ax[3, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 2].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 3])
+    ax[2, 3].set_xlabel("Time (mins)")
+    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -682,7 +682,7 @@ if False:
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
-    fig, ax = plt.subplots(4, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(3, 4, figsize=(20, 12))
 
     T, R, Theta = dfCor["dr1dRho_SdV1Correlation"].iloc[0].shape
 
@@ -766,7 +766,7 @@ if False:
     )
 
     maxCorr = np.max([dr2dRhodV2, -dr2dRhodV2])
-    c = ax[1, 0].pcolor(
+    c = ax[0, 3].pcolor(
         t,
         r,
         dr2dRhodV2,
@@ -775,10 +775,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(
+    fig.colorbar(c, ax=ax[0, 3])
+    ax[0, 3].set_xlabel("Time (mins)")
+    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
 
@@ -809,10 +809,27 @@ if False:
     dr2dQ1dV2 = np.mean(dr2dQ1dV2, axis=0)
 
     maxCorr = np.max([dr1dQ1dV1, -dr1dQ1dV1])
-    c = ax[1, 1].pcolor(
+    c = ax[1, 0].pcolor(
         t,
         r,
         dr1dQ1dV1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
+    )
+
+    maxCorr = np.max([dr1dQ1dV2, -dr1dQ1dV2])
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        dr1dQ1dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -822,14 +839,14 @@ if False:
     ax[1, 1].set_xlabel("Time (mins)")
     ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 1].title.set_text(
-        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
     )
 
-    maxCorr = np.max([dr1dQ1dV2, -dr1dQ1dV2])
+    maxCorr = np.max([dr2dQ1dV1, -dr2dQ1dV1])
     c = ax[1, 2].pcolor(
         t,
         r,
-        dr1dQ1dV2,
+        dr2dQ1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -839,28 +856,11 @@ if False:
     ax[1, 2].set_xlabel("Time (mins)")
     ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 2].title.set_text(
-        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
-    )
-
-    maxCorr = np.max([dr2dQ1dV1, -dr2dQ1dV1])
-    c = ax[2, 0].pcolor(
-        t,
-        r,
-        dr2dQ1dV1,
-        cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
-        shading="auto",
-    )
-    fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_1 \rangle$"
     )
 
     maxCorr = np.max([dr2dQ1dV2, -dr2dQ1dV2])
-    c = ax[2, 1].pcolor(
+    c = ax[1, 3].pcolor(
         t,
         r,
         dr2dQ1dV2,
@@ -869,10 +869,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(
+    fig.colorbar(c, ax=ax[1, 3])
+    ax[1, 3].set_xlabel("Time (mins)")
+    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
     )
 
@@ -908,7 +908,7 @@ if False:
 
     t, r = np.mgrid[0:100:2, 0:52:2]
     maxCorr = np.max([dP1dV1, -dP1dV1])
-    c = ax[2, 2].pcolor(
+    c = ax[2, 0].pcolor(
         t,
         r,
         dP1dV1,
@@ -917,13 +917,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 0])
+    ax[2, 0].set_xlabel("Time (mins)")
+    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
 
     maxCorr = np.max([dP2dV2, -dP2dV2])
-    c = ax[3, 0].pcolor(
+    c = ax[2, 1].pcolor(
         t,
         r,
         dP2dV2,
@@ -932,13 +932,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 0])
-    ax[3, 0].set_xlabel("Time (mins)")
-    ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 1])
+    ax[2, 1].set_xlabel("Time (mins)")
+    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
 
     maxCorr = np.max([dV1dV1, -dV1dV1])
-    c = ax[3, 1].pcolor(
+    c = ax[2, 2].pcolor(
         t,
         r,
         dV1dV1,
@@ -947,13 +947,13 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 1])
-    ax[3, 1].set_xlabel("Time (mins)")
-    ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 2])
+    ax[2, 2].set_xlabel("Time (mins)")
+    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
 
     maxCorr = np.max([dV2dV2, -dV2dV2])
-    c = ax[3, 2].pcolor(
+    c = ax[2, 3].pcolor(
         t,
         r,
         dV2dV2,
@@ -962,10 +962,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 2])
-    ax[3, 2].set_xlabel("Time (mins)")
-    ax[3, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 2].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 3])
+    ax[2, 3].set_xlabel("Time (mins)")
+    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -1106,7 +1106,7 @@ if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     dfstd_dr = pd.read_pickle(f"databases/correlations/dfstd_dr{fileType}.pkl")
 
-    fig, ax = plt.subplots(4, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(3, 4, figsize=(20, 12))
 
     T, R, Theta = dfCor["dr1dRho_SdV1Correlation"].iloc[0].shape
 
@@ -1194,7 +1194,7 @@ if False:
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
     )
 
-    c = ax[1, 0].pcolor(
+    c = ax[0, 3].pcolor(
         t,
         r,
         dr2dRhodV2,
@@ -1203,10 +1203,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(
+    fig.colorbar(c, ax=ax[0, 3])
+    ax[0, 3].set_xlabel("Time (mins)")
+    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
 
@@ -1243,10 +1243,26 @@ if False:
     dr2dQ1dV2 = np.mean(dr2dQ1dV2, axis=0)
     dr2dQ1dV2 = dr2dQ1dV2 / (std_dr2dQ1 * std_dv[1])
 
-    c = ax[1, 1].pcolor(
+    c = ax[1, 0].pcolor(
         t,
         r,
         dr1dQ1dV1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
+    )
+
+    c = ax[1, 1].pcolor(
+        t,
+        r,
+        dr1dQ1dV2,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1256,13 +1272,13 @@ if False:
     ax[1, 1].set_xlabel("Time (mins)")
     ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 1].title.set_text(
-        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
+        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
     )
 
     c = ax[1, 2].pcolor(
         t,
         r,
-        dr1dQ1dV2,
+        dr2dQ1dV1,
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -1272,26 +1288,10 @@ if False:
     ax[1, 2].set_xlabel("Time (mins)")
     ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
     ax[1, 2].title.set_text(
-        r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
-    )
-
-    c = ax[2, 0].pcolor(
-        t,
-        r,
-        dr2dQ1dV1,
-        cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
-        shading="auto",
-    )
-    fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_1 \rangle$"
     )
 
-    c = ax[2, 1].pcolor(
+    c = ax[1, 3].pcolor(
         t,
         r,
         dr2dQ1dV2,
@@ -1300,10 +1300,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 1].title.set_text(
+    fig.colorbar(c, ax=ax[1, 3])
+    ax[1, 3].set_xlabel("Time (mins)")
+    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
     )
 
@@ -1344,7 +1344,7 @@ if False:
     dV2dV2 = dV2dV2 / (std_dv[1] * std_dv[1])
 
     t, r = np.mgrid[0:100:2, 0:52:2]
-    c = ax[2, 2].pcolor(
+    c = ax[2, 0].pcolor(
         t,
         r,
         dP1dV1,
@@ -1353,12 +1353,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 0])
+    ax[2, 0].set_xlabel("Time (mins)")
+    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
 
-    c = ax[3, 0].pcolor(
+    c = ax[2, 1].pcolor(
         t,
         r,
         dP2dV2,
@@ -1367,12 +1367,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 0])
-    ax[3, 0].set_xlabel("Time (mins)")
-    ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 1])
+    ax[2, 1].set_xlabel("Time (mins)")
+    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
 
-    c = ax[3, 1].pcolor(
+    c = ax[2, 2].pcolor(
         t,
         r,
         dV1dV1,
@@ -1381,12 +1381,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 1])
-    ax[3, 1].set_xlabel("Time (mins)")
-    ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[2, 2])
+    ax[2, 2].set_xlabel("Time (mins)")
+    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
 
-    c = ax[3, 2].pcolor(
+    c = ax[2, 3].pcolor(
         t,
         r,
         dV2dV2,
@@ -1395,10 +1395,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 2])
-    ax[3, 2].set_xlabel("Time (mins)")
-    ax[3, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 2].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 3])
+    ax[2, 3].set_xlabel("Time (mins)")
+    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -1460,7 +1460,7 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
 
     # m = sp.optimize.curve_fit(
     #     f=Corr_dQ1_Integral_R,
@@ -1470,14 +1470,14 @@ if False:
     # )[0]
     # print(m)
 
-    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
-    ax[0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
-    # ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0]), label="Model")
-    ax[0].set_xlabel("Time (min)")
-    ax[0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[0].set_ylim([0, 5.9e-04])
-    ax[0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
-    ax[0].legend()
+    ax[0, 0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
+    ax[0, 0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
+    # ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0]), label="Model")
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[0, 0].set_ylim([0, 5.9e-04])
+    ax[0, 0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
+    ax[0, 0].legend()
 
     # m = sp.optimize.curve_fit(
     #     f=Corr_dQ1_Integral_T,
@@ -1488,19 +1488,19 @@ if False:
     # )[0]
     # print(m)
 
-    ax[1].plot(R, dQ1dQ1[1][:26], label="Data")
-    ax[1].plot(R, Corr_dQ1(R, 2), label="Model")
-    # ax[1].plot(R, Corr_dQ1_Integral_T(R, m[0]), label="Model")
-    ax[1].set_xlabel(r"$R (\mu m)$")
-    ax[1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[1].set_ylim([0, 5.9e-04])
-    ax[1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=2$")
-    ax[1].legend()
+    ax[0, 1].plot(R, dQ1dQ1[1][:26], label="Data")
+    ax[0, 1].plot(R, Corr_dQ1(R, 2), label="Model")
+    # ax[0, 1].plot(R, Corr_dQ1_Integral_T(R, m[0]), label="Model")
+    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[0, 1].set_ylim([0, 5.9e-04])
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=2$")
+    ax[0, 1].legend()
 
     Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
-    c = ax[2].pcolor(
+    c = ax[1, 0].pcolor(
         T,
         R,
         dQ1dQ1,
@@ -1509,12 +1509,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2])
-    ax[2].set_xlabel("Time (mins)")
-    ax[2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2].title.set_text(r"Experiment $\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Experiment $\langle \delta Q^1 \delta Q^1 \rangle$")
 
-    c = ax[3].pcolor(
+    c = ax[1, 1].pcolor(
         T,
         R,
         Corr_dQ1dQ1,
@@ -1523,10 +1523,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3])
-    ax[3].set_xlabel("Time (mins)")
-    ax[3].set_ylabel(r"$R (\mu m)$ ")
-    ax[3].title.set_text(r"Model $\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Model $\langle \delta Q^1 \delta Q^1 \rangle$")
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
@@ -1578,21 +1578,21 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
-    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
-    ax[0].plot(
+    ax[0, 0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
+    ax[0, 0].plot(
         T[1:],
         Corr_dQ2(0, T[1:])[0],
         label="Model",
     )
-    ax[0].set_xlabel("Time (min)")
-    ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[0].set_ylim([0, 6e-04])
-    ax[0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
-    ax[0].legend()
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
+    ax[0, 0].set_ylim([0, 6e-04])
+    ax[0, 0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
+    ax[0, 0].legend()
 
     # m = sp.optimize.curve_fit(
     #     f=Corr_dQ2_Integral_T,
@@ -1603,18 +1603,18 @@ if False:
     # )[0]
     # print(m)
 
-    ax[1].plot(R, dQ2dQ2[1][:26], label="Data")
-    ax[1].plot(R, Corr_dQ2(R, 2), label="Model")
-    ax[1].set_xlabel(r"$R (\mu m)$")
-    ax[1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[1].set_ylim([0, 6e-04])
-    ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=2$")
-    ax[1].legend()
+    ax[0, 1].plot(R, dQ2dQ2[1][:26], label="Data")
+    ax[0, 1].plot(R, Corr_dQ2(R, 2), label="Model")
+    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
+    ax[0, 1].set_ylim([0, 6e-04])
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=2$")
+    ax[0, 1].legend()
 
     Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
-    c = ax[2].pcolor(
+    c = ax[1, 0].pcolor(
         T,
         R,
         dQ2dQ2,
@@ -1623,12 +1623,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2])
-    ax[2].set_xlabel("Time (mins)")
-    ax[2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2].title.set_text(r"Experiment $\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Experiment $\langle \delta Q^2 \delta Q^2 \rangle$")
 
-    c = ax[3].pcolor(
+    c = ax[1, 1].pcolor(
         T,
         R,
         Corr_dQ2dQ2,
@@ -1637,10 +1637,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3])
-    ax[3].set_xlabel("Time (mins)")
-    ax[3].set_ylabel(r"$R (\mu m)$ ")
-    ax[3].title.set_text(r"Model $\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Model $\langle \delta Q^2 \delta Q^2 \rangle$")
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
@@ -1700,7 +1700,7 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -1713,13 +1713,13 @@ if False:
     # print(m)
     # B, D = m[0], m[1]
 
-    ax[0].plot(T, dP1dP1[:, 0], label="Data")
-    ax[0].plot(T, Corr_dP1(0, T)[0], label="Model")
-    ax[0].set_xlabel("Time (min)")
-    ax[0].set_ylabel(r"$\delta P_1$ Correlation")
-    ax[0].set_ylim([-2e-06, 4e-05])
-    ax[0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
-    ax[0].legend()
+    ax[0, 0].plot(T, dP1dP1[:, 0], label="Data")
+    ax[0, 0].plot(T, Corr_dP1(0, T)[0], label="Model")
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$\delta P_1$ Correlation")
+    ax[0, 0].set_ylim([-2e-06, 4e-05])
+    ax[0, 0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
+    ax[0, 0].legend()
 
     # m = sp.optimize.curve_fit(
     #     f=Corr_dP1_Integral_T,
@@ -1730,18 +1730,18 @@ if False:
     # )[0]
     # print(m)
 
-    ax[1].plot(R, dP1dP1[0][:26], label="Data")
-    ax[1].plot(R, Corr_dP1(R, 0), label="Model")
-    ax[1].set_xlabel(r"$R (\mu m)$")
-    ax[1].set_ylabel(r"$\delta P_1$ Correlation")
-    ax[1].set_ylim([-2e-06, 4e-05])
-    ax[1].title.set_text(r"Correlation of $\delta P_1$, $T=0$")
-    ax[1].legend()
+    ax[0, 1].plot(R, dP1dP1[0][:26], label="Data")
+    ax[0, 1].plot(R, Corr_dP1(R, 0), label="Model")
+    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta P_1$ Correlation")
+    ax[0, 1].set_ylim([-2e-06, 4e-05])
+    ax[0, 1].title.set_text(r"Correlation of $\delta P_1$, $T=0$")
+    ax[0, 1].legend()
 
     Corr_dP1dP1 = np.swapaxes(Corr_dP1(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dP1dP1, -dP1dP1])
-    c = ax[2].pcolor(
+    c = ax[1, 0].pcolor(
         T,
         R,
         dP1dP1,
@@ -1750,12 +1750,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2])
-    ax[2].set_xlabel("Time (mins)")
-    ax[2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2].title.set_text(r"Exp. $\langle \delta P_1 \delta P_1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Exp. $\langle \delta P_1 \delta P_1 \rangle$")
 
-    c = ax[3].pcolor(
+    c = ax[1, 1].pcolor(
         T,
         R,
         Corr_dP1dP1,
@@ -1764,10 +1764,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3])
-    ax[3].set_xlabel("Time (mins)")
-    ax[3].set_ylabel(r"$R (\mu m)$ ")
-    ax[3].title.set_text(r"Model $\langle \delta P_1 \delta P_1 \rangle$", y=1)
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Model $\langle \delta P_1 \delta P_1 \rangle$")
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
@@ -1820,7 +1820,7 @@ if False:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -1831,26 +1831,26 @@ if False:
     #     p0=(0.0001),
     # )[0]
 
-    ax[0].plot(T, dP2dP2[:, 0], label="Data")
-    ax[0].plot(T, Corr_dP2(0, T)[0], label="Model")
-    ax[0].set_xlabel("Time (min)")
-    ax[0].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[0].set_ylim([-2e-06, 2.7e-05])
-    ax[0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
-    ax[0].legend()
+    ax[0, 0].plot(T, dP2dP2[:, 0], label="Data")
+    ax[0, 0].plot(T, Corr_dP2(0, T)[0], label="Model")
+    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_ylabel(r"$\delta P_2$ Correlation")
+    ax[0, 0].set_ylim([-2e-06, 2.7e-05])
+    ax[0, 0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
+    ax[0, 0].legend()
 
-    ax[1].plot(R, dP2dP2[0][:26], label="Data")
-    ax[1].plot(R, Corr_dP2(R, 0), label="Model")
-    ax[1].set_xlabel(r"$R (\mu m)$")
-    ax[1].set_ylabel(r"$\delta P_2$ Correlation")
-    ax[1].set_ylim([-2e-06, 2.7e-05])
-    ax[1].title.set_text(r"Correlation of $\delta P_2$, $T=0$")
-    ax[1].legend()
+    ax[0, 1].plot(R, dP2dP2[0][:26], label="Data")
+    ax[0, 1].plot(R, Corr_dP2(R, 0), label="Model")
+    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta P_2$ Correlation")
+    ax[0, 1].set_ylim([-2e-06, 2.7e-05])
+    ax[0, 1].title.set_text(r"Correlation of $\delta P_2$, $T=0$")
+    ax[0, 1].legend()
 
     Corr_dP2dP2 = np.swapaxes(Corr_dP2(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dP2dP2, -dP2dP2])
-    c = ax[2].pcolor(
+    c = ax[1, 0].pcolor(
         T,
         R,
         dP2dP2,
@@ -1859,12 +1859,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2])
-    ax[2].set_xlabel("Time (mins)")
-    ax[2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2].title.set_text(r"Exp. $\langle \delta P_2 \delta P_2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Exp. $\langle \delta P_2 \delta P_2 \rangle$")
 
-    c = ax[3].pcolor(
+    c = ax[1, 1].pcolor(
         T,
         R,
         Corr_dP2dP2,
@@ -1873,10 +1873,10 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3])
-    ax[3].set_xlabel("Time (mins)")
-    ax[3].set_ylabel(r"$R (\mu m)$ ")
-    ax[3].title.set_text(r"Model $\langle \delta P_2 \delta P_2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Model $\langle \delta P_2 \delta P_2 \rangle$")
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
@@ -1897,13 +1897,13 @@ if False:
         return C / T
 
     def Corr_Rho_R(R, D):
-        C = 0.008226129102387299
-        T = 50
+        C = 0.0042179
+        T = 30
         return C / T * np.exp(-(R**2) / (4 * D * T))
 
     def Corr_Rho(R, T):
-        C = 0.008226129102387299
-        D = 2.935490027205022
+        C = 0.0042179
+        D = 3.78862204
         return C / T * np.exp(-(R**2) / (4 * D * T))
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
@@ -1926,43 +1926,43 @@ if False:
     R = np.linspace(0, 60, 7)
     T = np.linspace(10, 170, 17)
 
-    fig, ax = plt.subplots(4, 1, figsize=(4, 16))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 8))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
     m = sp.optimize.curve_fit(
         f=Corr_Rho_T,
-        xdata=T[4:],
-        ydata=dRhodRho[5:, 0],
+        xdata=T[2:],
+        ydata=dRhodRho[3:, 0],
         p0=0.003,
     )[0]
     print(m[0])
 
-    ax[0].plot(T, dRhodRho[1:, 0])
-    ax[0].plot(T, Corr_Rho_T(T, m[0]))
-    ax[0].set_xlabel(r"Time (mins)")
-    ax[0].set_ylabel(r"$\delta \rho_s$ Correlation")
-    ax[0].set_ylim([-2e-5, 6e-4])
-    ax[0].title.set_text(r"$\langle \delta \rho_s \delta \rho_s \rangle$, $R=0$")
+    ax[0, 0].plot(T, dRhodRho[1:, 0])
+    ax[0, 0].plot(T, Corr_Rho_T(T, m[0]))
+    ax[0, 0].set_xlabel(r"Time (mins)")
+    ax[0, 0].set_ylabel(r"$\delta \rho_n$ Correlation")
+    ax[0, 0].set_ylim([-2e-5, 6e-4])
+    ax[0, 0].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $R=0$")
 
     m = sp.optimize.curve_fit(
         f=Corr_Rho_R,
         xdata=R[1:],
-        ydata=dRhodRho[4][1:],
+        ydata=dRhodRho[3][1:],
         p0=(10),
     )[0]
     print(m[0])
 
-    ax[1].plot(R, dRhodRho[1])
-    ax[1].plot(R, Corr_Rho_R(R, m[0]))
-    ax[1].set_xlabel(r"$R (\mu m)$")
-    ax[1].set_ylabel(r"$\delta \rho_s$ Correlation")
-    ax[1].set_ylim([-2e-5, 6e-4])
-    ax[1].title.set_text(r"$\langle \delta \rho_s \delta \rho_s \rangle$, $T=50$")
+    ax[0, 1].plot(R, dRhodRho[3])
+    ax[0, 1].plot(R, Corr_Rho_R(R, m[0]))
+    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta \rho_n$ Correlation")
+    ax[0, 1].set_ylim([-2e-5, 6e-4])
+    ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $T=30$")
 
     R, T = np.meshgrid(R, T)
     maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])
-    c = ax[2].pcolor(
+    c = ax[1, 0].pcolor(
         T,
         R,
         dRhodRho[1:],
@@ -1971,12 +1971,12 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2])
-    ax[2].set_xlabel("Time (mins)")
-    ax[2].set_ylabel(r"$R (\mu m)$ ")
-    ax[2].title.set_text(r"Experiment $\langle \delta \rho_s \delta \rho_s \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Experiment $\langle \delta \rho_n \delta \rho_n \rangle$")
 
-    c = ax[3].pcolor(
+    c = ax[1, 1].pcolor(
         T,
         R,
         Corr_Rho(R, T),
@@ -1985,17 +1985,17 @@ if False:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3])
-    ax[3].set_xlabel("Time (mins)")
-    ax[3].set_ylabel(r"$R (\mu m)$ ")
-    ax[3].title.set_text(r"Model $\langle \delta \rho_s \delta \rho_s \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Model $\langle \delta \rho_n\delta \rho_n \rangle$")
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.4, hspace=0.45
     )
 
     fig.savefig(
-        f"results/Correlation dRho in T and R model",
+        f"results/Correlation dRho_n in T and R model",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2027,7 +2027,7 @@ if False:
 
     R = np.linspace(0, 60, 7)
 
-    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
 
     m = sp.optimize.curve_fit(
         f=Corr_dRho_S,
@@ -2087,7 +2087,7 @@ if False:
 
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(2, 1, figsize=(4, 8))
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 
     m = sp.optimize.curve_fit(
         f=Corr_dV,

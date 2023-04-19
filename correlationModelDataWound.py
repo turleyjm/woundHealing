@@ -90,7 +90,7 @@ timeGrid = 51
 if True:
     dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
 
-    fig, ax = plt.subplots(4, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(3, 4, figsize=(20, 12))
 
     T, R, Theta = dfCor["dRhodRhoClose"].iloc[0].shape
 
@@ -135,9 +135,11 @@ if True:
     fig.colorbar(c, ax=ax[0, 0])
     ax[0, 0].set_xlabel("Time (mins)")
     ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 0].title.set_text(r"Close to wound $\langle \delta \rho \delta \rho \rangle$")
+    ax[0, 0].title.set_text(
+        r"Close to wound $\langle \delta \rho_n \delta \rho_n \rangle$"
+    )
 
-    c = ax[1, 0].pcolor(
+    c = ax[0, 1].pcolor(
         t,
         r,
         dRhodRhoFar,
@@ -146,10 +148,12 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 0].title.set_text(r"Far from wound $\langle \delta \rho \delta \rho \rangle$")
+    fig.colorbar(c, ax=ax[0, 1])
+    ax[0, 1].set_xlabel("Time (mins)")
+    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].title.set_text(
+        r"Far from wound $\langle \delta \rho_n \delta \rho_n \rangle$"
+    )
 
     T, R, Theta = dfCor["dQ1dQ1Close"].iloc[0].shape
 
@@ -193,7 +197,7 @@ if True:
             -np.nan_to_num(dQ1dQ1Far),
         ]
     )
-    c = ax[0, 1].pcolor(
+    c = ax[0, 2].pcolor(
         t,
         r,
         dQ1dQ1Close,
@@ -202,12 +206,12 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (mins)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 1].title.set_text(r"Close to wound $\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[0, 2])
+    ax[0, 2].set_xlabel("Time (mins)")
+    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].title.set_text(r"Close to wound $\langle \delta Q^1 \delta Q^1 \rangle$")
 
-    c = ax[1, 1].pcolor(
+    c = ax[0, 3].pcolor(
         t,
         r,
         dQ1dQ1Far,
@@ -216,10 +220,10 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 1].title.set_text(r"Far from wound $\langle \delta Q^1 \delta Q^1 \rangle$")
+    fig.colorbar(c, ax=ax[0, 3])
+    ax[0, 3].set_xlabel("Time (mins)")
+    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].title.set_text(r"Far from wound $\langle \delta Q^1 \delta Q^1 \rangle$")
 
     maxCorr = np.max(
         [
@@ -229,7 +233,7 @@ if True:
             -np.nan_to_num(dQ2dQ2Far),
         ]
     )
-    c = ax[0, 2].pcolor(
+    c = ax[1, 0].pcolor(
         t,
         r,
         dQ2dQ2Close,
@@ -238,12 +242,12 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[0, 2])
-    ax[0, 2].set_xlabel("Time (mins)")
-    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[0, 2].title.set_text(r"Close to wound $\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 0])
+    ax[1, 0].set_xlabel("Time (mins)")
+    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].title.set_text(r"Close to wound $\langle \delta Q^2 \delta Q^2 \rangle$")
 
-    c = ax[1, 2].pcolor(
+    c = ax[1, 1].pcolor(
         t,
         r,
         dQ2dQ2Far,
@@ -252,10 +256,10 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
-    ax[1, 2].title.set_text(r"Far from wound $\langle \delta Q^2 \delta Q^2 \rangle$")
+    fig.colorbar(c, ax=ax[1, 1])
+    ax[1, 1].set_xlabel("Time (mins)")
+    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].title.set_text(r"Far from wound $\langle \delta Q^2 \delta Q^2 \rangle$")
 
     dV1dV1Close = np.zeros([len(filenames), T, R - 1])
     dV1dV1Far = np.zeros([len(filenames), T, R - 1])
@@ -295,7 +299,7 @@ if True:
             -np.nan_to_num(dV1dV1Far),
         ]
     )
-    c = ax[2, 0].pcolor(
+    c = ax[1, 2].pcolor(
         t,
         r,
         dV1dV1Close,
@@ -304,12 +308,12 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[2, 0].title.set_text(r"Close to wound $\langle \delta V_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 2])
+    ax[1, 2].set_xlabel("Time (mins)")
+    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].title.set_text(r"Close to wound $\langle \delta V_1 \delta V_1 \rangle$")
 
-    c = ax[3, 0].pcolor(
+    c = ax[1, 3].pcolor(
         t,
         r,
         dV1dV1Far,
@@ -318,10 +322,10 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 0])
-    ax[3, 0].set_xlabel("Time (mins)")
-    ax[3, 0].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 0].title.set_text(r"Far from wound $\langle \delta V_1 \delta V_1 \rangle$")
+    fig.colorbar(c, ax=ax[1, 3])
+    ax[1, 3].set_xlabel("Time (mins)")
+    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].title.set_text(r"Far from wound $\langle \delta V_1 \delta V_1 \rangle$")
 
     maxCorr = np.max(
         [
@@ -345,7 +349,7 @@ if True:
     ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
     ax[2, 1].title.set_text(r"Close to wound $\langle \delta V_2 \delta V_2 \rangle$")
 
-    c = ax[3, 1].pcolor(
+    c = ax[2, 2].pcolor(
         t,
         r,
         dV2dV2Far,
@@ -354,10 +358,10 @@ if True:
         vmax=maxCorr,
         shading="auto",
     )
-    fig.colorbar(c, ax=ax[3, 1])
-    ax[3, 1].set_xlabel("Time (mins)")
-    ax[3, 1].set_ylabel(r"$R (\mu m)$ ")
-    ax[3, 1].title.set_text(r"Far from wound $\langle \delta V_2 \delta V_2 \rangle$")
+    fig.colorbar(c, ax=ax[2, 2])
+    ax[2, 2].set_xlabel("Time (mins)")
+    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].title.set_text(r"Far from wound $\langle \delta V_2 \delta V_2 \rangle$")
     # plt.subplot_tool()
     plt.subplots_adjust(
         left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.4, hspace=0.45

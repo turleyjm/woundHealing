@@ -150,7 +150,7 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])

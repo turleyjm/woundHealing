@@ -30,8 +30,10 @@ plt.rcParams.update({"font.size": 20})
 
 # ---- individual conditions ----
 
+# fileType = "Unwound28h"
+# fileType = "Unwound15h"
 
-fileType = "Unwound18h"
+# fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
@@ -54,7 +56,7 @@ fileType = "Unwound18h"
 # fileType = "AllWound"
 
 # fileType = "18h"
-# fileType = "wt"
+fileType = "wt"
 # fileType = "JNK"
 # fileType = "Ca"
 # fileType = "rpr"
@@ -115,6 +117,9 @@ def getFilesTypes(fileType=fileType):
             "UnwoundJNK",
             "WoundLJNK",
             "WoundSJNK",
+            "Unwoundrpr",
+            "WoundLrpr",
+            "WoundSrpr",
         ]
         # fileTypes = [
         #     "Unwound18h",
@@ -131,10 +136,19 @@ def getFilesTypes(fileType=fileType):
         #     "WoundSrpr",
         # ]
     elif fileType == "AllWound":
-        fileTypes = ["WoundL18h", "WoundS18h", "WoundLJNK", "WoundSJNK"]
+        fileTypes = [
+            "WoundL18h",
+            "WoundS18h",
+            "WoundLJNK",
+            "WoundSJNK",
+            "WoundLrpr",
+            "WoundSrpr",
+        ]
 
     elif fileType == "18h":
         fileTypes = ["Unwound18h", "WoundL18h", "WoundS18h"]
+    elif fileType == "wt":
+        fileTypes = ["Unwound18h", "Unwound28h"]  # , "Unwound15h"]
     elif fileType == "JNK":
         fileTypes = ["UnwoundJNK", "WoundLJNK", "WoundSJNK"]
     elif fileType == "Ca":
@@ -147,10 +161,10 @@ def getFilesTypes(fileType=fileType):
         fileTypes = ["Unwound18h", "UnwoundJNK", "Unwoundrpr"]
     elif fileType == "WoundL":
         # fileTypes = ["WoundL18h", "WoundLJNK", "WoundLCa", "WoundLrpr"]
-        fileTypes = ["WoundL18h", "WoundLJNK"]
+        fileTypes = ["WoundL18h", "WoundLJNK", "WoundLrpr"]
     elif fileType == "WoundS":
         # fileTypes = ["WoundS18h", "WoundSJNK", "WoundSCa", "WoundSrpr"]
-        fileTypes = ["WoundS18h", "WoundSJNK"]
+        fileTypes = ["WoundS18h", "WoundSJNK", "WoundSrpr"]
 
     else:
         fileTypes = [fileType]
@@ -168,6 +182,10 @@ def getFileTitle(fileType):
         fileTitle = "small wound wt"
     elif fileType == "Unwound18h":
         fileTitle = "unwounded wt"
+    elif fileType == "Unwound28h":
+        fileTitle = "unwounded wt 28h"
+    elif fileType == "Unwound15h":
+        fileTitle = "unwounded wt 15h"
 
     elif fileType == "WoundLJNK":
         fileTitle = "large wound JNK DN"
@@ -202,6 +220,8 @@ def getgroupTitle(fileTypes):
 
     elif fileTypes == "18h":
         groupTitle = "wild type"
+    elif fileTypes == "wt":
+        groupTitle = "wild type times"
     elif fileTypes == "JNK":
         groupTitle = "JNK DN"
     elif fileTypes == "Ca":
@@ -293,9 +313,12 @@ def getColorLineMarker(fileType, groupTitle):
         or groupTitle == "JNK DN"
         or groupTitle == "Ca RNAi"
         or groupTitle == "immune ablation"
+        or groupTitle == "wild type times"
     ):
         colorDict = {
             "Unwound18h": [3, "o"],
+            "Unwound28h": [10, "o"],
+            "Unwound15h": [20, "o"],
             "WoundL18h": [10, "^"],
             "WoundS18h": [20, "s"],
             "UnwoundJNK": [3, ">"],

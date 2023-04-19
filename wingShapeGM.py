@@ -81,7 +81,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -116,7 +116,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q2 tensor
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -151,7 +151,7 @@ if False:
     plt.close("all")
 
 # compare: Mean P1
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -186,7 +186,7 @@ if False:
     plt.close("all")
 
 # compare: Mean P2
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -221,7 +221,7 @@ if False:
     plt.close("all")
 
 # compare: Mean rho
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -277,7 +277,7 @@ if True:
 
                 prob = heatmap / q.shape[0]
                 p = prob[prob != 0]
-                if True:
+                if False:
                     if i == 0:
                         if t in times:
                             x, y = np.mgrid[-0.1:0.11:0.01, -0.1:0.11:0.01]

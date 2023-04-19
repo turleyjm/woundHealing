@@ -1028,7 +1028,7 @@ if False:
         tifffile.imwrite(f"results/displayProperties/tissue_dq1{filename}.tif", dQ1)
 
 # Director dQ field heatmap wound
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     cm = plt.get_cmap("RdBu_r")
     for filename in filenames:
@@ -1181,3 +1181,19 @@ if False:
         tifffile.imwrite(f"results/displayProperties/Area{filename}.tif", Area)
         # imgLabel = np.asarray(imgLabel, "uint16")
         # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
+
+if True:
+    filename = "WoundL18h10"
+    focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+    (T, X, Y, rgb) = focus.shape
+    dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
+    close = np.zeros([X, Y])
+    far = np.zeros([X, Y])
+
+    close[(dist[0] < 30 / scale) & (dist[0] > 0)] = 128
+    far[dist[60] > 30 / scale] = 128
+
+    close = np.asarray(close, "uint8")
+    tifffile.imwrite(f"results/displayProperties/close{filename}.tif", close)
+    far = np.asarray(far, "uint8")
+    tifffile.imwrite(f"results/displayProperties/far{filename}.tif", far)

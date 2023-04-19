@@ -51,7 +51,22 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwound wt",
+                "Type": "Unwound18h wt",
+                "Filename": filename,
+                "q": np.mean(df["q"][df["T"] < 8])[0, 0],
+            }
+        )
+        # q = np.mean(df["q"][df["T"] < 8])[0, 0]
+        # print(f"{filename}: {q}")
+
+    fileType = "Unwound28h"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        _df.append(
+            {
+                "Type": "Unwound28h wt",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
@@ -157,8 +172,43 @@ if True:
         # q = np.mean(df["q"][df["T"] < 8])[0, 0]
         # print(f"{filename}: {q}")
 
+    fileType = "WoundSrpr"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{util.Prewound(fileType)}.pkl")
+    for filename in filenames:
+        filenamePre = util.Prewound(filename)
+        df = dfShape[dfShape["Filename"] == filenamePre]
+        if len(df) > 0:
+            _df.append(
+                {
+                    "Type": "Prewound Immune ab.",
+                    "Filename": filenamePre,
+                    "q": np.mean(df["q"])[0, 0],
+                }
+            )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
+
+    fileType = "WoundLrpr"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{util.Prewound(fileType)}.pkl")
+    for filename in filenames:
+        filenamePre = util.Prewound(filename)
+        df = dfShape[dfShape["Filename"] == filenamePre]
+        if len(df) > 0:
+            _df.append(
+                {
+                    "Type": "Prewound Immune ab.",
+                    "Filename": filenamePre,
+                    "q": np.mean(df["q"])[0, 0],
+                }
+            )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
+
     df = pd.DataFrame(_df)
-    sns.boxplot(y="q", x="Type", data=df, boxprops={"facecolor": "None"})
+    ax = sns.boxplot(y="q", x="Type", data=df, boxprops={"facecolor": "None"})
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=30)
     sns_plot = sns.swarmplot(data=df, y="q", x="Type")
     fig = sns_plot.get_figure()
     fig.savefig(
@@ -168,7 +218,7 @@ if True:
         bbox_inches="tight",
     )
     plt.close("all")
-    # sp.stats.ttest_ind(df["q"][(df["Type"]=="Prewound wt") & (df["q"]<0.03)], df["q"][df["Type"]=="Prewound JNK"])
+    # sp.stats.ttest_ind(df["q"][df["Type"]=="Unwound Immune ab."], df["q"][df["Type"]=="Prewound rpr"])
 
 # division density for prewound and early unwounded
 if False:
