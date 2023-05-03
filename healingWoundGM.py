@@ -40,8 +40,12 @@ T = 93
 # Compare wounds: Mean wound area
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    ax.vlines(10, -100, 1500, colors="r", linestyles="dashed")
+    ax.set_ylim([0, 1250])
     i = 0
     for fileType in fileTypes:
+        if "Unw" in fileType:
+            continue
         filenames, fileType = util.getFilesType(fileType)
         _df = []
         Area0 = []
@@ -51,7 +55,8 @@ if True:
             dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
             T = len(dfWound)
             area = np.array(dfWound["Area"]) * (scale) ** 2
-            Area0.append(area[0])
+            t10 = 5 - int(t0 / 2)
+            Area0.append(area[t10])
 
             for t in range(T):
                 if area[t] > area[0] * 0.2:

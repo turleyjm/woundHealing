@@ -309,7 +309,7 @@ if False:
         plt.close("all")
 
 # Individual: Change in divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])

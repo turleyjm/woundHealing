@@ -92,6 +92,46 @@ if False:
     )
     plt.close("all")
 
+# compare: Mean velocity of cells in tissue in r
+if False:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    for fileType in fileTypes:
+        filenames = util.getFilesType(fileType)[0]
+        dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
+        df = dfVelocityMean[dfVelocityMean["Filename"] == filenames[0]]
+        n = len(df)
+        V = np.zeros([len(filenames), n])
+        for i in range(len(filenames)):
+            filename = filenames[i]
+            df = dfVelocityMean[dfVelocityMean["Filename"] == filename]
+            mig = 0
+            for t in range(n):
+                v = np.mean(df["V"][df["T"] == t], axis=0) / 2
+                V[i, int(t)] = (v[0] ** 2 + v[1] ** 2) ** 0.5
+
+        time = 2 * np.array(range(int(T)))
+
+        std = np.std(V, axis=0)
+        V = np.mean(V, axis=0)
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
+        fileTitle = util.getFileTitle(fileType)
+        ax.plot(time, V, label=fileTitle, color=colour, marker=mark, markevery=10)
+        ax.fill_between(time, V - std, V + std, alpha=0.15, color=colour)
+
+    ax.set(xlabel="Time (mins)", ylabel=r"$\bar{V}$ ($\mu m / min$)")
+    boldTitle = util.getBoldTitle(groupTitle)
+    ax.title.set_text(r"Mean $V$" + f" of cells \n in tissue {boldTitle}")
+    ax.set_ylim([0, 0.75])
+    ax.legend(loc="upper left", fontsize=12)
+
+    fig.savefig(
+        f"results/Mean velocity magnitude of cells in tissue {groupTitle}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
 # compare: Mean migration of cells in tissue in r
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))

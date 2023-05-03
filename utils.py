@@ -202,11 +202,11 @@ def getFileTitle(fileType):
         fileTitle = "unwounded Ca RNAi"
 
     elif fileType == "WoundLrpr":
-        fileTitle = "large wound immune ablation"
+        fileTitle = "large wound imm. abl."
     elif fileType == "WoundSrpr":
-        fileTitle = "small wound immune ablation"
+        fileTitle = "small wound imm. abl."
     elif fileType == "Unwoundrpr":
-        fileTitle = "unwounded immune ablation"
+        fileTitle = "unwounded imm. abl."
 
     return fileTitle
 

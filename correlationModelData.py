@@ -481,6 +481,7 @@ if False:
     ax[0, 3].set_xlabel("Time (mins)")
     ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
     ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
+    print(np.max([np.max(dQ2dRho), np.max(-dQ2dRho)]), "dQ2dRho")
 
     T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
@@ -636,6 +637,7 @@ if False:
     ax[2, 1].set_xlabel("Time (mins)")
     ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
     ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
+    print(np.max([np.max(dP1dQ1), np.max(-dP1dQ1)]))
 
     c = ax[2, 2].pcolor(
         t,
@@ -650,6 +652,7 @@ if False:
     ax[2, 2].set_xlabel("Time (mins)")
     ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
     ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
+    print(np.max([np.max(dP1dQ2), np.max(-dP1dQ2)]), "dP1dQ2")
 
     c = ax[2, 3].pcolor(
         t,
@@ -664,6 +667,7 @@ if False:
     ax[2, 3].set_xlabel("Time (mins)")
     ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
     ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
+    print(np.max([np.max(dP2dQ2), np.max(-dP2dQ2)]), "dP2dQ2")
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -1419,13 +1423,12 @@ if False:
     def Corr_dQ1_Integral_T(R, L):
         B = 0.006533824439392692
         C = 0.00055
-        T = 2
+        T = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
         return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
 
-    def Corr_dQ1_Integral_R(T, L):
-        B = 0.006533824439392692
+    def Corr_dQ1_Integral_R(T, B, L):
         C = 0.00055
         R = 0
         k = np.linspace(0, 4, 200000)
@@ -1466,13 +1469,13 @@ if False:
     #     f=Corr_dQ1_Integral_R,
     #     xdata=T[1:],
     #     ydata=dQ1dQ1[:, 0][1:],
-    #     p0=(4),
+    #     p0=(4, 0.1),
     # )[0]
     # print(m)
 
     ax[0, 0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
     ax[0, 0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
-    # ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0]), label="Model")
+    # ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model")
     ax[0, 0].set_xlabel("Time (min)")
     ax[0, 0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
     ax[0, 0].set_ylim([0, 5.9e-04])
@@ -1488,13 +1491,13 @@ if False:
     # )[0]
     # print(m)
 
-    ax[0, 1].plot(R, dQ1dQ1[1][:26], label="Data")
-    ax[0, 1].plot(R, Corr_dQ1(R, 2), label="Model")
+    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
     # ax[0, 1].plot(R, Corr_dQ1_Integral_T(R, m[0]), label="Model")
     ax[0, 1].set_xlabel(r"$R (\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
     ax[0, 1].set_ylim([0, 5.9e-04])
-    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=2$")
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=0$")
     ax[0, 1].legend()
 
     Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
@@ -1545,7 +1548,7 @@ if False:
     def Corr_dQ2_Integral_T(R, C):
         B = 0.006533824439392692
         L = 2.1
-        T = 2
+        T = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
         return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
@@ -1603,12 +1606,12 @@ if False:
     # )[0]
     # print(m)
 
-    ax[0, 1].plot(R, dQ2dQ2[1][:26], label="Data")
-    ax[0, 1].plot(R, Corr_dQ2(R, 2), label="Model")
+    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26], label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
     ax[0, 1].set_xlabel(r"$R (\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[0, 1].set_ylim([0, 6e-04])
-    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=2$")
+    ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=0$")
     ax[0, 1].legend()
 
     Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
@@ -2097,33 +2100,33 @@ if False:
 
     m = sp.optimize.curve_fit(
         f=Corr_dV,
-        xdata=R[3:],
-        ydata=dV1dV1_r[3:],
+        xdata=R[5:],
+        ydata=dV1dV1_r[5:],
         p0=(0.23, 0.04),
     )[0]
     print(m)
 
-    ax[0].plot(R, dV1dV1_r, label="Data")
-    ax[0].plot(R, Corr_dV(R, m[0], m[1]), label="Model")
+    ax[0].plot(R[5:], dV1dV1_r[5:], label="Data")
+    ax[0].plot(R[5:], Corr_dV(R[5:], 0.08, m[1]), label="Model")
     ax[0].set_xlabel(r"$R (\mu m)$")
     ax[0].set_ylabel(r"$\delta V_1$ Correlation")
-    # ax[0].set_ylim([0, 4.5e-04])
+    ax[0].set_ylim([0, 0.04])
     ax[0].title.set_text(r"Correlation of $\delta V_1$")
     ax[0].legend()
 
     m = sp.optimize.curve_fit(
         f=Corr_dV,
-        xdata=R[3:],
-        ydata=dV2dV2_r[3:],
+        xdata=R[5:],
+        ydata=dV2dV2_r[5:],
         p0=(0.23, 0.04),
     )[0]
     print(m)
 
-    ax[1].plot(R, dV2dV2_r, label="Data")
-    ax[1].plot(R, Corr_dV(R, m[0], m[1]), label="Model")
+    ax[1].plot(R[5:], dV2dV2_r[5:], label="Data")
+    ax[1].plot(R[5:], Corr_dV(R[5:], 0.08, m[1]), label="Model")
     ax[1].set_xlabel(r"$R (\mu m)$")
     ax[1].set_ylabel(r"$\delta V_2$ Correlation")
-    # ax[1].set_ylim([0, 4.5e-04])
+    ax[1].set_ylim([0, 0.04])
     ax[1].title.set_text(r"Correlation of $\delta V_2$")
     ax[1].legend()
 

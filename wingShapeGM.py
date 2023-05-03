@@ -81,7 +81,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -102,7 +102,7 @@ if True:
         ax.plot(time, Q1, label=fileTitle, color=colour, marker=mark, markevery=10)
         ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
 
-    ax.set_ylim([0, 0.042])
+    ax.set_ylim([-0.005, 0.045])
     ax.legend(loc="upper left", fontsize=12)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(1)}$")
     boldTitle = util.getBoldTitle(groupTitle)
@@ -116,7 +116,7 @@ if True:
     plt.close("all")
 
 # compare: Mean Q2 tensor
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -137,7 +137,7 @@ if True:
         ax.plot(time, Q2, label=fileTitle, color=colour, marker=mark, markevery=10)
         ax.fill_between(time, Q2 - std, Q2 + std, alpha=0.15, color=colour)
 
-    ax.set_ylim([-0.02, 0.02])
+    ax.set_ylim([-0.025, 0.025])
     ax.legend(loc="upper left", fontsize=12)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(2)}$")
     boldTitle = util.getBoldTitle(groupTitle)
@@ -151,7 +151,7 @@ if True:
     plt.close("all")
 
 # compare: Mean P1
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -186,7 +186,7 @@ if True:
     plt.close("all")
 
 # compare: Mean P2
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -221,7 +221,7 @@ if True:
     plt.close("all")
 
 # compare: Mean rho
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -277,7 +277,7 @@ if True:
 
                 prob = heatmap / q.shape[0]
                 p = prob[prob != 0]
-                if False:
+                if True:
                     if i == 0:
                         if t in times:
                             x, y = np.mgrid[-0.1:0.11:0.01, -0.1:0.11:0.01]
@@ -327,10 +327,23 @@ if True:
         ent = np.mean(ent, axis=0)
         colour, mark = util.getColorLineMarker(fileType, groupTitle)
         fileTitle = util.getFileTitle(fileType)
-        ax.plot(time, ent, label=fileTitle, color=colour, marker=mark, markevery=10)
-        ax.fill_between(time, ent - std, ent + std, alpha=0.15, color=colour)
+        ax.plot(
+            time[:80],
+            ent[:80],
+            label=fileTitle,
+            color=colour,
+            marker=mark,
+            markevery=10,
+        )
+        ax.fill_between(
+            time[:80],
+            ent[:80] - std[:80],
+            ent[:80] + std[:80],
+            alpha=0.15,
+            color=colour,
+        )
 
-    ax.set_ylim([3.85, 4.65])
+    ax.set_ylim([4, 4.65])
     ax.legend(loc="lower left", fontsize=12)
     ax.set(xlabel="Time (mins)", ylabel="Shannon entropy")
     boldTitle = util.getBoldTitle(groupTitle)

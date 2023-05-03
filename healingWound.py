@@ -35,7 +35,7 @@ filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 93
 
-#Mean Wound Area
+# Mean Wound Area
 if False:
     fig = plt.figure(1, figsize=(9, 8))
     sf = []
@@ -107,7 +107,7 @@ if False:
     )
     plt.close("all")
 
-#Mean Wound Area with invial
+# Mean Wound Area with invial
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(6, 6))
     sf = []
@@ -117,6 +117,8 @@ if True:
     _df = []
     for filename in filenames:
         t0 = util.findStartTime(filename)
+        if filename == "WoundL18h18":
+            continue
 
         dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
         sf.append(dfWound["Shape Factor"].iloc[0])
@@ -139,7 +141,13 @@ if True:
         for t in range(T):
             if area[t] > area[0] * 0.2:
                 R[t].append(area[t])
-                _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
+                _df.append(
+                    {
+                        "Filename": filename,
+                        "Area": area[t],
+                        "Time": int(t0 / 2 + 0.01) * 2 + 2 * t,
+                    }
+                )
 
         A = area[area > area[0] * 0.2]
         # print(f"{filename} {area[0]}")
@@ -160,8 +168,8 @@ if True:
     A = np.array(A)
     std = np.array(std)
 
-    plt.plot(Time, A, linewidth=3, color='k')
-    ax.fill_between(Time, A - std, A + std, alpha=0.2, color='k')
+    plt.plot(Time, A, linewidth=3, color="k")
+    ax.fill_between(Time, A - std, A + std, alpha=0.2, color="k")
     plt.xlabel("Time")
     plt.ylabel(r" Mean Area ($\mu m ^2$)")
     plt.title(f"Mean Area {fileType}")
@@ -554,7 +562,14 @@ if False:
 
 # run all Mean Wound Area
 if False:
-    fileTypes = ["WoundS18h", "WoundL18h", "WoundXL18h", "WoundSJNK", "WoundLJNK", "WoundXLJNK"]
+    fileTypes = [
+        "WoundS18h",
+        "WoundL18h",
+        "WoundXL18h",
+        "WoundSJNK",
+        "WoundLJNK",
+        "WoundXLJNK",
+    ]
     for fileType in fileTypes:
         filenames, fileType = util.getFilesType(fileType)
 
@@ -649,7 +664,6 @@ if False:
                     R[t].append(area[t])
                     _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
 
-
         df = pd.DataFrame(_df)
         A = []
         Time = []
@@ -699,7 +713,6 @@ if False:
                     R[t].append(area[t])
                     _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
 
-
         df = pd.DataFrame(_df)
         A = []
         Time = []
@@ -748,7 +761,6 @@ if False:
                 if area[t] > area[0] * 0.2:
                     R[t].append(area[t])
                     _df.append({"Area": area[t], "Time": int(t0 / 2) * 2 + 2 * t})
-
 
         df = pd.DataFrame(_df)
         A = []

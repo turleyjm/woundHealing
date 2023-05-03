@@ -188,6 +188,7 @@ if True:
     _df2 = []
     _df = []
     for filename in filenames:
+        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
 
         df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         Q = np.mean(df["q"])
@@ -210,11 +211,12 @@ if True:
             )
 
             for i in range(len(dft)):
-                x = dft["X"].iloc[i] * scale
-                y = dft["Y"].iloc[i] * scale
+                x = dft["X"].iloc[i]
+                y = dft["Y"].iloc[i]
+                r = dist[t, int(511 - y), int(x)]
                 v = np.matmul(R, dft["Velocity"].iloc[i] * scale)
                 dv = np.matmul(R, dft["Velocity"].iloc[i] * scale) - V
-                [x, y] = np.matmul(R, np.array([x, y]))
+                [x, y] = np.matmul(R, np.array([x, y]) * scale)
 
                 _df2.append(
                     {
@@ -222,6 +224,7 @@ if True:
                         "T": t,
                         "X": x - mig[0],
                         "Y": y - mig[1],
+                        "R": r,
                         "V": V,
                         "dv": dv,
                         "v": v,
@@ -323,6 +326,7 @@ if True:
 
         df = pd.read_pickle(f"dat/{filename}/shape{filename}.pkl")
         dfFilename = dfVelocityMean[dfVelocityMean["Filename"] == filename]
+        dist = sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)
         mig = np.zeros(2)
         Q = np.mean(df["q"])
         theta0 = np.arctan2(Q[0, 1], Q[0, 0]) / 2
@@ -336,15 +340,16 @@ if True:
 
             for i in range(len(dft)):
                 [x, y] = [
-                    dft["Centroid"].iloc[i][0] * scale,
-                    dft["Centroid"].iloc[i][1] * scale,
+                    dft["Centroid"].iloc[i][0],
+                    dft["Centroid"].iloc[i][1],
                 ]
+                r = dist[t, int(512 - y), int(x)]
                 q = np.matmul(R, np.matmul(dft["q"].iloc[i], np.matrix.transpose(R)))
                 dq = q - Q
                 A = dft["Area"].iloc[i] * scale**2
                 TrQdq = np.trace(np.matmul(Q, dq))
                 dp = np.matmul(R, dft["Polar"].iloc[i]) - P
-                [x, y] = np.matmul(R, np.array([x, y]))
+                [x, y] = np.matmul(R, np.array([x, y]) * scale)
                 p = np.matmul(R, dft["Polar"].iloc[i])
 
                 _df2.append(
@@ -353,6 +358,7 @@ if True:
                         "T": t,
                         "X": x - mig[0],
                         "Y": y - mig[1],
+                        "R": r,
                         "Centroid": np.array(dft["Centroid"].iloc[i]) * scale,
                         "dq": dq,
                         "q": q,
@@ -577,7 +583,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divisions and Shape changes
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -961,7 +967,7 @@ if False:
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
 
 # Nucleus velocity relative to tissue for Prewound
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -1019,7 +1025,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
 
 # Cell division relative to tissue and wound for Prewound
-if False:
+if True:
     _df = []
     for filename in filenames:
         try:
@@ -1074,7 +1080,7 @@ if False:
     dfDivisions.to_pickle(f"databases/dfDivisions{util.Prewound(fileType)}.pkl")
 
 # Cell Shape relative to tissue for Prewound
-if False:
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
     dfVelocityMean = pd.read_pickle(

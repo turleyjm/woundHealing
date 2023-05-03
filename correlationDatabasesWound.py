@@ -344,7 +344,7 @@ if False:
 
 # space time cell-cell shape correlation close to wound
 if False:
-    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 27
     timeGrid = 51
 
@@ -384,9 +384,9 @@ if False:
             print(datetime.now().strftime("%H:%M:%S ") + filename)
             dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
             dfClose = dfShapeF[
-                np.array(dfShapeF["T"] < 60) & np.array(dfShapeF["R"] < 30)
+                np.array(dfShapeF["T"] < 30) & np.array(dfShapeF["R"] < 30 / scale)
             ]
-            n = int(len(dfClose) / 2)
+            n = int(len(dfClose) / 4)
             random.seed(10)
             count = 0
             Is = []
@@ -477,7 +477,7 @@ if False:
 
 # space time cell-cell shape correlation far from wound
 if False:
-    dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 27
     timeGrid = 51
 
@@ -516,7 +516,7 @@ if False:
             print(datetime.now().strftime("%H:%M:%S ") + filename)
             dfShapeF = dfShape[dfShape["Filename"] == filename].copy()
             dfFar = dfShapeF[
-                np.array(dfShapeF["T"] >= 90) & np.array(dfShapeF["R"] >= 30)
+                np.array(dfShapeF["T"] < 30) & np.array(dfShapeF["R"] >= 30 / scale)
             ]
             n = int(len(dfFar) / 10)
             random.seed(10)
@@ -611,7 +611,7 @@ if False:
 
 # space time velocity-velocity correlation Close to wound
 if False:
-    dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 27
     timeGrid = 51
 
@@ -649,10 +649,11 @@ if False:
 
             print(datetime.now().strftime("%H:%M:%S ") + filename)
             dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
-            dfFar = dfVelocityF[
-                np.array(dfVelocityF["T"] < 60) & np.array(dfVelocityF["R"] < 30)
+            dfClose = dfVelocityF[
+                np.array(dfVelocityF["T"] < 30)
+                & np.array(dfVelocityF["R"] < 30 / scale)
             ]
-            n = int(len(dfFar) / 2)
+            n = int(len(dfClose) / 4)
             random.seed(10)
             count = 0
             Is = []
@@ -665,11 +666,11 @@ if False:
                     print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
                     count += 1
 
-                x = dfFar["X"].iloc[i]
-                y = dfFar["Y"].iloc[i]
-                t = dfFar["T"].iloc[i]
-                dv1 = dfFar["dv"].iloc[i][0]
-                dv2 = dfFar["dv"].iloc[i][1]
+                x = dfClose["X"].iloc[i]
+                y = dfClose["Y"].iloc[i]
+                t = dfClose["T"].iloc[i]
+                dv1 = dfClose["dv"].iloc[i][0]
+                dv2 = dfClose["dv"].iloc[i][1]
                 dfVelocityF.loc[:, "dR"] = (
                     (
                         (dfVelocityF.loc[:, "X"] - x) ** 2
@@ -745,7 +746,7 @@ if False:
 
 # space time velocity-velocity correlation far from wound
 if False:
-    dfVelocity = pd.read_pickle(f"databases/dfVelocityWound{fileType}.pkl")
+    dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     grid = 27
     timeGrid = 51
 
@@ -784,7 +785,8 @@ if False:
             print(datetime.now().strftime("%H:%M:%S ") + filename)
             dfVelocityF = dfVelocity[dfVelocity["Filename"] == filename].copy()
             dfFar = dfVelocityF[
-                np.array(dfVelocityF["T"] >= 90) & np.array(dfVelocityF["R"] >= 30)
+                np.array(dfVelocityF["T"] < 30)
+                & np.array(dfVelocityF["R"] >= 30 / scale)
             ]
             n = int(len(dfFar) / 10)
             random.seed(10)
