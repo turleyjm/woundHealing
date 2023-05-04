@@ -30,8 +30,8 @@ plt.rcParams.update({"font.size": 20})
 
 # ---- individual conditions ----
 
-fileType = "Unwound18h"
-# fileType = "WoundL18h"
+# fileType = "Unwound18h"
+fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
 # fileType = "Unwound28h"

@@ -69,7 +69,7 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
 # --------- divisions ----------
 
 # correlation of division
-if False:
+if True:
     T = 160
     timeStep = 10
     R = 110
@@ -95,10 +95,10 @@ if False:
         [[[] for col in range(len(filenames))] for col in range(int(R / rStep))]
         for col in range(int(T / timeStep))
     ]
-    n = 1000
+    n = 500
     for m in range(len(filenames)):
         filename = filenames[m]
-        print(filename)
+        print(datetime.now().strftime("%H:%M:%S ") + filename)
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
         t0 = util.findStartTime(filename)
 
@@ -132,7 +132,9 @@ if False:
         divisionNum.append(count)
 
         for i in range(len(time)):
-            print(i)
+
+            if i % 9 == 0:
+                print(datetime.now().strftime("%H:%M:%S") + f" {i}%")
             t0 = int(time[i] / 2)
             t1 = int(t0 + timeStep / 2)
             for j in range(len(rad)):
@@ -179,7 +181,8 @@ if False:
         t = 90 * np.random.random_sample(n)
 
         for i in range(len(time)):
-            print(i)
+            if i % 9 == 0:
+                print(datetime.now().strftime("%H:%M:%S") + f" {i}%")
             t0 = int(time[i] / 2)
             t1 = int(t0 + timeStep / 2)
             for j in range(len(rad)):
@@ -1834,7 +1837,7 @@ if False:
 # --------- collect all ----------
 
 # collect all correlations
-if True:
+if False:
     _df = []
     for filename in filenames:
 

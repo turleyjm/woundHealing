@@ -110,15 +110,13 @@ if True:
     dRhodRhoClose = np.mean(dRhodRhoClose, axis=0)
     dRhodRhoFar = np.mean(dRhodRhoFar, axis=0)
 
-    dRhodRhoClose - dRhodRhoClose[-1]
-    dRhodRhoFar - dRhodRhoFar[-1]
+    dRhodRhoClose = dRhodRhoClose - np.mean(dRhodRhoClose[10:-1], axis=0)
+    dRhodRhoFar = dRhodRhoFar - np.mean(dRhodRhoFar[10:-1], axis=0)
 
     maxCorr = np.max(
         [
             np.nan_to_num(dRhodRhoClose),
             -np.nan_to_num(dRhodRhoClose),
-            np.nan_to_num(dRhodRhoFar),
-            -np.nan_to_num(dRhodRhoFar),
         ]
     )
     t, r = np.mgrid[0:180:10, 0:70:10]
@@ -182,12 +180,13 @@ if True:
             dfCor["dQ2dQ2Far"].iloc[i][:, :-1, :-1] * dQ2dQ2Fartotal, axis=2
         ) / np.sum(dQ2dQ2Fartotal, axis=2)
 
-    dQ1dQ1Close = np.mean(dQ1dQ1Close, axis=0)
-    dQ1dQ1Far = np.mean(dQ1dQ1Far, axis=0)
-    dQ2dQ2Close = np.mean(dQ2dQ2Close, axis=0)
-    dQ2dQ2Far = np.mean(dQ2dQ2Far, axis=0)
+    dQ1dQ1Close = np.mean(dQ1dQ1Close, axis=0)[:-5]
+    dQ1dQ1Far = np.mean(dQ1dQ1Far, axis=0)[:-5]
+    dQ2dQ2Close = np.mean(dQ2dQ2Close, axis=0)[:-5]
+    dQ2dQ2Far = np.mean(dQ2dQ2Far, axis=0)[:-5]
+    print(dQ2dQ2Far[:, 0])
 
-    t, r = np.mgrid[0:102:2, 0:52:2]
+    t, r = np.mgrid[0:92:2, 0:52:2]
 
     maxCorr = np.max(
         [
@@ -286,10 +285,10 @@ if True:
             dfCor["dV2dV2Far"].iloc[i][:, :-1, :-1] * dV2dV2Fartotal, axis=2
         ) / np.sum(dV2dV2Fartotal, axis=2)
 
-    dV1dV1Close = np.mean(dV1dV1Close, axis=0)
-    dV1dV1Far = np.mean(dV1dV1Far, axis=0)
-    dV2dV2Close = np.mean(dV2dV2Close, axis=0)
-    dV2dV2Far = np.mean(dV2dV2Far, axis=0)
+    dV1dV1Close = np.mean(dV1dV1Close, axis=0)[:-5]
+    dV1dV1Far = np.mean(dV1dV1Far, axis=0)[:-5]
+    dV2dV2Close = np.mean(dV2dV2Close, axis=0)[:-5]
+    dV2dV2Far = np.mean(dV2dV2Far, axis=0)[:-5]
 
     maxCorr = np.max(
         [

@@ -259,7 +259,7 @@ if False:
                                 dfg["Area"]
                             )
                             inPlaneEcad[t, i, j] = 1
-                            if (np.min(dfg["R"]) > 30) & (t >= 45):
+                            if (np.min(dfg["R"]) >= 30) & (t <= 30):
                                 inFarWound[t, i, j] = 1
 
                 heatmapdrho[t] = heatmapdrho[t] - np.mean(
@@ -885,6 +885,7 @@ if False:
 if True:
     _df = []
     for filename in filenames:
+        print(filename)
 
         dfCorRhoClose = pd.read_pickle(
             f"databases/correlationsWound/dfCorRhoClose{filename}.pkl"
