@@ -150,7 +150,7 @@ if False:
         plt.close("all")
 
 # Division correlations figure
-if True:
+if False:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]
@@ -229,22 +229,8 @@ if True:
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
     fileTitle = util.getFileTitle(fileType)
-
-    if "Wound" in fileType:
-        ax.title.set_text(
-            f"Division density \n correlation "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
-    else:
-        ax.title.set_text(
-            f"Division density \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
-        )
+    fileTitle = util.getBoldTitle(fileTitle)
+    ax.title.set_text(f"Division density \n correlation " + fileTitle)
 
     fig.savefig(
         f"results/Division Correlation figure {fileType}",
@@ -273,22 +259,9 @@ if True:
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
     fileTitle = util.getFileTitle(fileType)
+    fileTitle = util.getBoldTitle(fileTitle)
 
-    if "Wound" in fileType:
-        ax.title.set_text(
-            f"Division density \n correlation "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
-    else:
-        ax.title.set_text(
-            f"Division density \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
-        )
+    ax.title.set_text(f"Division density \n correlation " + fileTitle)
 
     fig.savefig(
         f"results/Division Correlation figure remove long times {fileType}",
@@ -315,22 +288,8 @@ if True:
     ax.set_xlabel("Time apart $t$ (min)")
     ax.set_ylabel(r"Distance apart $r (\mu m)$")
     fileTitle = util.getFileTitle(fileType)
-
-    if "Wound" in fileType:
-        ax.title.set_text(
-            f"Division orientation \n correlation "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
-    else:
-        ax.title.set_text(
-            f"Division orientation \n correlation " + r"$\bf{" + str(fileTitle) + "}$"
-        )
+    fileTitle = util.getBoldTitle(fileTitle)
+    ax.title.set_text(f"Division orientation \n correlation " + fileTitle)
 
     fig.savefig(
         f"results/Division orientation figure {fileType}",

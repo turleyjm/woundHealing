@@ -67,21 +67,32 @@ def inertia(polygon):
             + 2 * x[i + 1] * y[i + 1]
             + x[i + 1] * y[i]
         ) * (x[i] * y[i + 1] - x[i + 1] * y[i])
-    Ixx = sxx / 12 - a * cy ** 2
-    Iyy = syy / 12 - a * cx ** 2
+    Ixx = sxx / 12 - a * cy**2
+    Iyy = syy / 12 - a * cx**2
     Ixy = sxy / 24 - a * cx * cy
     I = np.zeros(shape=(2, 2))
     I[0, 0] = Ixx
     I[1, 0] = -Ixy
     I[0, 1] = -Ixy
     I[1, 1] = Iyy
-    I = I / a ** 2
+    I = I / a**2
     return I
 
 
 def qTensor(polygon):
 
     S = -inertia(polygon)
+    TrS = S[0, 0] + S[1, 1]
+    I = np.zeros(shape=(2, 2))
+    I[0, 0] = 1
+    I[1, 1] = 1
+    q = S - TrS * I / 2
+    return q
+
+
+def qTensor_tcj(tcj):
+
+    S = -inertia_tcj(tcj)
     TrS = S[0, 0] + S[1, 1]
     I = np.zeros(shape=(2, 2))
     I[0, 0] = 1
@@ -128,7 +139,7 @@ def circularity(polygon):
 
     A = polygon.area
     P = polygon.length
-    Cir = 4 * np.pi * A / (P ** 2)
+    Cir = 4 * np.pi * A / (P**2)
     return Cir
 
 
@@ -265,7 +276,7 @@ def polarMag(polygon):
     m = minorPolar(polygon)
     M = mayorPolar(polygon)
 
-    r = (m ** 2 + M ** 2) ** (0.5)
+    r = (m**2 + M**2) ** (0.5)
 
     return r
 
@@ -376,7 +387,7 @@ def findContourCurvature(contour, m):
 
     class ComputeCurvature:
         def __init__(self):
-            """ Initialize some variables """
+            """Initialize some variables"""
             self.xc = 0  # X-coordinate of circle center
             self.yc = 0  # Y-coordinate of circle center
             self.r = 0  # Radius of the circle
@@ -384,11 +395,11 @@ def findContourCurvature(contour, m):
             self.yy = np.array([])  # Data points
 
         def calc_r(self, xc, yc):
-            """ calculate the distance of each 2D points from the center (xc, yc) """
+            """calculate the distance of each 2D points from the center (xc, yc)"""
             return np.sqrt((self.xx - xc) ** 2 + (self.yy - yc) ** 2)
 
         def f(self, c):
-            """ calculate the algebraic distance between the data points and the mean circle centered at c=(xc, yc) """
+            """calculate the algebraic distance between the data points and the mean circle centered at c=(xc, yc)"""
             ri = self.calc_r(*c)
             return ri - ri.mean()
 

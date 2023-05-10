@@ -69,7 +69,7 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
 # --------- divisions ----------
 
 # correlation of division
-if True:
+if False:
     T = 160
     timeStep = 10
     R = 110
@@ -95,7 +95,7 @@ if True:
         [[[] for col in range(len(filenames))] for col in range(int(R / rStep))]
         for col in range(int(T / timeStep))
     ]
-    n = 500
+    n = 1000
     for m in range(len(filenames)):
         filename = filenames[m]
         print(datetime.now().strftime("%H:%M:%S ") + filename)
@@ -113,7 +113,7 @@ if True:
             outPlane.append(np.array(img.resize((124, 124))))
         outPlane = np.array(outPlane)
         outPlane[outPlane > 50] = 255
-        outPlane[outPlane < 0] = 0
+        outPlane[outPlane < 50] = 0
 
         N.append(90 * 124**2 - np.sum(outPlane) / 255)
 
@@ -133,8 +133,7 @@ if True:
 
         for i in range(len(time)):
 
-            if i % 9 == 0:
-                print(datetime.now().strftime("%H:%M:%S") + f" {i}%")
+            print(f"T={i}")
             t0 = int(time[i] / 2)
             t1 = int(t0 + timeStep / 2)
             for j in range(len(rad)):
@@ -181,8 +180,7 @@ if True:
         t = 90 * np.random.random_sample(n)
 
         for i in range(len(time)):
-            if i % 9 == 0:
-                print(datetime.now().strftime("%H:%M:%S") + f" {i}%")
+            print(f"T={i}")
             t0 = int(time[i] / 2)
             t1 = int(t0 + timeStep / 2)
             for j in range(len(rad)):

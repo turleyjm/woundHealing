@@ -235,7 +235,7 @@ if False:
     plt.close("all")
 
 # Divison density with time best fit
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
@@ -287,23 +287,14 @@ if True:
     ax.set_ylim([0, 7])
 
     fileTitle = util.getFileTitle(fileType)
+    fileTitle = util.getBoldTitle(fileTitle)
+    ax.title.set_text(f"Division density with \n time " + fileTitle)
     if "Wound" in fileType:
-        ax.title.set_text(
-            f"Division density with \n time "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
         ax.set(
             xlabel="Time after wounding (mins)",
             ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
         )
     else:
-        ax.title.set_text(f"Division density with \n time " + r"$\bf{unwounded}$")
         ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
 
     ax.legend(loc="upper left", fontsize=12)
@@ -316,7 +307,7 @@ if True:
     plt.close("all")
 
 # Compare divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     # legend = ["Unwounded", "Small wound", "Large wound"]
@@ -762,28 +753,16 @@ if False:
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
+    fileTitle = util.getBoldTitle(fileTitle)
+    ax.title.set_text(
+        f"Deviation in division density: \n " + fileTitle + " from linear model"
+    )
     if "Wound" in fileType:
-        ax.title.set_text(
-            f"Deviation in division density: \n "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$ from linear model"
-        )
         ax.set(
             xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$"
         )
     else:
-        ax.title.set_text(
-            f"Deviation in division density: \n "
-            + r"$\bf{"
-            + str(fileTitle)
-            + "}$ from linear model"
-        )
-        ax.set(xlabel="Time (mins)", ylabel=r"Distance from wound $(\mu m)$")
+        ax.set(xlabel="Time (mins)", ylabel=r"Distance from virtual wound $(\mu m)$")
 
     fig.savefig(
         f"results/Change in Division density heatmap {fileType}",

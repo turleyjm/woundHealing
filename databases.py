@@ -184,7 +184,7 @@ scale = 123.26 / 512
 T = 93
 
 # Nucleus velocity relative to tissue
-if True:
+if False:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -239,7 +239,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 # Cell division relative to tissue and wound
-if True:
+if False:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")
@@ -318,7 +318,7 @@ if True:
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
 # Cell Shape relative to tissue
-if True:
+if False:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -377,7 +377,7 @@ if True:
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 # Cell Shape relative to wound
-if True:
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -494,7 +494,7 @@ if True:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 # Nucleus velocity relative to wound
-if True:
+if False:
     _df2 = []
     for filename in filenames:
 
@@ -583,7 +583,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divisions and Shape changes
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []
@@ -661,6 +661,8 @@ if True:
                     else:
                         tcj = False
                     theta = cell.orientation_tcj(tcj)
+                    q = cell.qTensor(polygon)
+                    q_tcj = cell.qTensor_tcj(tcj)
                     _dfTrack.append(
                         {
                             "Filename": filename,
@@ -675,6 +677,10 @@ if True:
                             "Shape Factor": cell.shapeFactor(polygon),
                             "Orientation": (cell.orientation(polygon) * 180 / np.pi)
                             % 180,
+                            "q": q,
+                            "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                            "q_tcj": q_tcj,
+                            "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2) ** 0.5,
                             "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                             "Orientation tcj": (cell.orientation_tcj(tcj) * 180 / np.pi)
                             % 180,
@@ -709,6 +715,8 @@ if True:
                                 tcj = findtcj(polygon, binary[int(t)])
                             else:
                                 tcj = False
+                            q = cell.qTensor(polygon)
+                            q_tcj = cell.qTensor_tcj(tcj)
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -725,6 +733,11 @@ if True:
                                         cell.orientation(polygon) * 180 / np.pi
                                     )
                                     % 180,
+                                    "q": q,
+                                    "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                                    "q_tcj": q_tcj,
+                                    "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2)
+                                    ** 0.5,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                                     "Orientation tcj": (
                                         cell.orientation_tcj(tcj) * 180 / np.pi
@@ -762,6 +775,8 @@ if True:
                         else:
                             tcj = False
                         theta = cell.orientation_tcj(tcj)
+                        q = cell.qTensor(polygon)
+                        q_tcj = cell.qTensor_tcj(tcj)
                         _dfTrack.append(
                             {
                                 "Filename": filename,
@@ -776,6 +791,10 @@ if True:
                                 "Shape Factor": cell.shapeFactor(polygon),
                                 "Orientation": (cell.orientation(polygon) * 180 / np.pi)
                                 % 180,
+                                "q": q,
+                                "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                                "q_tcj": q_tcj,
+                                "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2) ** 0.5,
                                 "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                                 "Orientation tcj": (
                                     cell.orientation_tcj(tcj) * 180 / np.pi
@@ -812,6 +831,8 @@ if True:
                                 tcj = findtcj(polygon, binary[int(t)])
                             else:
                                 tcj = False
+                            q = cell.qTensor(polygon)
+                            q_tcj = cell.qTensor_tcj(tcj)
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -828,6 +849,11 @@ if True:
                                         cell.orientation(polygon) * 180 / np.pi
                                     )
                                     % 180,
+                                    "q": q,
+                                    "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                                    "q_tcj": q_tcj,
+                                    "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2)
+                                    ** 0.5,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                                     "Orientation tcj": (
                                         cell.orientation_tcj(tcj) * 180 / np.pi
@@ -861,6 +887,8 @@ if True:
                         else:
                             tcj = False
                         theta = cell.orientation_tcj(tcj)
+                        q = cell.qTensor(polygon)
+                        q_tcj = cell.qTensor_tcj(tcj)
                         _dfTrack.append(
                             {
                                 "Filename": filename,
@@ -875,6 +903,10 @@ if True:
                                 "Shape Factor": cell.shapeFactor(polygon),
                                 "Orientation": (cell.orientation(polygon) * 180 / np.pi)
                                 % 180,
+                                "q": q,
+                                "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                                "q_tcj": q_tcj,
+                                "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2) ** 0.5,
                                 "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                                 "Orientation tcj": (
                                     cell.orientation_tcj(tcj) * 180 / np.pi
@@ -911,6 +943,8 @@ if True:
                                 tcj = findtcj(polygon, binary[int(t)])
                             else:
                                 tcj = False
+                            q = cell.qTensor(polygon)
+                            q_tcj = cell.qTensor_tcj(tcj)
                             _dfTrack.append(
                                 {
                                     "Filename": filename,
@@ -927,6 +961,11 @@ if True:
                                         cell.orientation(polygon) * 180 / np.pi
                                     )
                                     % 180,
+                                    "q": q,
+                                    "q0": (q[0, 0] ** 2 + q[0, 1] ** 2) ** 0.5,
+                                    "q_tcj": q_tcj,
+                                    "q0_tcj": (q_tcj[0, 0] ** 2 + q_tcj[0, 1] ** 2)
+                                    ** 0.5,
                                     "Shape Factor tcj": cell.shapeFactor_tcj(tcj),
                                     "Orientation tcj": (
                                         cell.orientation_tcj(tcj) * 180 / np.pi
@@ -967,7 +1006,7 @@ if True:
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
 
 # Nucleus velocity relative to tissue for Prewound
-if True:
+if False:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -1025,7 +1064,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
 
 # Cell division relative to tissue and wound for Prewound
-if True:
+if False:
     _df = []
     for filename in filenames:
         try:
@@ -1080,7 +1119,7 @@ if True:
     dfDivisions.to_pickle(f"databases/dfDivisions{util.Prewound(fileType)}.pkl")
 
 # Cell Shape relative to tissue for Prewound
-if True:
+if False:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
     dfVelocityMean = pd.read_pickle(

@@ -112,29 +112,16 @@ if False:
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
+    fileTitle = util.getBoldTitle(fileTitle)
 
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
 
-    cm = plt.cm.get_cmap('RdBu_r')
+    cm = plt.cm.get_cmap("RdBu_r")
 
     n, bins, patches = ax.hist(dfDivisions["Orientation"], color="g")
 
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    if "Wound" in fileType:
-        ax.title.set_text(
-            f"Divison orientation with \n respect to wing "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
-    else:
-        ax.title.set_text(
-            f"Divison orientation with \n respect to wing " + r"$\bf{" + str(fileTitle) + "}$"
-        )
+    ax.title.set_text(f"Divison orientation with respect \n to wing " + fileTitle)
 
     fig.savefig(
         f"results/Divison orientation with respect to tissue {fileType}",
@@ -183,32 +170,20 @@ if False:
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
+    fileTitle = util.getBoldTitle(fileTitle)
 
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
-    cm = plt.cm.get_cmap('RdBu_r')
+    cm = plt.cm.get_cmap("RdBu_r")
     n, bins, patches = ax.hist(dfDivisions["Orientation Wound"])
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
+    ax.title.set_text(f"Divison orientation with \n respect to a " + fileTitle)
     if "Wound" in fileType:
-        ax.title.set_text(
-            f"Divison orientation with \n respect to a "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
         bin_centers = 0.5 * (bins[:-1] + bins[1:])
         col = bin_centers - min(bin_centers)
         col /= max(col)
 
         for c, p in zip(col, patches):
-            plt.setp(p, 'facecolor', cm(c))
-    else:
-        ax.title.set_text(
-            f"Divison orientation with \n respect to a " + r"$\bf{" + str(fileTitle) + "}$"
-        )
+            plt.setp(p, "facecolor", cm(c))
 
     fig.savefig(
         f"results/Divison orientation with respect to a wound {fileType}",
@@ -246,11 +221,11 @@ if False:
         vmax=80,
     )
     fig.colorbar(c, ax=ax[0])
-    ax[0].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+    ax[0].set(xlabel=r"Distance from wound ($\mu m$)", ylabel="Orientation")
 
     ax[1].errorbar(rad, mu, yerr=std)
     ax[1].set_ylim([0, 90])
-    ax[1].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
+    ax[1].set(xlabel=r"Distance from wound ($\mu m$)", ylabel="Orientation")
 
     fig.suptitle(
         f"Divison orientation with respect to a wound over distance from wound {fileType}"
@@ -446,15 +421,17 @@ if False:
     )
     plt.close("all")
 
-T=160
+T = 160
 timeStep = 16
 R = 80
 rStep = 20
 
 # Divison orientation with distance from wound edge and time
-if False:
+if True:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    fileTitle = util.getFileTitle(fileType)
+    fileTitle = util.getBoldTitle(fileTitle)
     for r in range(ori.shape[1]):
         for t in range(ori.shape[0]):
             df1 = dfDivisions[dfDivisions["T"] > timeStep * t]
@@ -464,7 +441,7 @@ if False:
             ori[t, r] = np.mean(df["Orientation Wound"])
 
     t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-    fig, ax = plt.subplots(1, 1, figsize=(6, 2))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     c = ax.pcolor(
         t,
         r,
@@ -474,8 +451,15 @@ if False:
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
-    ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-    # ax.title.set_text(f"Division ori {fileType}")
+    if "Wound" in fileType:
+        ax.set(
+            xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$"
+        )
+    else:
+        ax.set(
+            xlabel="Time (mins)", ylabel="Distance from virtual \n" + r"wound $(\mu m)$"
+        )
+    ax.title.set_text(f"Mean division orientation \n {fileTitle}")
 
     fig.savefig(
         f"results/Division ori heatmap {fileType}",
@@ -484,42 +468,6 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
-# Divison orientation with distance from wound edge and time
-if False:
-    ori = np.zeros([int(T / timeStep), int(R / rStep)])
-    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
-    for filename in filenames:
-        dfF = dfDivisions[dfDivisions["Filename"] == filename]
-        for r in range(ori.shape[1]):
-            for t in range(ori.shape[0]):
-                df1 = dfF[dfF["T"] > timeStep * t]
-                df2 = df1[df1["T"] <= timeStep * (t + 1)]
-                df3 = df2[df2["R"] > rStep * r]
-                df = df3[df3["R"] <= rStep * (r + 1)]
-                ori[t, r] = np.mean(df["Orientation Wound"])
-
-        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
-        fig, ax = plt.subplots(1, 1, figsize=(6, 2))
-        c = ax.pcolor(
-            t,
-            r,
-            ori,
-            vmin=70,
-            vmax=20,
-            cmap="RdBu_r",
-        )
-        fig.colorbar(c, ax=ax)
-        ax.set(xlabel="Time (mins)", ylabel=r"$R (\mu m)$")
-        # ax.title.set_text(f"Division ori {fileType}")
-
-        fig.savefig(
-            f"results/Division ori heatmap {filename}",
-            transparent=True,
-            bbox_inches="tight",
-            dpi=300,
-        )
-        plt.close("all")
 
 # Divison orientation with direction from wound
 if False:
@@ -545,5 +493,3 @@ if False:
         dpi=300,
     )
     plt.close("all")
-
-

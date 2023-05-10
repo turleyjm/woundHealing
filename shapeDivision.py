@@ -36,7 +36,7 @@ import cellProperties as cell
 import utils as util
 
 pd.options.mode.chained_assignment = None
-plt.rcParams.update({"font.size": 18})
+plt.rcParams.update({"font.size": 16})
 
 # -------------------
 
@@ -180,9 +180,9 @@ def maskQ(mask):
     xx = (x - Cx) ** 2
     yy = (y - Cy) ** 2
     xy = (x - Cx) * (y - Cy)
-    S[0, 0] = -np.sum(yy * mask) / A ** 2
-    S[1, 0] = S[0, 1] = np.sum(xy * mask) / A ** 2
-    S[1, 1] = -np.sum(xx * mask) / A ** 2
+    S[0, 0] = -np.sum(yy * mask) / A**2
+    S[1, 0] = S[0, 1] = np.sum(xy * mask) / A**2
+    S[1, 1] = -np.sum(xx * mask) / A**2
     TrS = S[0, 0] + S[1, 1]
     I = np.zeros(shape=(2, 2))
     I[0, 0] = 1
@@ -196,6 +196,7 @@ def maskQ(mask):
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
+groupTitle = "wild type"
 
 
 # area of parent dividing cells
@@ -230,8 +231,8 @@ if False:
             if t < T:
                 divTime = df["Division Time"].iloc[i]
                 index = time.index(divTime)
-                area[index].append(df["Area"].iloc[i] * scale ** 2)
-                dArea[index].append(df["Area"].iloc[i] * scale ** 2 - areaT[t])
+                area[index].append(df["Area"].iloc[i] * scale**2)
+                dArea[index].append(df["Area"].iloc[i] * scale**2 - areaT[t])
 
     std = []
     dAreastd = []
@@ -242,17 +243,28 @@ if False:
         dArea[i] = np.mean(dArea[i])
     time = 2 * np.array(time)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, area, std)
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    area = np.array(area)
+    std = np.array(std)
+    dArea = np.array(dArea)
+    dAreastd = np.array(dAreastd)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, area, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, area - std, area + std, alpha=0.15, color=colour)
     ax[0].set(xlabel=r"Time (mins)", ylabel=r"$A$ $(\mu m^2$)")
     ax[0].title.set_text(r"$A$ during division")
-    ax[0].set_ylim([-10, 55])
+    ax[0].set_ylim([-5, 55])
 
-    ax[1].errorbar(time, dArea, dAreastd)
+    ax[1].plot(time, dArea, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(
+        time, dArea - dAreastd, dArea + dAreastd, alpha=0.15, color=colour
+    )
     ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta A$ $(\mu m^2$)")
     ax[1].title.set_text(r"$\delta A$ during division")
-    ax[1].set_ylim([-10, 55])
+    ax[1].set_ylim([-5, 55])
 
+    plt.subplots_adjust(wspace=0.5)
     fig.savefig(
         f"results/Area division {fileType}",
         dpi=300,
@@ -261,7 +273,7 @@ if False:
     )
     plt.close("all")
 
-# shape of parent dividing cells
+# shape (Q0) of parent dividing cells
 if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -278,14 +290,28 @@ if False:
             ),
         )
     )
-    sf = [[] for col in range(len(time))]
-    dsf = [[] for col in range(len(time))]
+    Q0 = [[] for col in range(len(time))]
+    dQ0 = [[] for col in range(len(time))]
     for filename in filenames:
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         dfFileShape = dfShape[dfShape["Filename"] == filename]
-        sfT = []
+        Q0_T = []
         for t in range(T):
-            sfT.append(np.mean(dfFileShape["Shape Factor"][dfFileShape["T"] == t]))
+            Q0_T.append(
+                np.mean(
+                    (
+                        np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 0]
+                        ** 2
+                        + np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 1]
+                        ** 2
+                    )
+                    ** 0.5
+                )
+            )
 
         for i in range(len(df)):
 
@@ -293,31 +319,40 @@ if False:
             if t < T:
                 divTime = df["Division Time"].iloc[i]
                 index = time.index(divTime)
-                sf[index].append(df["Shape Factor"].iloc[i])
-                dsf[index].append(df["Shape Factor"].iloc[i] - sfT[t])
+                Q0[index].append(df["q0"].iloc[i])
+                dQ0[index].append(df["q0"].iloc[i] - Q0_T[t])
 
     std = []
-    dsfstd = []
-    for i in range(len(sf)):
-        std.append(np.std(sf[i]))
-        sf[i] = np.mean(sf[i])
-        dsfstd.append(np.std(dsf[i]))
-        dsf[i] = np.mean(dsf[i])
+    dQ0std = []
+    for i in range(len(Q0)):
+        std.append(np.std(Q0[i]))
+        Q0[i] = np.mean(Q0[i])
+        dQ0std.append(np.std(dQ0[i]))
+        dQ0[i] = np.mean(dQ0[i])
     time = 2 * np.array(time)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, sf, std)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$S_f$")
-    ax[0].title.set_text(r"$S_f$ during division")
-    # ax[0].set_ylim([-5, 55])
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    Q0 = np.array(Q0)
+    std = np.array(std)
+    dQ0 = np.array(dQ0)
+    dQ0std = np.array(dQ0std)
 
-    ax[1].errorbar(time, dsf, dsfstd)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta S_f$")
-    ax[1].title.set_text(r"$\delta S_f$ during division")
-    # ax[1].set_ylim([-5, 55])
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, Q0, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, Q0 - std, Q0 + std, alpha=0.15, color=colour)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q_0$")
+    ax[0].title.set_text(r"$Q_0$ during division")
+    ax[0].set_ylim([-0.03, 0.08])
 
+    ax[1].plot(time, dQ0, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(time, dQ0 - dQ0std, dQ0 + dQ0std, alpha=0.15, color=colour)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q_0$")
+    ax[1].title.set_text(r"$\delta Q_0$ during division")
+    ax[1].set_ylim([-0.03, 0.08])
+
+    plt.subplots_adjust(wspace=0.5)
     fig.savefig(
-        f"results/Shape factor division {fileType}",
+        f"results/Q0 division {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -356,8 +391,8 @@ if False:
             if t < T:
                 divTime = df["Division Time"].iloc[i]
                 index = time.index(divTime)
-                area[index].append(df["Area"].iloc[i] * scale ** 2)
-                dArea[index].append(df["Area"].iloc[i] * scale ** 2 - areaT[t])
+                area[index].append(df["Area"].iloc[i] * scale**2)
+                dArea[index].append(df["Area"].iloc[i] * scale**2 - areaT[t])
 
     std = []
     dAreastd = []
@@ -368,17 +403,28 @@ if False:
         dArea[i] = np.mean(dArea[i])
     time = 2 * np.array(time)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, area, std)
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    area = np.array(area)
+    std = np.array(std)
+    dArea = np.array(dArea)
+    dAreastd = np.array(dAreastd)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, area, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, area - std, area + std, alpha=0.15, color=colour)
     ax[0].set(xlabel=r"Time (mins)", ylabel=r"$A$ $(\mu m^2$)")
     ax[0].title.set_text(r"$A$ after division")
     ax[0].set_ylim([-10, 55])
 
-    ax[1].errorbar(time, dArea, dAreastd)
+    ax[1].plot(time, dArea, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(
+        time, dArea - dAreastd, dArea + dAreastd, alpha=0.15, color=colour
+    )
     ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta A$ $(\mu m^2$)")
     ax[1].title.set_text(r"$\delta A$ after division")
     ax[1].set_ylim([-10, 55])
 
+    plt.subplots_adjust(wspace=0.5)
     fig.savefig(
         f"results/Area Daughter Cell {fileType}",
         dpi=300,
@@ -387,7 +433,7 @@ if False:
     )
     plt.close("all")
 
-# shape of daughter cells
+# shape (Q0) of daughter cells
 if False:
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
@@ -404,14 +450,28 @@ if False:
             ),
         )
     )
-    sf = [[] for col in range(len(time))]
-    dsf = [[] for col in range(len(time))]
+    Q0 = [[] for col in range(len(time))]
+    dQ0 = [[] for col in range(len(time))]
     for filename in filenames:
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         dfFileShape = dfShape[dfShape["Filename"] == filename]
-        sfT = []
+        Q0_T = []
         for t in range(T):
-            sfT.append(np.mean(dfFileShape["Shape Factor"][dfFileShape["T"] == t]))
+            Q0_T.append(
+                np.mean(
+                    (
+                        np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 0]
+                        ** 2
+                        + np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 1]
+                        ** 2
+                    )
+                    ** 0.5
+                )
+            )
 
         for i in range(len(df)):
 
@@ -419,31 +479,40 @@ if False:
             if t < T:
                 divTime = df["Division Time"].iloc[i]
                 index = time.index(divTime)
-                sf[index].append(df["Shape Factor"].iloc[i])
-                dsf[index].append(df["Shape Factor"].iloc[i] - sfT[t])
+                Q0[index].append(df["q0"].iloc[i])
+                dQ0[index].append(df["q0"].iloc[i] - Q0_T[t])
 
     std = []
-    dsfstd = []
-    for i in range(len(sf)):
-        std.append(np.std(sf[i]))
-        sf[i] = np.mean(sf[i])
-        dsfstd.append(np.std(dsf[i]))
-        dsf[i] = np.mean(dsf[i])
+    dQ0std = []
+    for i in range(len(Q0)):
+        std.append(np.std(Q0[i]))
+        Q0[i] = np.mean(Q0[i])
+        dQ0std.append(np.std(dQ0[i]))
+        dQ0[i] = np.mean(dQ0[i])
     time = 2 * np.array(time)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].errorbar(time, sf, std)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$S_f$")
-    ax[0].title.set_text(r"$S_f$ during division")
-    # ax[0].set_ylim([-5, 55])
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    Q0 = np.array(Q0)
+    std = np.array(std)
+    dQ0 = np.array(dQ0)
+    dQ0std = np.array(dQ0std)
 
-    ax[1].errorbar(time, dsf, dsfstd)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta S_f$")
-    ax[1].title.set_text(r"$\delta S_f$ during division")
-    # ax[1].set_ylim([-5, 55])
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, Q0, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, Q0 - std, Q0 + std, alpha=0.15, color=colour)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q_0$")
+    ax[0].title.set_text(r"$Q_0$ after division")
+    ax[0].set_ylim([-0.03, 0.08])
 
+    ax[1].plot(time, dQ0, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(time, dQ0 - dQ0std, dQ0 + dQ0std, alpha=0.15, color=colour)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q_0$")
+    ax[1].title.set_text(r"$\delta Q_0$ after division")
+    ax[1].set_ylim([-0.03, 0.08])
+
+    plt.subplots_adjust(wspace=0.5)
     fig.savefig(
-        f"results/Shape factor Daughter Cell {fileType}",
+        f"results/Q0 Daughter Cell {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -680,7 +749,7 @@ if False:
                     )
                     area.append(
                         dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0].area
-                        * scale ** 2
+                        * scale**2
                     )
                     time.append(
                         dfDiv["Time"][dfDiv["Division Time"] == -15].iloc[0] * 2
@@ -699,7 +768,7 @@ if False:
                     )
                     areaAll.append(
                         dfDiv["Polygon"][dfDiv["Division Time"] == -15].iloc[0].area
-                        * scale ** 2
+                        * scale**2
                     )
                     timeAll.append(
                         dfDiv["Time"][dfDiv["Division Time"] == -15].iloc[0] * 2
@@ -1198,7 +1267,7 @@ if False:
     plt.close("all")
 
 # delta Q of daughter cells with division orientation relative to tissue
-if False:
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1304,37 +1373,55 @@ if False:
             np.std(list(df2["dq_inv1"]) + list(df2["dq_inv2"]), axis=0)[1, 0]
         )
 
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    dQ1_con = np.array(dQ1_con)
+    dQ2_con = np.array(dQ2_con)
+    dQ1_inv = np.array(dQ1_inv)
+    dQ2_inv = np.array(dQ2_inv)
+    dQ1std_con = np.array(dQ1std_con)
+    dQ2std_con = np.array(dQ2std_con)
+    dQ1std_inv = np.array(dQ1std_inv)
+    dQ2std_inv = np.array(dQ2std_inv)
+
     fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
-    ax[0, 0].errorbar(thetas + 5, dQ1_con, dQ1std_con)
-    ax[0, 0].set(
-        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^1$"
+    ax[0, 0].plot(thetas + 5, dQ1_con, color=colour, marker=mark, markevery=1)
+    ax[0, 0].fill_between(
+        thetas + 5, dQ1_con - dQ1std_con, dQ1_con + dQ1std_con, alpha=0.15, color=colour
     )
-    ax[0, 0].title.set_text(r"combined $\delta Q_1$ after division")
-    ax[0, 0].set_ylim([-0.08, 0.08])
+    ax[0, 0].set(xlabel=r"Division ori. rel. to tissue", ylabel=r"$\delta Q^1$")
+    ax[0, 0].title.set_text(r"comb. $\delta Q_1$ after division")
+    ax[0, 0].set_ylim([-0.1, 0.1])
+    ax[0, 0].set_xlim([0, 90])
 
-    ax[0, 1].errorbar(thetas + 5, dQ2_con, dQ2std_con)
-    ax[0, 1].set(
-        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^2$"
+    ax[0, 1].plot(thetas + 5, dQ2_con, color=colour, marker=mark, markevery=1)
+    ax[0, 1].fill_between(
+        thetas + 5, dQ2_con - dQ2std_con, dQ2_con + dQ2std_con, alpha=0.15, color=colour
     )
-    ax[0, 1].title.set_text(r"combined $\delta Q_2$ after division")
-    ax[0, 1].set_ylim([-0.08, 0.08])
+    ax[0, 1].set(xlabel=r"Division ori. rel. to tissue", ylabel=r"$\delta Q^2$")
+    ax[0, 1].title.set_text(r"comb. $\delta Q_2$ after division")
+    ax[0, 1].set_ylim([-0.1, 0.1])
+    ax[0, 1].set_xlim([0, 90])
 
-    ax[1, 0].errorbar(thetas + 5, dQ1_inv, dQ1std_inv)
-    ax[1, 0].set(
-        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^1$"
+    ax[1, 0].plot(thetas + 5, dQ1_inv, color=colour, marker=mark, markevery=1)
+    ax[1, 0].fill_between(
+        thetas + 5, dQ1_inv - dQ1std_inv, dQ1_inv + dQ1std_inv, alpha=0.15, color=colour
     )
-    ax[1, 0].title.set_text(r"individual $\delta Q_1$ after division")
-    ax[1, 0].set_ylim([-0.08, 0.08])
+    ax[1, 0].set(xlabel=r"Division ori. rel. to tissue", ylabel=r"$\delta Q^1$")
+    ax[1, 0].title.set_text(r"indiv. $\delta Q_1$ after division")
+    ax[1, 0].set_ylim([-0.1, 0.1])
+    ax[1, 0].set_xlim([0, 90])
 
-    ax[1, 1].errorbar(thetas + 5, dQ2_inv, dQ2std_inv)
-    ax[1, 1].set(
-        xlabel=r"Division Orientation relative to tissue", ylabel=r"$\delta Q^2$"
+    ax[1, 1].plot(thetas + 5, dQ2_inv, color=colour, marker=mark, markevery=1)
+    ax[1, 1].fill_between(
+        thetas + 5, dQ2_inv - dQ2std_inv, dQ2_inv + dQ2std_inv, alpha=0.15, color=colour
     )
-    ax[1, 1].title.set_text(r"individual $\delta Q_2$ after division")
-    ax[1, 1].set_ylim([-0.08, 0.08])
+    ax[1, 1].set(xlabel=r"Division ori. rel. to tissue", ylabel=r"$\delta Q^2$")
+    ax[1, 1].title.set_text(r"indiv. $\delta Q_2$ after division")
+    ax[1, 1].set_ylim([-0.1, 0.1])
+    ax[1, 1].set_xlim([0, 90])
 
-    plt.subplots_adjust(hspace=0.3, wspace=0.3)
+    plt.subplots_adjust(hspace=0.4, wspace=0.5)
     fig.savefig(
         f"results/deltaQ after division with theta {fileType}",
         dpi=300,
@@ -1406,7 +1493,7 @@ if False:
     fig, ax = plt.subplots(2, 2, figsize=(10, 10))
 
     ax[0, 0].hist(
-        df["Orientation"], 
+        df["Orientation"],
     )
     ax[0, 0].axvline(np.mean(df["Orientation"]), color="r")
     ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Tissue")
@@ -1446,16 +1533,16 @@ if False:
     )
     plt.close("all")
 
-
     # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     fig, ax = plt.subplots(1, 1, figsize=(6, 5))
 
-    ax.hist(
-        df["Orientation"], alpha=0.4, label= "Mitosis orientation", color="g"
-    )
+    ax.hist(df["Orientation"], alpha=0.4, label="Mitosis orientation", color="g")
     ax.axvline(np.mean(df["Orientation"]), color="g")
     ax.hist(
-        df["Shape Orientation"], alpha=0.4, color="m", label= "Post shuffling orientation"
+        df["Shape Orientation"],
+        alpha=0.4,
+        color="m",
+        label="Post shuffling orientation",
     )
     ax.axvline(np.mean(df["Shape Orientation"]), color="m")
 
@@ -1475,11 +1562,14 @@ if False:
         ax.set_ylim([0, 75])
     else:
         ax.title.set_text(
-            f"Shift in division orientation relative \n to wing in " + r"$\bf{" + str(fileTitle) + "}$ tissue"
+            f"Shift in division orientation relative \n to wing in "
+            + r"$\bf{"
+            + str(fileTitle)
+            + "}$ tissue"
         )
         ax.set_ylim([0, 145])
 
-    ax.legend(fontsize=12, loc='upper left')
+    ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(
     #     df["Change Towards Tissue"],
@@ -1508,7 +1598,7 @@ if False:
     plt.close("all")
 
 # shift in orientation after division relative to wound
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1647,12 +1737,13 @@ if True:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
 
-    ax.hist(
-        df["Nuclei Orientation"], alpha=0.4, label= "Mitosis orientation", color="g"
-    )
+    ax.hist(df["Nuclei Orientation"], alpha=0.4, label="Mitosis orientation", color="g")
     ax.axvline(np.mean(df["Nuclei Orientation"]), color="g")
     ax.hist(
-        df["Daughter Orientation"], alpha=0.4, color="m", label= "Post shuffling orientation"
+        df["Daughter Orientation"],
+        alpha=0.4,
+        color="m",
+        label="Post shuffling orientation",
     )
     ax.axvline(np.mean(df["Daughter Orientation"]), color="m")
 
@@ -1671,10 +1762,13 @@ if True:
         )
     else:
         ax.title.set_text(
-            f"Shift in division orientation relative \n to wing in " + r"$\bf{" + str(fileTitle) + "}$"
+            f"Shift in division orientation relative \n to wing in "
+            + r"$\bf{"
+            + str(fileTitle)
+            + "}$"
         )
     ax.set_ylim([0, 63])
-    ax.legend(fontsize=12, loc='upper left')
+    ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(
     #     df["Change Towards Wound"],
@@ -1823,4 +1917,3 @@ if True:
         bbox_inches="tight",
     )
     plt.close("all")
-
