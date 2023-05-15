@@ -314,14 +314,15 @@ if False:
             f"results/displayProperties/orientationWound{filename}.tif", divisions
         )
 
-# orientation to of division TCJs
-if False:
+# orientation to of division shape and TCJs
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     for filename in filenames:
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
+        tracks = sm.io.imread(f"dat/{filename}/binaryTracks{filename}.tif").astype(int)
 
         (T, X, Y, rgb) = focus.shape
         gray = rgb2gray(focus)
@@ -389,12 +390,12 @@ if False:
                     np.array([blue, red, green]) * 255 / np.max([blue, red, green])
                 )
                 for t in timeVid:
-                    divisions[t][rr0, cc0, 0] = 255
-                    divisions[t][rr1, cc1, 0] = red
-                    divisions[t][rr0, cc0, 1] = 255
-                    divisions[t][rr1, cc1, 1] = green
-                    divisions[t][rr0, cc0, 2] = 255
-                    divisions[t][rr1, cc1, 2] = blue
+                    divisions[t][rr0, cc0, 0] = red
+                    divisions[t][rr1, cc1, 0] = 255
+                    divisions[t][rr0, cc0, 1] = green
+                    divisions[t][rr1, cc1, 1] = 255
+                    divisions[t][rr0, cc0, 2] = blue
+                    divisions[t][rr1, cc1, 2] = 255
 
                 rr0, cc0, val = sm.draw.line_aa(
                     int(551 - (y + 17 * np.sin(ori * np.pi / 180) + 20)),
@@ -417,12 +418,12 @@ if False:
                     np.array([blue, red, green]) * 255 / np.max([blue, red, green])
                 )
                 for t in timeVid:
-                    divisions_tcj[t][rr0, cc0, 0] = 255
-                    divisions_tcj[t][rr1, cc1, 0] = red
-                    divisions_tcj[t][rr0, cc0, 1] = 255
-                    divisions_tcj[t][rr1, cc1, 1] = green
-                    divisions_tcj[t][rr0, cc0, 2] = 255
-                    divisions_tcj[t][rr1, cc1, 2] = blue
+                    divisions_tcj[t][rr0, cc0, 0] = red
+                    divisions_tcj[t][rr1, cc1, 0] = 255
+                    divisions_tcj[t][rr0, cc0, 1] = green
+                    divisions_tcj[t][rr1, cc1, 1] = 255
+                    divisions_tcj[t][rr0, cc0, 2] = blue
+                    divisions_tcj[t][rr1, cc1, 2] = 255
 
                 x_tcj = int(np.mean(np.array(tcjs)[:, 0]))
                 y_tcj = int(np.mean(np.array(tcjs)[:, 1]))
@@ -441,6 +442,21 @@ if False:
                     )
                     divisions_tcj[t15][rr2, cc2, 1] = 255
 
+                rr1, cc1, val = sm.draw.line_aa(
+                    int(551 - (y_tcj + 14 * np.sin(oriPre * np.pi / 180) + 20)),
+                    int(x_tcj + 14 * np.cos(oriPre * np.pi / 180) + 20),
+                    int(551 - (y_tcj - 14 * np.sin(oriPre * np.pi / 180) + 20)),
+                    int(x_tcj - 14 * np.cos(oriPre * np.pi / 180) + 20),
+                )
+                divisions[t15][rr1, cc1, 0] = 255
+                divisions[t15][rr1, cc1, 1] = 255
+                divisions[t15][rr1, cc1, 2] = 255
+                colour = tracks[t, 511 - y, x]
+                if np.all(colour != np.array([255, 255, 255])):
+                    divisions[t15, 20:532, 20:532, 1][
+                        np.all((tracks[t15] - colour) == 0, axis=2)
+                    ] = 255
+
         divisions = divisions[:, 20:532, 20:532]
 
         mask = np.all((divisions - np.zeros(3)) == 0, axis=3)
@@ -450,7 +466,9 @@ if False:
         divisions[:, :, :, 2][mask] = gray[mask]
 
         divisions = np.asarray(divisions, "uint8")
-        tifffile.imwrite(f"results/orientationShape{filename}.tif", divisions)
+        tifffile.imwrite(
+            f"results/displayProperties/orientationShape{filename}.tif", divisions
+        )
 
         divisions_tcj = divisions_tcj[:, 20:532, 20:532]
 
@@ -1179,10 +1197,11 @@ if False:
 
         Area = np.asarray(Area, "uint8")
         tifffile.imwrite(f"results/displayProperties/Area{filename}.tif", Area)
-        # imgLabel = np.asarray(imgLabel, "uint16")
-        # tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
+        imgLabel = np.asarray(imgLabel, "uint16")
+        tifffile.imwrite(f"results/displayProperties/imgLabel{filename}.tif", imgLabel)
 
-if True:
+# Far and close to wound
+if False:
     filename = "WoundL18h10"
     focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
     (T, X, Y, rgb) = focus.shape

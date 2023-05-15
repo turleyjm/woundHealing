@@ -130,7 +130,10 @@ if True:
         V1[meanArea < 500] = np.nan
         V1Cont[meanArea < 500] = np.nan
 
-        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        t, r = np.mgrid[
+            timeStep / 2 : T + timeStep / 2 : timeStep,
+            rStep / 2 : R + rStep / 2 : rStep,
+        ]
         fig, ax = plt.subplots(1, 1, figsize=(6, 3))
         c = ax.pcolor(
             t,

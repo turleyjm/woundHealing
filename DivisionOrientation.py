@@ -429,6 +429,7 @@ rStep = 20
 # Divison orientation with distance from wound edge and time
 if True:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
+    ori_skew = np.zeros([int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
@@ -439,8 +440,9 @@ if True:
             df3 = df2[df2["R"] > rStep * r]
             df = df3[df3["R"] <= rStep * (r + 1)]
             ori[t, r] = np.mean(df["Orientation Wound"])
+            ori_skew[t, r] = sp.stats.skew(df["Orientation Wound"])
 
-    t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+    t, r = np.mgrid[0:T:timeStep, rStep / 2 : R + rStep / 2 : rStep]
     fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     c = ax.pcolor(
         t,
@@ -463,6 +465,34 @@ if True:
 
     fig.savefig(
         f"results/Division ori heatmap {fileType}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 1, figsize=(6, 3))
+    c = ax.pcolor(
+        t,
+        r,
+        ori_skew,
+        vmin=-2,
+        vmax=2,
+        cmap="RdBu_r",
+    )
+    fig.colorbar(c, ax=ax)
+    if "Wound" in fileType:
+        ax.set(
+            xlabel="Time after wounding (mins)", ylabel=r"Distance from wound $(\mu m)$"
+        )
+    else:
+        ax.set(
+            xlabel="Time (mins)", ylabel="Distance from virtual \n" + r"wound $(\mu m)$"
+        )
+    ax.title.set_text(f"Skew division orientation \n {fileTitle}")
+
+    fig.savefig(
+        f"results/Skew division ori heatmap {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,

@@ -127,10 +127,154 @@ def bestFitUnwound(fileType="Unwound18h"):
     return m, c
 
 
+def quadFitUnwound(fileType="Unwound18h"):
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    filenames = util.getFilesType(fileType)[0]
+    count = np.zeros([len(filenames), int(T / timeStep)])
+    area = np.zeros([len(filenames), int(T / timeStep)])
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        t0 = util.findStartTime(filename)
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        for t in range(count.shape[1]):
+            df1 = dfFile[dfFile["T"] > timeStep * t]
+            df = df1[df1["T"] <= timeStep * (t + 1)]
+            count[k, t] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+        )
+        for t in range(area.shape[1]):
+            t1 = int(timeStep / 2 * t - t0 / 2)
+            t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+            if t1 < 0:
+                t1 = 0
+            if t2 < 0:
+                t2 = 0
+            area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
+    time = []
+    dd = []
+    std = []
+    for t in range(area.shape[1]):
+        _area = area[:, t][area[:, t] > 0]
+        _count = count[:, t][area[:, t] > 0]
+        if len(_area) > 0:
+            _dd, _std = weighted_avg_and_std(_count / _area, _area)
+            dd.append(_dd)
+            std.append(_std)
+            time.append(t * 10 + timeStep / 2)
+    time = np.array(time)
+    dd = np.array(dd)
+    std = np.array(std)
+    a, b, c = np.poly1d(np.polyfit(time, dd * 10000, 2))
+
+    return a, b, c
+
+
+def returnUnw(fileType):
+
+    if fileType == "WoundL18h":
+        return "Unwound18h"
+    elif fileType == "WoundS18h":
+        return "Unwound18h"
+
+    if fileType == "WoundLJNK":
+        return "UnwoundJNK"
+    elif fileType == "WoundSJNK":
+        return "UnwoundJNK"
+
+    if fileType == "WoundLCa":
+        return "UnwoundCa"
+    elif fileType == "WoundSCa":
+        return "UnwoundCa"
+
+    if fileType == "WoundLrpr":
+        return "Unwoundrpr"
+    elif fileType == "WoundSrpr":
+        return "Unwoundrpr"
+
+
 # -------------------
 
+# Compare: Divison density with time minus unwounded
+if False:
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    total = 0
+    for fileType in fileTypes:
+        filenames = util.getFilesType(fileType)[0]
+
+        count = np.zeros([len(filenames), int(T / timeStep)])
+        area = np.zeros([len(filenames), int(T / timeStep)])
+        dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        total += len(dfDivisions)
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            t0 = util.findStartTime(filename)
+            dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df = df1[df1["T"] <= timeStep * (t + 1)]
+                count[k, t] = len(df)
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int) / 255
+            )
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
+
+        time = []
+        dd = []
+        std = []
+        for t in range(area.shape[1]):
+            _area = area[:, t][area[:, t] > 0]
+            _count = count[:, t][area[:, t] > 0]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd.append(_dd * 10000)
+                std.append(_std * 10000)
+                time.append(t * timeStep + timeStep / 2)
+
+        dd = np.array(dd)
+        std = np.array(std)
+        time = np.array(time)
+        compareType = returnUnw(fileType)
+        a, b, c = quadFitUnwound(compareType)
+        dd = dd / (a * time**2 + b * time + c) * 100
+
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
+        fileTitle = util.getFileTitle(fileType)
+        ax.plot(time, dd, label=fileTitle, marker=mark, color=colour)
+        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colour)
+
+    time = np.array(time)
+
+    ax.set(
+        xlabel="Time after wounding (mins)",
+        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
+    )
+    boldTitle = util.getBoldTitle(groupTitle)
+    ax.title.set_text(f"Change in division density with \n time " + boldTitle)
+    ax.set_ylim([0, 300])
+    ax.legend(loc="upper left", fontsize=10)
+
+    fig.savefig(
+        f"results/Compared change in division density with time {groupTitle}",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
+    print(total)
+
 # Compare: Divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     total = 0
     for fileType in fileTypes:
@@ -212,7 +356,7 @@ if True:
     print(total)
 
 # Individual: Divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -282,7 +426,10 @@ if False:
         dd[sumArea < 600 * len(filenames)] = np.nan
         dd = dd * 10000
 
-        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        t, r = np.mgrid[
+            timeStep / 2 : T + timeStep / 2 : timeStep,
+            rStep / 2 : R + rStep / 2 : rStep,
+        ]
         fig, ax = plt.subplots(1, 1, figsize=(6, 4))
         c = ax.pcolor(
             t,
@@ -309,7 +456,7 @@ if False:
         plt.close("all")
 
 # Individual: Change in divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -393,7 +540,10 @@ if False:
         dd = dd * 10000
 
         fileTitle = util.getFileTitle(fileType)
-        t, r = np.mgrid[0:T:timeStep, 0:R:rStep]
+        t, r = np.mgrid[
+            timeStep / 2 : T + timeStep / 2 : timeStep,
+            rStep / 2 : R + rStep / 2 : rStep,
+        ]
         fig, ax = plt.subplots(1, 1, figsize=(6, 4))
         c = ax.pcolor(
             t,

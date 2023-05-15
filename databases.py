@@ -94,9 +94,9 @@ def findtcj(polygon, img):
     tcj[tcj != 1] = 0
 
     outerTCJ = skimage.feature.peak_local_max(tcj)
-    # tcjrc = util.imgxyrc(tcj)
-    # tcjrc = np.asarray(tcjrc, "uint16")
-    # tifffile.imwrite(f"results/tcj{filename}.tif", tcjrc)
+    tcjrc = util.imgxyrc(tcj)
+    tcjrc = np.asarray(tcjrc, "uint16")
+    tifffile.imwrite(f"results/tcj{filename}.tif", tcjrc)
 
     tcj = []
     for coord in outerTCJ:
@@ -181,7 +181,7 @@ def vectorBoundary(pts):
 
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
-T = 93
+T = 91
 
 # Nucleus velocity relative to tissue
 if False:
@@ -583,7 +583,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divisions and Shape changes
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []

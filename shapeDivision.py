@@ -539,30 +539,53 @@ if False:
     )
     diff = []
     sf = []
+    q0 = []
     for filename in filenames:
         dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
-        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 13]
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
         for label in labels:
             dfDiv = df[df["Label"] == label]
-            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -10].iloc[0]
             if tcjs != False:
                 ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
-                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -10].iloc[0]
                 diff.append(angleDiff(ori, oriPre))
-                sf.append(dfDiv["Shape Factor"][dfDiv["Division Time"] == -15].iloc[0])
+                sf.append(dfDiv["Shape Factor"][dfDiv["Division Time"] == -10].iloc[0])
+                q0.append(dfDiv["q0"][dfDiv["Division Time"] == -10].iloc[0])
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    heatmap = np.histogram2d(
+        diff,
+        sf,
+        range=[[0, 90], [0, 1]],
+        bins=(9, 10),
+    )[0]
+    x, y = np.mgrid[5:95:10, 0.05:1.05:0.1]
 
-    ax[0].hist(diff, 9)
-    ax[0].set(xlabel=r"Difference in Orientation", ylabel=r"number")
-    ax[0].set_ylim([0, 270])
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[1].scatter(diff, sf)
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+
+    ax[0].hist(diff, 9, density=True, color=colour)
+    ax[0].set(xlabel=r"Difference in Orientation", ylabel=r"density")
+    ax[0].set_ylim([0, 0.02])
+
+    c = ax[1].pcolor(
+        x,
+        y,
+        heatmap / np.sum(heatmap),
+        vmin=0,
+        vmax=0.04,
+        cmap="Reds",
+    )
+    fig.colorbar(c, ax=ax[1])
     ax[1].set(xlabel=r"Difference in Orientation", ylabel=r"$S_f$")
     ax[1].set_ylim([0, 1])
 
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.5, hspace=0.4
+    )
     fig.savefig(
         f"results/Orientation division {fileType}",
         dpi=300,
@@ -589,35 +612,81 @@ if False:
         )
     )
     diff = []
-    sf = []
+    sf_tcj = []
+    q0_tcj = []
     for filename in filenames:
         dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
-        dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
+        dfFileShape = dfFileShape[dfFileShape["Track length"] > 13]
         df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
         labels = list(dfFileShape["Label"])
         for label in labels:
             dfDiv = df[df["Label"] == label]
-            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
+            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -10].iloc[0]
             if tcjs != False:
                 ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
-                oriPre = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -15].iloc[0]
+                oriPre = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -10].iloc[0]
                 diff.append(angleDiff(ori, oriPre))
-                sf.append(
-                    dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
+                sf_tcj.append(
+                    dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -10].iloc[0]
+                )
+                q0_tcj.append(
+                    dfDiv["q0_tcj"][dfDiv["Division Time"] == -10].iloc[0]
+                    / (
+                        dfDiv["Polygon"][dfDiv["Division Time"] == -10].iloc[0].area
+                        ** 2
+                    )
                 )
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    heatmap = np.histogram2d(
+        diff,
+        sf_tcj,
+        range=[[0, 90], [0, 1]],
+        bins=(9, 10),
+    )[0]
 
-    ax[0].hist(diff, 9)
-    ax[0].set(xlabel=r"Difference in Orientation tcj", ylabel=r"number")
-    ax[0].set_ylim([0, 270])
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[1].scatter(diff, sf)
+    ax[0].hist(diff, 9, density=True, color=colour)
+    ax[0].set(xlabel=r"Difference in Orientation tcj", ylabel=r"density")
+    ax[0].set_ylim([0, 0.02])
+
+    c = ax[1].pcolor(
+        x,
+        y,
+        heatmap / np.sum(heatmap),
+        vmin=0,
+        vmax=0.04,
+        cmap="Reds",
+    )
+    fig.colorbar(c, ax=ax[1])
     ax[1].set(xlabel=r"Difference in Orientation tcj", ylabel=r"$S_f$ tcj")
-    ax[1].set_ylim([0, 1])
 
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.5, hspace=0.4
+    )
     fig.savefig(
         f"results/Orientation tcj division {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].scatter(sf, sf_tcj, color=colour)
+    ax[0].set(xlabel=r"$S_f$", ylabel=r"$S_f$ tcj")
+    ax[0].set_xlim([0, 1])
+    ax[0].set_ylim([0, 1])
+
+    ax[1].scatter(q0, q0_tcj, color=colour)
+    ax[1].set(xlabel=r"$q_0$", ylabel=r"$q_0$ tcj")
+
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.5, hspace=0.4
+    )
+    fig.savefig(
+        f"results/s_f and q_0 correlation tcj shape division {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -662,38 +731,48 @@ if False:
                         oriDiff_sfH.append(angleDiff(ori, oriPre))
                         oriDiff_tcj_sfH.append(angleDiff(ori, oriPre_tcj))
 
-    fig, ax = plt.subplots(2, 3, figsize=(15, 10))
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    fig, ax = plt.subplots(2, 3, figsize=(12, 8))
 
-    ax[0, 0].hist(oriDiff, 9)
-    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 0].hist(oriDiff, 9, density=True, color=colour)
+    ax[0, 0].axvline(np.mean(oriDiff), color="b")
+    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
     ax[0, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
-    ax[0, 0].set_ylim([0, 35])
+    ax[0, 0].set_ylim([0, 0.026])
 
-    ax[1, 0].hist(oriDiff_tcj, 9)
-    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 0].hist(oriDiff_tcj, 9, density=True, color=colour)
+    ax[1, 0].axvline(np.mean(oriDiff_tcj), color="b")
+    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
     ax[1, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
-    ax[1, 0].set_ylim([0, 35])
+    ax[1, 0].set_ylim([0, 0.026])
 
-    ax[0, 1].hist(oriDiff_sfL, 9)
-    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 1].hist(oriDiff_sfL, 9, density=True, color=colour)
+    ax[0, 1].axvline(np.mean(oriDiff_sfL), color="b")
+    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
     ax[0, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
-    ax[0, 1].set_ylim([0, 35])
+    ax[0, 1].set_ylim([0, 0.026])
 
-    ax[1, 1].hist(oriDiff_tcj_sfL, 9)
-    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 1].hist(oriDiff_tcj_sfL, 9, density=True, color=colour)
+    ax[1, 1].axvline(np.mean(oriDiff_tcj_sfL), color="b")
+    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
     ax[1, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
-    ax[1, 1].set_ylim([0, 35])
+    ax[1, 1].set_ylim([0, 0.026])
 
-    ax[0, 2].hist(oriDiff_sfH, 9)
-    ax[0, 2].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"number")
+    ax[0, 2].hist(oriDiff_sfH, 9, density=True, color=colour)
+    ax[0, 2].axvline(np.mean(oriDiff_sfH), color="b")
+    ax[0, 2].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
     ax[0, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
-    ax[0, 2].set_ylim([0, 35])
+    ax[0, 2].set_ylim([0, 0.026])
 
-    ax[1, 2].hist(oriDiff_tcj_sfH, 9)
-    ax[1, 2].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"number")
+    ax[1, 2].hist(oriDiff_tcj_sfH, 9, density=True, color=colour)
+    ax[1, 2].axvline(np.mean(oriDiff_tcj_sfH), color="b")
+    ax[1, 2].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
     ax[1, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
-    ax[1, 2].set_ylim([0, 35])
+    ax[1, 2].set_ylim([0, 0.026])
 
+    plt.subplots_adjust(
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.4, hspace=0.45
+    )
     fig.savefig(
         f"results/Orientation division diff when shape ori disagree {fileType}",
         dpi=300,
@@ -1267,7 +1346,7 @@ if False:
     plt.close("all")
 
 # delta Q of daughter cells with division orientation relative to tissue
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -1490,7 +1569,7 @@ if False:
     deltaOri = np.array(deltaOri)
     deltaOristd = np.array(deltaOristd)
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
     ax[0, 0].hist(
         df["Orientation"],
@@ -1534,41 +1613,39 @@ if False:
     plt.close("all")
 
     # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
 
-    ax.hist(df["Orientation"], alpha=0.4, label="Mitosis orientation", color="g")
+    ax.hist(
+        df["Orientation"],
+        alpha=0.4,
+        density=True,
+        label="Mitosis orientation",
+        color="g",
+    )
     ax.axvline(np.mean(df["Orientation"]), color="g")
     ax.hist(
         df["Shape Orientation"],
         alpha=0.4,
         color="m",
+        density=True,
         label="Post shuffling orientation",
     )
     ax.axvline(np.mean(df["Shape Orientation"]), color="m")
 
     ax.set(xlabel="Division orientation relative to wing", ylabel="Frequency")
     fileTitle = util.getFileTitle(fileType)
+    boldTitle = util.getBoldTitle(fileTitle)
     if "Wound" in fileType:
         ax.title.set_text(
             f"Shift in division orientation relative \n to wing in tissue with "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
+            + boldTitle
         )
-        ax.set_ylim([0, 75])
     else:
         ax.title.set_text(
-            f"Shift in division orientation relative \n to wing in "
-            + r"$\bf{"
-            + str(fileTitle)
-            + "}$ tissue"
+            f"Shift in division orientation relative \n to wing in " + boldTitle
         )
-        ax.set_ylim([0, 145])
 
+    ax.set_ylim([0, 0.019])
     ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(
@@ -1685,7 +1762,7 @@ if False:
     deltaOri = np.array(deltaOri)
     deltaOristd = np.array(deltaOristd)
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
     ax[0, 0].hist(
         df["Nuclei Orientation"],
@@ -1737,37 +1814,33 @@ if False:
     fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
 
-    ax.hist(df["Nuclei Orientation"], alpha=0.4, label="Mitosis orientation", color="g")
+    ax.hist(
+        df["Nuclei Orientation"],
+        alpha=0.4,
+        density=True,
+        label="Mitosis orientation",
+        color="g",
+    )
     ax.axvline(np.mean(df["Nuclei Orientation"]), color="g")
     ax.hist(
         df["Daughter Orientation"],
         alpha=0.4,
         color="m",
+        density=True,
         label="Post shuffling orientation",
     )
     ax.axvline(np.mean(df["Daughter Orientation"]), color="m")
 
     ax.set(xlabel="Division orientation relative \n to wound", ylabel="Frequency")
     fileTitle = util.getFileTitle(fileType)
+    boldTitle = util.getBoldTitle(fileTitle)
     if "Wound" in fileType:
-        ax.title.set_text(
-            f"Shift in division orientation \n relative to "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[0])
-            + "}$"
-            + " "
-            + r"$\bf{"
-            + str(str(fileTitle).split(" ")[1])
-            + "}$"
-        )
+        ax.title.set_text(f"Shift in division orientation \n relative to " + boldTitle)
     else:
         ax.title.set_text(
-            f"Shift in division orientation relative \n to wing in "
-            + r"$\bf{"
-            + str(fileTitle)
-            + "}$"
+            f"Shift in division orientation relative \n to wing in " + boldTitle
         )
-    ax.set_ylim([0, 63])
+    ax.set_ylim([0, 0.019])
     ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(
@@ -1808,7 +1881,7 @@ if False:
         deltaOri.append(np.mean(df3["Change Towards Wound"]))
         deltaOristd.append(np.std(df3["Change Towards Wound"]))
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
     ax[0, 0].hist(
         df["Nuclei Orientation"][df["T"] < 45],
@@ -1863,18 +1936,20 @@ if False:
     deltaOri = []
     deltaOristd = []
     for theta in thetas:
-        df1 = df[df["R"] < 45]
+        df1 = df[(df["R"] < 30) & (df["T"] < 30)]
         df2 = df1[df1["Nuclei Orientation"] > theta]
         df3 = df2[df2["Nuclei Orientation"] < theta + 10]
         deltaOri.append(np.mean(df3["Change Towards Wound"]))
         deltaOristd.append(np.std(df3["Change Towards Wound"]))
 
-    fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
 
     ax[0, 0].hist(
-        df["Nuclei Orientation"][df["R"] < 45],
+        df["Nuclei Orientation"][(df["R"] < 30) & (df["T"] < 30)],
     )
-    ax[0, 0].axvline(np.mean(df["Nuclei Orientation"][df["R"] < 45]), color="r")
+    ax[0, 0].axvline(
+        np.mean(df["Nuclei Orientation"][(df["R"] < 30) & (df["T"] < 30)]), color="r"
+    )
     ax[0, 0].set(xlabel=r"Nuclei Division Orientation relative to Wound")
     ax[0, 0].title.set_text(r"Distribution of Nuclei Division Orientation")
     if "Wound" in filename:
@@ -1883,9 +1958,11 @@ if False:
         ax[0, 0].set_ylim([0, 130])
 
     ax[0, 1].hist(
-        df["Daughter Orientation"][df["R"] < 45],
+        df["Daughter Orientation"][(df["R"] < 30) & (df["T"] < 30)],
     )
-    ax[0, 1].axvline(np.mean(df["Daughter Orientation"][df["R"] < 45]), color="r")
+    ax[0, 1].axvline(
+        np.mean(df["Daughter Orientation"][(df["R"] < 30) & (df["T"] < 30)]), color="r"
+    )
     ax[0, 1].set(xlabel=r"Shape Division Orientation relative to Wound")
     ax[0, 1].title.set_text(r"Distribution of Shape Division Orientation")
     if "Wound" in filename:
@@ -1894,12 +1971,14 @@ if False:
         ax[0, 1].set_ylim([0, 130])
 
     ax[1, 0].hist(
-        df["Change Towards Wound"][df["R"] < 45],
+        df["Change Towards Wound"][(df["R"] < 30) & (df["T"] < 30)],
     )
     ax[1, 0].set(xlabel=r"Division Orientation Change Towards Wound")
     ax[1, 0].title.set_text(r"Change in orientation Towards Wound")
     ax[1, 0].set_xlim([-90, 90])
-    ax[1, 0].axvline(np.mean(df["Change Towards Wound"][df["R"] < 45]), color="r")
+    ax[1, 0].axvline(
+        np.mean(df["Change Towards Wound"][(df["R"] < 30) & (df["T"] < 30)]), color="r"
+    )
 
     ax[1, 1].errorbar(thetas + 5, deltaOri, deltaOristd)
     ax[1, 1].set(

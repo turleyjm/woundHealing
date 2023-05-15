@@ -87,7 +87,7 @@ grid = 26
 timeGrid = 51
 
 # display all correlations shape
-if True:
+if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
 
     fig, ax = plt.subplots(3, 4, figsize=(20, 12))
@@ -368,6 +368,409 @@ if True:
 
     fig.savefig(
         f"results/Correlations close and far from wounds {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaQ1 (model)
+if False:
+
+    def Corr_dQ1_Integral_T(R, B, L):
+        C = 0.00055
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+
+    def Corr_dQ1_Integral_R(T, B, L):
+        C = 0.00055
+        R = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+
+    def Corr_dQ1(R, T):
+        B = 0.006533824439392692
+        C = 0.00055
+        L = 2.1
+
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationsUnwound18h.pkl")
+
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0][:, :-1, :-1].shape
+
+    dQ1dQ1 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
+
+    T, R, Theta = dfCor["dQ1dQ1Close"].iloc[0].shape
+
+    dQ1dQ1Close = np.zeros([len(filenames), T, R - 1])
+    dQ1dQ1Far = np.zeros([len(filenames), T, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1Closetotal = dfCor["dQ1dQ1Closetotal"].iloc[i][:, :-1, :-1]
+        dQ1dQ1Close[i] = np.sum(
+            dfCor["dQ1dQ1Close"].iloc[i][:, :-1, :-1] * dQ1dQ1Closetotal, axis=2
+        ) / np.sum(dQ1dQ1Closetotal, axis=2)
+
+        dQ1dQ1Fartotal = dfCor["dQ1dQ1Fartotal"].iloc[i][:, :-1, :-1]
+        dQ1dQ1Far[i] = np.sum(
+            dfCor["dQ1dQ1Far"].iloc[i][:, :-1, :-1] * dQ1dQ1Fartotal, axis=2
+        ) / np.sum(dQ1dQ1Fartotal, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1Close = np.mean(dQ1dQ1Close, axis=0)[:-5]
+    dQ1dQ1Far = np.mean(dQ1dQ1Far, axis=0)[:-5]
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dQ1_Integral_R,
+        xdata=T[1:-5],
+        ydata=dQ1dQ1Close[:, 0][1:],
+        p0=(0.006, 4),
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dQ1_Integral_R,
+        xdata=T[1:-5],
+        ydata=dQ1dQ1Far[:, 0][1:],
+        p0=(0.006, 4),
+    )[0]
+    print(m)
+
+    ax[0].plot(T[1:-5], dQ1dQ1Close[:, 0][1:], label="Close to wound", color="g")
+    ax[0].plot(T[1:-5], Corr_dQ1_Integral_R(T[1:-5], M[0], M[1]), label="Model close")
+    ax[0].plot(T[1:-5], dQ1dQ1Far[:, 0][1:], label="far from wound", color="m")
+    ax[0].plot(T[1:-5], Corr_dQ1_Integral_R(T[1:-5], m[0], m[1]), label="Model far")
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[0].set_ylim([0, 5.9e-04])
+    ax[0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
+    ax[0].legend(fontsize=12)
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dQ1_Integral_T,
+        xdata=R[1:],
+        ydata=dQ1dQ1Close[1][1:26],
+        p0=(0.006, 4),
+        method="lm",
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dQ1_Integral_T,
+        xdata=R[1:],
+        ydata=dQ1dQ1Far[1][1:26],
+        p0=(0.006, 4),
+        method="lm",
+    )[0]
+    print(m)
+
+    ax[1].plot(R[5:], dQ1dQ1Close[0][5:26], label="Close to wound", color="g")
+    ax[1].plot(R[5:], Corr_dQ1_Integral_T(R[5:], M[0], M[1]), label="Model close")
+    ax[1].plot(R[5:], dQ1dQ1Far[0][5:26], label="far from wound", color="m")
+    ax[1].plot(R[5:], Corr_dQ1_Integral_T(R[5:], m[0], m[1]), label="Model")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
+    ax[1].set_ylim([0, 5.9e-04])
+    ax[1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=0$")
+    ax[1].legend(fontsize=12)
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
+    fig.savefig(
+        f"results/Correlation dQ1 close and far from wounds {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaQ2 (model)
+if False:
+
+    def Corr_dQ2_Integral_T(R, B, L):
+        C = 0.00055
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+
+    def Corr_dQ2_Integral_R(T, B, L):
+        C = 0.00055
+        R = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+
+    def Corr_dQ2(R, T):
+        B = 0.006533824439392692
+        C = 0.00055
+        L = 2.1
+
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationsUnwound18h.pkl")
+
+    T, R, Theta = dfCor["dQ2dQ2Correlation"].iloc[0][:, :-1, :-1].shape
+
+    dQ2dQ2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+    dfCor = 0
+
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
+
+    T, R, Theta = dfCor["dQ2dQ2Close"].iloc[0].shape
+
+    dQ2dQ2Close = np.zeros([len(filenames), T, R - 1])
+    dQ2dQ2Far = np.zeros([len(filenames), T, R - 1])
+    for i in range(len(filenames)):
+        dQ2dQ2Closetotal = dfCor["dQ2dQ2Closetotal"].iloc[i][:, :-1, :-1]
+        dQ2dQ2Close[i] = np.sum(
+            dfCor["dQ2dQ2Close"].iloc[i][:, :-1, :-1] * dQ2dQ2Closetotal, axis=2
+        ) / np.sum(dQ2dQ2Closetotal, axis=2)
+
+        dQ2dQ2Fartotal = dfCor["dQ2dQ2Fartotal"].iloc[i][:, :-1, :-1]
+        dQ2dQ2Far[i] = np.sum(
+            dfCor["dQ2dQ2Far"].iloc[i][:, :-1, :-1] * dQ2dQ2Fartotal, axis=2
+        ) / np.sum(dQ2dQ2Fartotal, axis=2)
+
+    dfCor = 0
+
+    dQ2dQ2Close = np.mean(dQ2dQ2Close, axis=0)[:-5]
+    dQ2dQ2Far = np.mean(dQ2dQ2Far, axis=0)[:-5]
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dQ2_Integral_R,
+        xdata=T[1:-5],
+        ydata=dQ2dQ2Close[:, 0][1:],
+        p0=(0.006, 4),
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dQ2_Integral_R,
+        xdata=T[1:-5],
+        ydata=dQ2dQ2Far[:, 0][1:],
+        p0=(0.006, 4),
+    )[0]
+    print(m)
+
+    ax[0].plot(T[1:-5], dQ2dQ2Close[:, 0][1:], label="Close to wound", color="g")
+    ax[0].plot(T[1:-5], Corr_dQ2_Integral_R(T[1:-5], M[0], M[1]), label="Model close")
+    ax[0].plot(T[1:-5], dQ2dQ2Far[:, 0][1:], label="far from wound", color="m")
+    ax[0].plot(T[1:-5], Corr_dQ2_Integral_R(T[1:-5], m[0], m[1]), label="Model far")
+    ax[0].set_xlabel("Time (min)")
+    ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
+    ax[0].set_ylim([0, 5.9e-04])
+    ax[0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
+    ax[0].legend(fontsize=12)
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dQ2_Integral_T,
+        xdata=R[1:],
+        ydata=dQ2dQ2Close[1][1:26],
+        p0=(0.006, 4),
+        method="lm",
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dQ2_Integral_T,
+        xdata=R[1:],
+        ydata=dQ2dQ2Far[1][1:26],
+        p0=(0.006, 4),
+        method="lm",
+    )[0]
+    print(m)
+
+    ax[1].plot(R[5:], dQ2dQ2Close[0][5:26], label="Close to wound", color="g")
+    ax[1].plot(R[5:], Corr_dQ2_Integral_T(R[5:], M[0], M[1]), label="Model close")
+    ax[1].plot(R[5:], dQ2dQ2Far[0][5:26], label="far from wound", color="m")
+    ax[1].plot(R[5:], Corr_dQ2_Integral_T(R[5:], m[0], m[1]), label="Model far")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
+    ax[1].set_ylim([0, 5.9e-04])
+    ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=0$")
+    ax[1].legend(fontsize=12)
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
+    fig.savefig(
+        f"results/Correlation dQ2 close and far from wounds {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaV (model)
+if True:
+
+    def Corr_dV(r, C, lamdba):
+        return C * np.exp(-lamdba * r)
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationsUnwound18h.pkl")
+
+    T, R, Theta = dfCor["dV1dV1Correlation"].iloc[0].shape
+
+    dV1dV1 = np.zeros([len(filenames), T, R])
+    dV2dV2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        dV1dV1Count = dfCor["dV1dV1Count"].iloc[i][:, :, :-1]
+        dV1dV1[i] = np.sum(
+            dfCor["dV1dV1Correlation"].iloc[i][:, :, :-1] * dV1dV1Count, axis=2
+        ) / np.sum(dV1dV1Count, axis=2)
+        dV2dV2[i] = np.sum(
+            dfCor["dV2dV2Correlation"].iloc[i][:, :, :-1] * dV1dV1Count, axis=2
+        ) / np.sum(dV1dV1Count, axis=2)
+
+    dfCor = 0
+
+    dV1dV1 = np.mean(dV1dV1, axis=0)
+    dV2dV2 = np.mean(dV2dV2, axis=0)
+
+    dV1dV1_r = dV1dV1[0][0:-1]
+    dV2dV2_r = dV2dV2[0][0:-1]
+
+    dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
+
+    T, R, Theta = dfCor["dQ1dQ1Close"].iloc[0].shape
+
+    dV1dV1Close = np.zeros([len(filenames), T, R - 1])
+    dV1dV1Far = np.zeros([len(filenames), T, R - 1])
+    dV2dV2Close = np.zeros([len(filenames), T, R - 1])
+    dV2dV2Far = np.zeros([len(filenames), T, R - 1])
+    for i in range(len(filenames)):
+        dV1dV1Closetotal = dfCor["dV1dV1Closetotal"].iloc[i][:, :-1, :-1]
+        dV1dV1Close[i] = np.sum(
+            dfCor["dV1dV1Close"].iloc[i][:, :-1, :-1] * dV1dV1Closetotal, axis=2
+        ) / np.sum(dV1dV1Closetotal, axis=2)
+        dV1dV1Fartotal = dfCor["dV1dV1Fartotal"].iloc[i][:, :-1, :-1]
+        dV1dV1Far[i] = np.sum(
+            dfCor["dV1dV1Far"].iloc[i][:, :-1, :-1] * dV1dV1Fartotal, axis=2
+        ) / np.sum(dV1dV1Fartotal, axis=2)
+
+        dV2dV2Closetotal = dfCor["dV2dV2Closetotal"].iloc[i][:, :-1, :-1]
+        dV2dV2Close[i] = np.sum(
+            dfCor["dV2dV2Close"].iloc[i][:, :-1, :-1] * dV2dV2Closetotal, axis=2
+        ) / np.sum(dV2dV2Closetotal, axis=2)
+        dV2dV2Fartotal = dfCor["dV2dV2Fartotal"].iloc[i][:, :-1, :-1]
+        dV2dV2Far[i] = np.sum(
+            dfCor["dV2dV2Far"].iloc[i][:, :-1, :-1] * dV2dV2Fartotal, axis=2
+        ) / np.sum(dV2dV2Fartotal, axis=2)
+
+    dfCor = 0
+
+    dV1dV1Close = np.mean(dV1dV1Close, axis=0)
+    dV1dV1Far = np.mean(dV1dV1Far, axis=0)
+    dV2dV2Close = np.mean(dV2dV2Close, axis=0)
+    dV2dV2Far = np.mean(dV2dV2Far, axis=0)
+
+    dV1dV1Close_r = dV1dV1Close[0][0:-1]
+    dV1dV1Far_r = dV1dV1Far[0][0:-1]
+    dV2dV2Close_r = dV2dV2Close[0][0:-1]
+    dV2dV2Far_r = dV2dV2Far[0][0:-1]
+
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[5:25],
+        ydata=dV1dV1Close_r[5:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[5:25],
+        ydata=dV1dV1Far_r[5:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[0].plot(R[5:25], dV1dV1Close_r[5:], label="Close to wound")
+    ax[0].plot(R[5:], Corr_dV(R[5:], M[0], M[1]), label="Model close")
+    ax[0].plot(R[5:25], dV1dV1Far_r[5:], label="Far from wound")
+    ax[0].plot(R[5:], Corr_dV(R[5:], m[0], m[1]), label="Model far")
+    ax[0].set_xlabel(r"$R (\mu m)$")
+    ax[0].set_ylabel(r"$\delta V_1$ Correlation")
+    ax[0].set_ylim([0, 0.6])
+    ax[0].title.set_text(r"Correlation of $\delta V_1$")
+    ax[0].legend(fontsize=12)
+
+    M = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[5:25],
+        ydata=dV2dV2Close_r[5:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(M)
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=R[5:25],
+        ydata=dV2dV2Far_r[5:],
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[1].plot(R[5:25], dV2dV2Close_r[5:], label="Close to wound")
+    ax[1].plot(R[5:], Corr_dV(R[5:], M[0], M[1]), label="Model close")
+    ax[1].plot(R[5:25], dV2dV2Far_r[5:], label="Far from wound")
+    ax[1].plot(R[5:], Corr_dV(R[5:], m[0], m[1]), label="Model far")
+    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_ylabel(r"$\delta V_2$ Correlation")
+    ax[1].set_ylim([0, 0.6])
+    ax[1].title.set_text(r"Correlation of $\delta V_2$")
+    ax[1].legend(fontsize=12)
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.35, hspace=0.37
+    )
+    fig.savefig(
+        f"results/Correlation dV in T and R {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",

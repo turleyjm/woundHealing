@@ -43,6 +43,7 @@ R = 110
 rStep = 10
 Theta = 390
 thetaStep = 30
+groupTitle = "wild type"
 
 
 def weighted_avg_and_std(values, weight, axis=0):
@@ -235,7 +236,7 @@ if False:
     plt.close("all")
 
 # Divison density with time best fit
-if False:
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
@@ -279,9 +280,10 @@ if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     bestfit = OLSfit(time, dd, dy=std)
     (m, c) = (bestfit[0], bestfit[2])
-    ax.plot(time, dd, marker="o", label=f"Unwounded")
-    ax.fill_between(time, dd - std, dd + std, alpha=0.15)
-    ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    ax.plot(time, dd, marker="o", label=f"Unwounded", color=colour)
+    ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colour)
+    ax.plot(time, m * time + c, color="k", label=f"Linear model")
     ax.set(xlabel="Time", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
     ax.title.set_text(f"Divison density with time {fileType}")
     ax.set_ylim([0, 7])
@@ -307,7 +309,7 @@ if False:
     plt.close("all")
 
 # Compare divison density with time
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     # legend = ["Unwounded", "Small wound", "Large wound"]
@@ -362,12 +364,13 @@ if False:
 
         dd = np.array(dd)
         std = np.array(std)
-        ax.plot(time, dd, label=f"{legend[i]}", marker="o", color=colors[i])
-        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colors[i])
+        colour, mark = util.getColorLineMarker(fileType, groupTitle)
+        ax.plot(time, dd, label=f"{legend[i]}", marker="o", color=colour)
+        ax.fill_between(time, dd - std, dd + std, alpha=0.15, color=colour)
         i += 1
 
     time = np.array(time)
-    ax.plot(time, m * time + c, color="tab:red", label=f"Linear model")
+    ax.plot(time, m * time + c, color="k", label=f"Linear model")
     ax.set(
         xlabel="Time after wounding (mins)",
         ylabel=r"Division density ($10^{-4}\mu m^{-2}$)",

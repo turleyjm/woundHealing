@@ -150,7 +150,7 @@ if False:
         plt.close("all")
 
 # Division correlations figure
-if False:
+if True:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]
@@ -211,8 +211,8 @@ if False:
         )
         plt.close("all")
 
-    t, r = np.mgrid[10:110:10, 10:120:10]
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    t, r = np.mgrid[5:105:10, 5:115:10]
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -222,8 +222,8 @@ if False:
         r,
         divCorr[:10] * 10000**2,
         cmap="RdBu_r",
-        vmin=-3,
-        vmax=3,
+        vmin=-4.1,
+        vmax=4.1,
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
@@ -240,8 +240,7 @@ if False:
     )
     plt.close("all")
 
-    t, r = np.mgrid[10:110:10, 10:120:10]
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -252,8 +251,8 @@ if False:
         (divCorr[:10] - np.mean(divCorr[:10, 7:10], axis=1).reshape((10, 1)))
         * 10000**2,
         cmap="RdBu_r",
-        vmin=-3,
-        vmax=3,
+        vmin=-4.1,
+        vmax=4.1,
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
@@ -261,7 +260,9 @@ if False:
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
 
-    ax.title.set_text(f"Division density \n correlation " + fileTitle)
+    ax.title.set_text(
+        f"Division density \n correlation minus long \n times " + fileTitle
+    )
 
     fig.savefig(
         f"results/Division Correlation figure remove long times {fileType}",
@@ -271,8 +272,7 @@ if False:
     )
     plt.close("all")
 
-    t, r = np.mgrid[10:110:10, 10:120:10]
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     plt.subplots_adjust(wspace=0.3)
     plt.gcf().subplots_adjust(bottom=0.15)
 
