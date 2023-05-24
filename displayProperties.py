@@ -385,7 +385,7 @@ if True:
                 andDiff = angleDiff(ori, oriPre)
                 blue = 255 * gaussian(andDiff, 0, 45)
                 red = 255 * gaussian(andDiff, 90, 45)
-                green = 155 * gaussian(andDiff, 45, 10)
+                green = 0
                 blue, red, green = (
                     np.array([blue, red, green]) * 255 / np.max([blue, red, green])
                 )
@@ -413,7 +413,7 @@ if True:
                 andDiff = angleDiff(ori, oriPre_tcj)
                 blue = 255 * gaussian(andDiff, 0, 45)
                 red = 255 * gaussian(andDiff, 90, 45)
-                green = 155 * gaussian(andDiff, 45, 10)
+                green = 0
                 blue, red, green = (
                     np.array([blue, red, green]) * 255 / np.max([blue, red, green])
                 )

@@ -439,10 +439,16 @@ if True:
             vmax=6,
         )
         fig.colorbar(c, ax=ax)
-        ax.set(
-            xlabel="Time (mins)",
-            ylabel=r"Distance from wound $(\mu m)$",
-        )
+        if "Wound" in fileType:
+            ax.set(
+                xlabel="Time after wounded (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
+        else:
+            ax.set(
+                xlabel="Time (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(f"Division density \n {boldTitle}")
@@ -554,10 +560,16 @@ if True:
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
-        ax.set(
-            xlabel="Time (mins)",
-            ylabel=r"Distance from wound $(\mu m)$",
-        )
+        if "Wound" in fileType:
+            ax.set(
+                xlabel="Time after wounded (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
+        else:
+            ax.set(
+                xlabel="Time (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(

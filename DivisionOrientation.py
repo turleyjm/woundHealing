@@ -427,7 +427,7 @@ R = 80
 rStep = 20
 
 # Divison orientation with distance from wound edge and time
-if True:
+if False:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
     ori_skew = np.zeros([int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
@@ -439,17 +439,19 @@ if True:
             df2 = df1[df1["T"] <= timeStep * (t + 1)]
             df3 = df2[df2["R"] > rStep * r]
             df = df3[df3["R"] <= rStep * (r + 1)]
-            ori[t, r] = np.mean(df["Orientation Wound"])
+            ori[t, r] = np.median(df["Orientation Wound"])
             ori_skew[t, r] = sp.stats.skew(df["Orientation Wound"])
 
-    t, r = np.mgrid[0:T:timeStep, rStep / 2 : R + rStep / 2 : rStep]
+    t, r = np.mgrid[
+        timeStep / 2 : T + timeStep / 2 : timeStep, rStep / 2 : R + rStep / 2 : rStep
+    ]
     fig, ax = plt.subplots(1, 1, figsize=(6, 3))
     c = ax.pcolor(
         t,
         r,
         ori,
-        vmin=70,
-        vmax=20,
+        vmin=90,
+        vmax=0,
         cmap="RdBu_r",
     )
     fig.colorbar(c, ax=ax)
@@ -461,7 +463,7 @@ if True:
         ax.set(
             xlabel="Time (mins)", ylabel="Distance from virtual \n" + r"wound $(\mu m)$"
         )
-    ax.title.set_text(f"Mean division orientation \n {fileTitle}")
+    ax.title.set_text(f"Median division orientation \n {fileTitle}")
 
     fig.savefig(
         f"results/Division ori heatmap {fileType}",
@@ -478,7 +480,7 @@ if True:
         ori_skew,
         vmin=-2,
         vmax=2,
-        cmap="RdBu_r",
+        cmap="RdBu",
     )
     fig.colorbar(c, ax=ax)
     if "Wound" in fileType:

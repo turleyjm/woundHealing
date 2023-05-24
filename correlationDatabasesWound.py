@@ -70,8 +70,8 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
 
 # space time cell density correlation close to wound
 if False:
-    grid = 7
-    timeGrid = 18
+    grid = 5
+    timeGrid = 6
     gridSize = 10
     gridSizeT = 5
     theta = np.linspace(0, 2 * np.pi, 17)
@@ -144,44 +144,57 @@ if False:
                             for jdash in range(yGrid):
                                 for tdash in T:
                                     tdash = int(tdash)
-                                    deltaT = int((tdash - t) / gridSizeT)
-                                    deltaR = int(
-                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
-                                    )
-                                    deltaTheta = int(
-                                        np.arctan2((j - jdash), (i - idash)) * 8 / np.pi
-                                    )
+                                    if (
+                                        np.sum(
+                                            inNearWound[
+                                                tdash : tdash + gridSizeT, idash, jdash
+                                            ]
+                                        )
+                                        > 0
+                                    ):
+                                        deltaT = int((tdash - t) / gridSizeT)
+                                        deltaR = int(
+                                            ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
+                                        )
+                                        deltaTheta = int(
+                                            np.arctan2((j - jdash), (i - idash))
+                                            * 8
+                                            / np.pi
+                                        )
 
-                                    if deltaR < grid:
-                                        if deltaT >= 0 and deltaT < timeGrid:
-                                            if (
-                                                np.sum(
-                                                    inPlaneEcad[
-                                                        tdash : tdash + gridSizeT,
-                                                        idash,
-                                                        jdash,
-                                                    ]
-                                                )
-                                                > 0
-                                            ):
-
-                                                drhodrhoij[deltaT][deltaR][
-                                                    deltaTheta
-                                                ].append(
-                                                    deltarho
-                                                    * np.mean(
-                                                        heatmapdrho[
+                                        if deltaR < grid:
+                                            if deltaT >= 0 and deltaT < timeGrid:
+                                                if (
+                                                    np.sum(
+                                                        inPlaneEcad[
                                                             tdash : tdash + gridSizeT,
                                                             idash,
                                                             jdash,
-                                                        ][
-                                                            inPlaneEcad[
-                                                                t : t + gridSizeT, i, j
-                                                            ]
-                                                            > 0
                                                         ]
                                                     )
-                                                )
+                                                    > 0
+                                                ):
+
+                                                    drhodrhoij[deltaT][deltaR][
+                                                        deltaTheta
+                                                    ].append(
+                                                        deltarho
+                                                        * np.mean(
+                                                            heatmapdrho[
+                                                                tdash : tdash
+                                                                + gridSizeT,
+                                                                idash,
+                                                                jdash,
+                                                            ][
+                                                                inPlaneEcad[
+                                                                    t : t + gridSizeT,
+                                                                    i,
+                                                                    j,
+                                                                ]
+                                                                > 0
+                                                            ]
+                                                        )
+                                                    )
 
         for i in range(len(T)):
             for j in range(len(R)):
@@ -206,8 +219,8 @@ if False:
 
 # space time cell density correlation far from to wound
 if False:
-    grid = 7
-    timeGrid = 18
+    grid = 5
+    timeGrid = 6
     gridSize = 10
     gridSizeT = 5
     theta = np.linspace(0, 2 * np.pi, 17)
@@ -280,44 +293,57 @@ if False:
                             for jdash in range(yGrid):
                                 for tdash in T:
                                     tdash = int(tdash)
-                                    deltaT = int((tdash - t) / gridSizeT)
-                                    deltaR = int(
-                                        ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
-                                    )
-                                    deltaTheta = int(
-                                        np.arctan2((j - jdash), (i - idash)) * 8 / np.pi
-                                    )
+                                    if (
+                                        np.sum(
+                                            inFarWound[
+                                                tdash : tdash + gridSizeT, idash, jdash
+                                            ]
+                                        )
+                                        > 0
+                                    ):
+                                        deltaT = int((tdash - t) / gridSizeT)
+                                        deltaR = int(
+                                            ((i - idash) ** 2 + (j - jdash) ** 2) ** 0.5
+                                        )
+                                        deltaTheta = int(
+                                            np.arctan2((j - jdash), (i - idash))
+                                            * 8
+                                            / np.pi
+                                        )
 
-                                    if deltaR < grid:
-                                        if deltaT >= 0 and deltaT < timeGrid:
-                                            if (
-                                                np.sum(
-                                                    inPlaneEcad[
-                                                        tdash : tdash + gridSizeT,
-                                                        idash,
-                                                        jdash,
-                                                    ]
-                                                )
-                                                > 0
-                                            ):
-
-                                                drhodrhoij[deltaT][deltaR][
-                                                    deltaTheta
-                                                ].append(
-                                                    deltarho
-                                                    * np.mean(
-                                                        heatmapdrho[
+                                        if deltaR < grid:
+                                            if deltaT >= 0 and deltaT < timeGrid:
+                                                if (
+                                                    np.sum(
+                                                        inPlaneEcad[
                                                             tdash : tdash + gridSizeT,
                                                             idash,
                                                             jdash,
-                                                        ][
-                                                            inPlaneEcad[
-                                                                t : t + gridSizeT, i, j
-                                                            ]
-                                                            > 0
                                                         ]
                                                     )
-                                                )
+                                                    > 0
+                                                ):
+
+                                                    drhodrhoij[deltaT][deltaR][
+                                                        deltaTheta
+                                                    ].append(
+                                                        deltarho
+                                                        * np.mean(
+                                                            heatmapdrho[
+                                                                tdash : tdash
+                                                                + gridSizeT,
+                                                                idash,
+                                                                jdash,
+                                                            ][
+                                                                inPlaneEcad[
+                                                                    t : t + gridSizeT,
+                                                                    i,
+                                                                    j,
+                                                                ]
+                                                                > 0
+                                                            ]
+                                                        )
+                                                    )
 
         for i in range(len(T)):
             for j in range(len(R)):
@@ -343,10 +369,10 @@ if False:
 # --------- shape ----------
 
 # space time cell-cell shape correlation close to wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
+    grid = 20
+    timeGrid = 30
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -386,16 +412,12 @@ if False:
             dfClose = dfShapeF[
                 np.array(dfShapeF["T"] < 30) & np.array(dfShapeF["R"] < 30 / scale)
             ]
-            n = int(len(dfClose) / 4)
+            n = len(dfClose)
             random.seed(10)
             count = 0
             Is = []
-            for i0 in range(n):
-                i = int(random.random() * n)
-                while i in Is:
-                    i = int(random.random() * n)
-                Is.append(i)
-                if i0 % int((n) / 10) == 0:
+            for i in range(n):
+                if i % int((n) / 10) == 0:
                     print(datetime.now().strftime("%H:%M:%S ") + f"{10*count}%")
                     count += 1
 
@@ -406,11 +428,11 @@ if False:
                 dp2 = dfClose["dp"].iloc[i][1]
                 dq1 = dfClose["dq"].iloc[i][0, 0]
                 dq2 = dfClose["dq"].iloc[i][0, 1]
-                dfShapeF.loc[:, "dR"] = (
-                    ((dfShapeF.loc[:, "X"] - x) ** 2 + (dfShapeF.loc[:, "Y"] - y) ** 2)
+                dfClose.loc[:, "dR"] = (
+                    ((dfClose.loc[:, "X"] - x) ** 2 + (dfClose.loc[:, "Y"] - y) ** 2)
                     ** 0.5
                 ).copy()
-                df = dfShapeF[
+                df = dfClose[
                     [
                         "X",
                         "Y",
@@ -426,7 +448,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = (df.loc[:, "T"] - t) / 2
+                df["dT"] = df.loc[:, "T"] - t
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -476,10 +498,10 @@ if False:
             )
 
 # space time cell-cell shape correlation far from wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
+    grid = 20
+    timeGrid = 30
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -518,16 +540,12 @@ if False:
             dfFar = dfShapeF[
                 np.array(dfShapeF["T"] < 30) & np.array(dfShapeF["R"] >= 30 / scale)
             ]
-            n = int(len(dfFar) / 10)
+            n = len(dfFar)
             random.seed(10)
             count = 0
             Is = []
-            for i0 in range(n):
-                i = int(random.random() * n)
-                while i in Is:
-                    i = int(random.random() * n)
-                Is.append(i)
-                if i0 % int((n) / 10) == 0:
+            for i in range(n):
+                if i % int((n) / 10) == 0:
                     print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
                     count += 1
 
@@ -538,11 +556,10 @@ if False:
                 dp2 = dfFar["dp"].iloc[i][1]
                 dq1 = dfFar["dq"].iloc[i][0, 0]
                 dq2 = dfFar["dq"].iloc[i][0, 1]
-                dfShapeF.loc[:, "dR"] = (
-                    ((dfShapeF.loc[:, "X"] - x) ** 2 + (dfShapeF.loc[:, "Y"] - y) ** 2)
-                    ** 0.5
+                dfFar.loc[:, "dR"] = (
+                    ((dfFar.loc[:, "X"] - x) ** 2 + (dfFar.loc[:, "Y"] - y) ** 2) ** 0.5
                 ).copy()
-                df = dfShapeF[
+                df = dfFar[
                     [
                         "X",
                         "Y",
@@ -558,7 +575,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = (df.loc[:, "T"] - t) / 2
+                df["dT"] = df.loc[:, "T"] - t
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -610,10 +627,10 @@ if False:
 # --------- velocity ----------
 
 # space time velocity-velocity correlation Close to wound
-if False:
+if True:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
+    grid = 20
+    timeGrid = 30
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -653,16 +670,12 @@ if False:
                 np.array(dfVelocityF["T"] < 30)
                 & np.array(dfVelocityF["R"] < 30 / scale)
             ]
-            n = int(len(dfClose) / 4)
+            n = len(dfClose)
             random.seed(10)
             count = 0
             Is = []
-            for i0 in range(n):
-                i = int(random.random() * n)
-                while i in Is:
-                    i = int(random.random() * n)
-                Is.append(i)
-                if i0 % int((n) / 10) == 0:
+            for i in range(n):
+                if i % int((n) / 10) == 0:
                     print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
                     count += 1
 
@@ -671,14 +684,11 @@ if False:
                 t = dfClose["T"].iloc[i]
                 dv1 = dfClose["dv"].iloc[i][0]
                 dv2 = dfClose["dv"].iloc[i][1]
-                dfVelocityF.loc[:, "dR"] = (
-                    (
-                        (dfVelocityF.loc[:, "X"] - x) ** 2
-                        + (dfVelocityF.loc[:, "Y"] - y) ** 2
-                    )
+                dfClose.loc[:, "dR"] = (
+                    ((dfClose.loc[:, "X"] - x) ** 2 + (dfClose.loc[:, "Y"] - y) ** 2)
                     ** 0.5
                 ).copy()
-                df = dfVelocityF[
+                df = dfClose[
                     [
                         "X",
                         "Y",
@@ -693,7 +703,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = (df.loc[:, "T"] - t) / 2
+                df["dT"] = df.loc[:, "T"] - t
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)
@@ -745,10 +755,10 @@ if False:
             )
 
 # space time velocity-velocity correlation far from wound
-if False:
+if True:
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
-    grid = 27
-    timeGrid = 51
+    grid = 20
+    timeGrid = 30
 
     T = np.linspace(0, (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -788,16 +798,12 @@ if False:
                 np.array(dfVelocityF["T"] < 30)
                 & np.array(dfVelocityF["R"] >= 30 / scale)
             ]
-            n = int(len(dfFar) / 10)
+            n = len(dfFar)
             random.seed(10)
             count = 0
             Is = []
-            for i0 in range(n):
-                i = int(random.random() * n)
-                while i in Is:
-                    i = int(random.random() * n)
-                Is.append(i)
-                if i0 % int((n) / 10) == 0:
+            for i in range(n):
+                if i % int((n) / 10) == 0:
                     print(datetime.now().strftime("%H:%M:%S") + f" {10*count}%")
                     count += 1
 
@@ -806,14 +812,10 @@ if False:
                 t = dfFar["T"].iloc[i]
                 dv1 = dfFar["dv"].iloc[i][0]
                 dv2 = dfFar["dv"].iloc[i][1]
-                dfVelocityF.loc[:, "dR"] = (
-                    (
-                        (dfVelocityF.loc[:, "X"] - x) ** 2
-                        + (dfVelocityF.loc[:, "Y"] - y) ** 2
-                    )
-                    ** 0.5
+                dfFar.loc[:, "dR"] = (
+                    ((dfFar.loc[:, "X"] - x) ** 2 + (dfFar.loc[:, "Y"] - y) ** 2) ** 0.5
                 ).copy()
-                df = dfVelocityF[
+                df = dfFar[
                     [
                         "X",
                         "Y",
@@ -828,7 +830,7 @@ if False:
                 ]
                 df = df[np.array(df["dR"] < R[-1]) & np.array(df["dR"] >= 0)]
 
-                df["dT"] = (df.loc[:, "T"] - t) / 2
+                df["dT"] = df.loc[:, "T"] - t
                 df = df[np.array(df["dT"] < timeGrid) & np.array(df["dT"] >= 0)]
                 if len(df) != 0:
                     theta = np.arctan2(df.loc[:, "Y"] - y, df.loc[:, "X"] - x)

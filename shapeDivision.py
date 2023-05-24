@@ -340,19 +340,99 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].plot(time, Q0, color=colour, marker=mark, markevery=3)
     ax[0].fill_between(time, Q0 - std, Q0 + std, alpha=0.15, color=colour)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q_0$")
-    ax[0].title.set_text(r"$Q_0$ during division")
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q^{(0)}$")
+    ax[0].title.set_text(r"$Q^{(0)}$ during division")
     ax[0].set_ylim([-0.03, 0.08])
 
     ax[1].plot(time, dQ0, color=colour, marker=mark, markevery=3)
     ax[1].fill_between(time, dQ0 - dQ0std, dQ0 + dQ0std, alpha=0.15, color=colour)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q_0$")
-    ax[1].title.set_text(r"$\delta Q_0$ during division")
-    ax[1].set_ylim([-0.03, 0.08])
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^{(0)}$")
+    ax[1].title.set_text(r"$\delta Q^{(0)}$ during division")
+    ax[1].set_ylim([-0.04, 0.04])
 
     plt.subplots_adjust(wspace=0.5)
     fig.savefig(
         f"results/Q0 division {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# shape (Q1) of parent dividing cells
+if False:
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    T = np.max(dfShape["T"])
+    time = list(
+        np.linspace(
+            np.min(dfDivisionTrack["Division Time"]),
+            np.max(dfDivisionTrack["Division Time"]),
+            int(
+                np.max(dfDivisionTrack["Division Time"])
+                - np.min(dfDivisionTrack["Division Time"])
+                + 1
+            ),
+        )
+    )
+    Q1 = [[] for col in range(len(time))]
+    dQ1 = [[] for col in range(len(time))]
+    for filename in filenames:
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        dfFileShape = dfShape[dfShape["Filename"] == filename]
+        Q1_T = []
+        for t in range(T):
+            Q1_T.append(
+                np.mean(
+                    (
+                        np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 0]
+                    )
+                )
+            )
+
+        for i in range(len(df)):
+
+            t = df["Time"].iloc[i]
+            if t < T:
+                divTime = df["Division Time"].iloc[i]
+                index = time.index(divTime)
+                Q1[index].append(df["q"].iloc[i][0, 0])
+                dQ1[index].append(df["q"].iloc[i][0, 0] - Q1_T[t])
+
+    std = []
+    dQ1std = []
+    for i in range(len(Q1)):
+        std.append(np.std(Q1[i]))
+        Q1[i] = np.mean(Q1[i])
+        dQ1std.append(np.std(dQ1[i]))
+        dQ1[i] = np.mean(dQ1[i])
+    time = 2 * np.array(time)
+
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    Q1 = np.array(Q1)
+    std = np.array(std)
+    dQ1 = np.array(dQ1)
+    dQ1std = np.array(dQ1std)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, Q1, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q^{(1)}$")
+    ax[0].title.set_text(r"$Q^{(1)}$ during division")
+    ax[0].set_ylim([-0.02, 0.05])
+
+    ax[1].plot(time, dQ1, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(time, dQ1 - dQ1std, dQ1 + dQ1std, alpha=0.15, color=colour)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^{(1)}$")
+    ax[1].title.set_text(r"$\delta Q^{(1)}$ during division")
+    ax[1].set_ylim([-0.04, 0.04])
+
+    plt.subplots_adjust(wspace=0.5)
+    fig.savefig(
+        f"results/Q1 division {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -500,19 +580,99 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].plot(time, Q0, color=colour, marker=mark, markevery=3)
     ax[0].fill_between(time, Q0 - std, Q0 + std, alpha=0.15, color=colour)
-    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q_0$")
-    ax[0].title.set_text(r"$Q_0$ after division")
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q^{(0)}$")
+    ax[0].title.set_text(r"$Q^{(0)}$ after division")
     ax[0].set_ylim([-0.03, 0.08])
 
     ax[1].plot(time, dQ0, color=colour, marker=mark, markevery=3)
     ax[1].fill_between(time, dQ0 - dQ0std, dQ0 + dQ0std, alpha=0.15, color=colour)
-    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q_0$")
-    ax[1].title.set_text(r"$\delta Q_0$ after division")
-    ax[1].set_ylim([-0.03, 0.08])
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^{(0)}$")
+    ax[1].title.set_text(r"$\delta Q^{(0)}$ after division")
+    ax[1].set_ylim([-0.04, 0.04])
 
     plt.subplots_adjust(wspace=0.5)
     fig.savefig(
         f"results/Q0 Daughter Cell {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# shape (Q1) of daughter cells
+if False:
+    dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
+    dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] != "parent"]
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    T = np.max(dfShape["T"])
+    time = list(
+        np.linspace(
+            np.min(dfDivisionTrack["Division Time"]),
+            np.max(dfDivisionTrack["Division Time"]),
+            int(
+                np.max(dfDivisionTrack["Division Time"])
+                - np.min(dfDivisionTrack["Division Time"])
+                + 1
+            ),
+        )
+    )
+    Q1 = [[] for col in range(len(time))]
+    dQ1 = [[] for col in range(len(time))]
+    for filename in filenames:
+        df = dfDivisionTrack[dfDivisionTrack["Filename"] == filename]
+        dfFileShape = dfShape[dfShape["Filename"] == filename]
+        Q1_T = []
+        for t in range(T):
+            Q1_T.append(
+                np.mean(
+                    (
+                        np.stack(
+                            np.array(dfFileShape["q"][dfFileShape["T"] == t]), axis=0
+                        )[:, 0, 0]
+                    )
+                )
+            )
+
+        for i in range(len(df)):
+
+            t = df["Time"].iloc[i]
+            if t < T:
+                divTime = df["Division Time"].iloc[i]
+                index = time.index(divTime)
+                Q1[index].append(df["q"].iloc[i][0, 0])
+                dQ1[index].append(df["q"].iloc[i][0, 0] - Q1_T[t])
+
+    std = []
+    dQ1std = []
+    for i in range(len(Q1)):
+        std.append(np.std(Q1[i]))
+        Q1[i] = np.mean(Q1[i])
+        dQ1std.append(np.std(dQ1[i]))
+        dQ1[i] = np.mean(dQ1[i])
+    time = 2 * np.array(time)
+
+    colour, mark = util.getColorLineMarker(fileType, groupTitle)
+    Q1 = np.array(Q1)
+    std = np.array(std)
+    dQ1 = np.array(dQ1)
+    dQ1std = np.array(dQ1std)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    ax[0].plot(time, Q1, color=colour, marker=mark, markevery=3)
+    ax[0].fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
+    ax[0].set(xlabel=r"Time (mins)", ylabel=r"$Q^{(1)}$")
+    ax[0].title.set_text(r"$Q^{(1)}$ after division")
+    ax[0].set_ylim([-0.02, 0.05])
+
+    ax[1].plot(time, dQ1, color=colour, marker=mark, markevery=3)
+    ax[1].fill_between(time, dQ1 - dQ1std, dQ1 + dQ1std, alpha=0.15, color=colour)
+    ax[1].set(xlabel=r"Time (mins)", ylabel=r"$\delta Q^{(1)}$")
+    ax[1].title.set_text(r"$\delta Q^{(1)}$ after division")
+    ax[1].set_ylim([-0.04, 0.04])
+
+    plt.subplots_adjust(wspace=0.5)
+    fig.savefig(
+        f"results/Q1 Daughter Cell {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -568,7 +728,7 @@ if False:
     colour, mark = util.getColorLineMarker(fileType, groupTitle)
 
     ax[0].hist(diff, 9, density=True, color=colour)
-    ax[0].set(xlabel=r"Difference in Orientation", ylabel=r"density")
+    ax[0].set(xlabel=r"$|\theta_{d} - \theta_{A}|$", ylabel=r"density")
     ax[0].set_ylim([0, 0.02])
 
     c = ax[1].pcolor(
@@ -580,7 +740,7 @@ if False:
         cmap="Reds",
     )
     fig.colorbar(c, ax=ax[1])
-    ax[1].set(xlabel=r"Difference in Orientation", ylabel=r"$S_f$")
+    ax[1].set(xlabel=r"$|\theta_{d} - \theta_{A}|$", ylabel=r"Area $S_f$")
     ax[1].set_ylim([0, 1])
 
     plt.subplots_adjust(
@@ -647,7 +807,7 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
     ax[0].hist(diff, 9, density=True, color=colour)
-    ax[0].set(xlabel=r"Difference in Orientation tcj", ylabel=r"density")
+    ax[0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
     ax[0].set_ylim([0, 0.02])
 
     c = ax[1].pcolor(
@@ -659,7 +819,7 @@ if False:
         cmap="Reds",
     )
     fig.colorbar(c, ax=ax[1])
-    ax[1].set(xlabel=r"Difference in Orientation tcj", ylabel=r"$S_f$ tcj")
+    ax[1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"tcj $S_f$")
 
     plt.subplots_adjust(
         left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.5, hspace=0.4
@@ -675,12 +835,12 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
     ax[0].scatter(sf, sf_tcj, color=colour)
-    ax[0].set(xlabel=r"$S_f$", ylabel=r"$S_f$ tcj")
+    ax[0].set(xlabel=r"Area $S_f$", ylabel=r"tcj $S_f$")
     ax[0].set_xlim([0, 1])
     ax[0].set_ylim([0, 1])
 
     ax[1].scatter(q0, q0_tcj, color=colour)
-    ax[1].set(xlabel=r"$q_0$", ylabel=r"$q_0$ tcj")
+    ax[1].set(xlabel=r"Area $q_0$", ylabel=r"tcj $q_0$")
 
     plt.subplots_adjust(
         left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.5, hspace=0.4
@@ -694,7 +854,7 @@ if False:
     plt.close("all")
 
 # |\theta_{tcj} - \theta_{s}| > 15 compare different in orientation
-if False:
+if True:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -706,6 +866,7 @@ if False:
     oriDiff_tcj_sfL = []
     oriDiff_sfH = []
     oriDiff_tcj_sfH = []
+    tcj_n = []
     for filename in filenames:
         dfFileShape = dfDivisionShape[dfDivisionShape["Filename"] == filename]
         dfFileShape = dfFileShape[dfFileShape["Track length"] > 18]
@@ -713,65 +874,71 @@ if False:
         labels = list(dfFileShape["Label"])
         for label in labels:
             dfDiv = df[df["Label"] == label]
-            tcjs = dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]
-            if tcjs != False:
-                ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
-                oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
-                oriPre_tcj = dfDiv["Orientation tcj"][
-                    dfDiv["Division Time"] == -15
-                ].iloc[0]
-                sf = dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
-                if angleDiff(oriPre, oriPre_tcj) > 15:
-                    oriDiff.append(angleDiff(ori, oriPre))
-                    oriDiff_tcj.append(angleDiff(ori, oriPre_tcj))
-                    if sf < 0.2:
-                        oriDiff_sfL.append(angleDiff(ori, oriPre))
-                        oriDiff_tcj_sfL.append(angleDiff(ori, oriPre_tcj))
-                    else:
-                        oriDiff_sfH.append(angleDiff(ori, oriPre))
-                        oriDiff_tcj_sfH.append(angleDiff(ori, oriPre_tcj))
+
+            tcj_n.append(len(dfDiv["TCJ"][dfDiv["Division Time"] == -15].iloc[0]))
+            ori = dfFileShape["Orientation"][dfFileShape["Label"] == label].iloc[0]
+            oriPre = dfDiv["Orientation"][dfDiv["Division Time"] == -15].iloc[0]
+            oriPre_tcj = dfDiv["Orientation tcj"][dfDiv["Division Time"] == -15].iloc[0]
+            sf = dfDiv["Shape Factor tcj"][dfDiv["Division Time"] == -15].iloc[0]
+            if angleDiff(oriPre, oriPre_tcj) > 15:
+                oriDiff.append(angleDiff(ori, oriPre))
+                oriDiff_tcj.append(angleDiff(ori, oriPre_tcj))
+                if sf < 0.2:
+                    oriDiff_sfL.append(angleDiff(ori, oriPre))
+                    oriDiff_tcj_sfL.append(angleDiff(ori, oriPre_tcj))
+                else:
+                    oriDiff_sfH.append(angleDiff(ori, oriPre))
+                    oriDiff_tcj_sfH.append(angleDiff(ori, oriPre_tcj))
 
     colour, mark = util.getColorLineMarker(fileType, groupTitle)
     fig, ax = plt.subplots(2, 3, figsize=(12, 8))
 
     ax[0, 0].hist(oriDiff, 9, density=True, color=colour)
-    ax[0, 0].axvline(np.mean(oriDiff), color="b")
-    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
-    ax[0, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
+    ax[0, 0].axvline(np.median(oriDiff), color="b")
+    ax[0, 0].set(xlabel=r"$|\theta_{d} - \theta_{A}|$", ylabel=r"Density")
+    ax[0, 0].title.set_text(r"$|\theta_{tcj} - \theta_{A}| > 15$")
     ax[0, 0].set_ylim([0, 0.026])
 
     ax[1, 0].hist(oriDiff_tcj, 9, density=True, color=colour)
-    ax[1, 0].axvline(np.mean(oriDiff_tcj), color="b")
-    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
-    ax[1, 0].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$")
+    ax[1, 0].axvline(np.median(oriDiff_tcj), color="b")
+    ax[1, 0].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"Density")
+    ax[1, 0].title.set_text(r"$|\theta_{tcj} - \theta_{A}| > 15$")
     ax[1, 0].set_ylim([0, 0.026])
 
     ax[0, 1].hist(oriDiff_sfL, 9, density=True, color=colour)
-    ax[0, 1].axvline(np.mean(oriDiff_sfL), color="b")
-    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
-    ax[0, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
+    ax[0, 1].axvline(np.median(oriDiff_sfL), color="b")
+    ax[0, 1].set(xlabel=r"$|\theta_{d} - \theta_{A}|$", ylabel=r"Density")
+    ax[0, 1].title.set_text(
+        r"$|\theta_{tcj} - \theta_{A}| > 15$" + "\n and " + r"Area $S_f<0.2$"
+    )
     ax[0, 1].set_ylim([0, 0.026])
 
     ax[1, 1].hist(oriDiff_tcj_sfL, 9, density=True, color=colour)
-    ax[1, 1].axvline(np.mean(oriDiff_tcj_sfL), color="b")
-    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
-    ax[1, 1].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f<0.2$")
+    ax[1, 1].axvline(np.median(oriDiff_tcj_sfL), color="b")
+    ax[1, 1].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"Density")
+    ax[1, 1].title.set_text(
+        r"$|\theta_{tcj} - \theta_{A}| > 15$" + "\n and " + r"Area $S_f<0.2$"
+    )
     ax[1, 1].set_ylim([0, 0.026])
 
     ax[0, 2].hist(oriDiff_sfH, 9, density=True, color=colour)
-    ax[0, 2].axvline(np.mean(oriDiff_sfH), color="b")
-    ax[0, 2].set(xlabel=r"$|\theta_{d} - \theta_{s}|$", ylabel=r"density")
-    ax[0, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
+    ax[0, 2].axvline(np.median(oriDiff_sfH), color="b")
+    ax[0, 2].set(xlabel=r"$|\theta_{d} - \theta_{A}|$", ylabel=r"Density")
+    ax[0, 2].title.set_text(
+        r"$|\theta_{tcj} - \theta_{A}| > 15$" + "\n and " + r"Area $S_f>0.2$"
+    )
     ax[0, 2].set_ylim([0, 0.026])
 
     ax[1, 2].hist(oriDiff_tcj_sfH, 9, density=True, color=colour)
-    ax[1, 2].axvline(np.mean(oriDiff_tcj_sfH), color="b")
-    ax[1, 2].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"density")
-    ax[1, 2].title.set_text(r"$|\theta_{tcj} - \theta_{s}| > 15$ and $S_f>0.2$")
+    ax[1, 2].axvline(np.median(oriDiff_tcj_sfH), color="b")
+    ax[1, 2].set(xlabel=r"$|\theta_{d} - \theta_{tcj}|$", ylabel=r"Density")
+    ax[1, 2].title.set_text(
+        r"$|\theta_{tcj} - \theta_{A}| > 15$" + "\n and " + r"Area $S_f>0.2$"
+    )
     ax[1, 2].set_ylim([0, 0.026])
 
     plt.subplots_adjust(
-        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.4, hspace=0.45
+        left=0.075, bottom=0.1, right=0.95, top=0.9, wspace=0.4, hspace=0.5
     )
     fig.savefig(
         f"results/Orientation division diff when shape ori disagree {fileType}",
@@ -1622,7 +1789,7 @@ if False:
         label="Mitosis orientation",
         color="g",
     )
-    ax.axvline(np.mean(df["Orientation"]), color="g")
+    ax.axvline(np.median(df["Orientation"]), color="g")
     ax.hist(
         df["Shape Orientation"],
         alpha=0.4,
@@ -1630,7 +1797,7 @@ if False:
         density=True,
         label="Post shuffling orientation",
     )
-    ax.axvline(np.mean(df["Shape Orientation"]), color="m")
+    ax.axvline(np.median(df["Shape Orientation"]), color="m")
 
     ax.set(xlabel="Division orientation relative to wing", ylabel="Frequency")
     fileTitle = util.getFileTitle(fileType)
@@ -1645,7 +1812,7 @@ if False:
             f"Shift in division orientation relative \n to wing in " + boldTitle
         )
 
-    ax.set_ylim([0, 0.019])
+    ax.set_ylim([0, 0.024])
     ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(
@@ -1821,7 +1988,7 @@ if False:
         label="Mitosis orientation",
         color="g",
     )
-    ax.axvline(np.mean(df["Nuclei Orientation"]), color="g")
+    ax.axvline(np.median(df["Nuclei Orientation"]), color="g")
     ax.hist(
         df["Daughter Orientation"],
         alpha=0.4,
@@ -1829,7 +1996,7 @@ if False:
         density=True,
         label="Post shuffling orientation",
     )
-    ax.axvline(np.mean(df["Daughter Orientation"]), color="m")
+    ax.axvline(np.median(df["Daughter Orientation"]), color="m")
 
     ax.set(xlabel="Division orientation relative \n to wound", ylabel="Frequency")
     fileTitle = util.getFileTitle(fileType)
@@ -1840,7 +2007,7 @@ if False:
         ax.title.set_text(
             f"Shift in division orientation relative \n to wing in " + boldTitle
         )
-    ax.set_ylim([0, 0.019])
+    ax.set_ylim([0, 0.024])
     ax.legend(fontsize=12, loc="upper left")
 
     # ax[1].hist(

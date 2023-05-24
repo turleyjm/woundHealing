@@ -318,7 +318,7 @@ if False:
     dfDivisions.to_pickle(f"databases/dfDivisions{fileType}.pkl")
 
 # Cell Shape relative to tissue
-if False:
+if True:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{fileType}.pkl")
     dfVelocityMean = pd.read_pickle(f"databases/dfVelocityMean{fileType}.pkl")
@@ -377,7 +377,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShape{fileType}.pkl")
 
 # Cell Shape relative to wound
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -494,7 +494,7 @@ if False:
     dfShape.to_pickle(f"databases/dfShapeWound{fileType}.pkl")
 
 # Nucleus velocity relative to wound
-if False:
+if True:
     _df2 = []
     for filename in filenames:
 
@@ -583,7 +583,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocityWound{fileType}.pkl")
 
 # Cells Divisions and Shape changes
-if True:
+if False:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     _df = []
     _dfTrack = []

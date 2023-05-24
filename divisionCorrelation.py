@@ -227,7 +227,7 @@ if True:
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
-    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    ax.set_ylabel(r"Distance apart $r$ $(\mu m)$")
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
     ax.title.set_text(f"Division density \n correlation " + fileTitle)
@@ -256,12 +256,12 @@ if True:
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
-    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    ax.set_ylabel(r"Distance apart $r$ $(\mu m)$")
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
 
     ax.title.set_text(
-        f"Division density \n correlation minus long \n times " + fileTitle
+        f"Division density corr.\n after removing long range \n time corr. " + fileTitle
     )
 
     fig.savefig(
@@ -281,12 +281,12 @@ if True:
         r,
         oriCorr[:10],
         cmap="RdBu_r",
-        vmin=-1,
-        vmax=1,
+        vmin=-1.05,
+        vmax=1.05,
     )
     fig.colorbar(c, ax=ax)
     ax.set_xlabel("Time apart $t$ (min)")
-    ax.set_ylabel(r"Distance apart $r (\mu m)$")
+    ax.set_ylabel(r"Distance apart $r$ $(\mu m)$")
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
     ax.title.set_text(f"Division orientation \n correlation " + fileTitle)

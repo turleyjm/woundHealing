@@ -143,8 +143,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Time (mins)")
-    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 0].title.set_text(
         r"$\langle (\delta \rho_s + \delta \rho_n) (\delta \rho_s + \delta \rho_n) \rangle$"
     )
@@ -159,8 +159,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (mins)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].set_xlabel("Time apart $T$ (min)")
+    ax[0, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$")
 
     maxCorr = np.max([dQ1dRho, -dQ1dRho])
@@ -174,8 +174,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 2])
-    ax[0, 2].set_xlabel("Time (mins)")
-    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].set_xlabel("Time apart $T$ (min)")
+    ax[0, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 2].title.set_text(r"$\langle \delta Q^1 \delta \rho \rangle$")
 
     maxCorr = np.max([dQ2dRho, -dQ2dRho])
@@ -189,8 +189,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 3])
-    ax[0, 3].set_xlabel("Time (mins)")
-    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].set_xlabel("Time apart $T$ (min)")
+    ax[0, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
 
     T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
@@ -265,8 +265,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
     maxCorr = np.max([dP2dP2, -dP2dP2])
@@ -280,8 +280,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
     maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
@@ -295,8 +295,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].set_xlabel("Time apart $T$ (min)")
+    ax[1, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
     maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
@@ -310,8 +310,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 3])
-    ax[1, 3].set_xlabel("Time (mins)")
-    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].set_xlabel("Time apart $T$ (min)")
+    ax[1, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 3].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dQ1dQ2, -dQ1dQ2])
@@ -325,8 +325,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dP1dQ1, -dP1dQ1])
@@ -340,8 +340,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].set_xlabel("Time apart $T$ (min)")
+    ax[2, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
 
     maxCorr = np.max([dP1dQ2, -dP1dQ2])
@@ -355,8 +355,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].set_xlabel("Time apart $T$ (min)")
+    ax[2, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
 
     maxCorr = np.max([dP2dQ2, -dP2dQ2])
@@ -370,8 +370,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 3])
-    ax[2, 3].set_xlabel("Time (mins)")
-    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].set_xlabel("Time apart $T$ (min)")
+    ax[2, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
 
     # plt.subplot_tool()
@@ -434,8 +434,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Time (mins)")
-    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 0].title.set_text(
         r"$\langle (\delta \rho_s + \delta \rho_n) (\delta \rho_s + \delta \rho_n) \rangle$"
     )
@@ -450,8 +450,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (mins)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].set_xlabel("Time apart $T$ (min)")
+    ax[0, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$")
 
     c = ax[0, 2].pcolor(
@@ -464,8 +464,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 2])
-    ax[0, 2].set_xlabel("Time (mins)")
-    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].set_xlabel("Time apart $T$ (min)")
+    ax[0, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 2].title.set_text(r"$\langle \delta Q^1 \delta \rho \rangle$")
 
     c = ax[0, 3].pcolor(
@@ -478,8 +478,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 3])
-    ax[0, 3].set_xlabel("Time (mins)")
-    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].set_xlabel("Time apart $T$ (min)")
+    ax[0, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 3].title.set_text(r"$\langle \delta Q^2 \delta \rho \rangle$")
     print(np.max([np.max(dQ2dRho), np.max(-dQ2dRho)]), "dQ2dRho")
 
@@ -564,8 +564,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"$\langle \delta P_1 \delta P_1 \rangle$")
 
     c = ax[1, 1].pcolor(
@@ -578,8 +578,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"$\langle \delta P_2 \delta P_2 \rangle$")
 
     c = ax[1, 2].pcolor(
@@ -592,8 +592,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].set_xlabel("Time apart $T$ (min)")
+    ax[1, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 2].title.set_text(r"$\langle \delta Q^1 \delta Q^1 \rangle$")
 
     c = ax[1, 3].pcolor(
@@ -606,8 +606,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 3])
-    ax[1, 3].set_xlabel("Time (mins)")
-    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].set_xlabel("Time apart $T$ (min)")
+    ax[1, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 3].title.set_text(r"$\langle \delta Q^2 \delta Q^2 \rangle$")
 
     c = ax[2, 0].pcolor(
@@ -620,8 +620,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].title.set_text(r"$\langle \delta Q^1 \delta Q^2 \rangle$")
 
     c = ax[2, 1].pcolor(
@@ -634,8 +634,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].set_xlabel("Time apart $T$ (min)")
+    ax[2, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 1].title.set_text(r"$\langle \delta P_1 \delta Q^1 \rangle$")
     print(np.max([np.max(dP1dQ1), np.max(-dP1dQ1)]))
 
@@ -649,8 +649,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].set_xlabel("Time apart $T$ (min)")
+    ax[2, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 2].title.set_text(r"$\langle \delta P_1 \delta Q^2 \rangle$")
     print(np.max([np.max(dP1dQ2), np.max(-dP1dQ2)]), "dP1dQ2")
 
@@ -664,8 +664,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 3])
-    ax[2, 3].set_xlabel("Time (mins)")
-    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].set_xlabel("Time apart $T$ (min)")
+    ax[2, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 3].title.set_text(r"$\langle \delta P_2 \delta Q^2 \rangle$")
     print(np.max([np.max(dP2dQ2), np.max(-dP2dQ2)]), "dP2dQ2")
 
@@ -729,8 +729,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Time (mins)")
-    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 0].title.set_text(
         r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
     )
@@ -746,8 +746,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (mins)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].set_xlabel("Time apart $T$ (min)")
+    ax[0, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].title.set_text(
         r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
@@ -763,8 +763,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 2])
-    ax[0, 2].set_xlabel("Time (mins)")
-    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].set_xlabel("Time apart $T$ (min)")
+    ax[0, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 2].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
     )
@@ -780,8 +780,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 3])
-    ax[0, 3].set_xlabel("Time (mins)")
-    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].set_xlabel("Time apart $T$ (min)")
+    ax[0, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 3].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
@@ -823,8 +823,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(
         r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
     )
@@ -840,8 +840,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(
         r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
     )
@@ -857,8 +857,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].set_xlabel("Time apart $T$ (min)")
+    ax[1, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 2].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_1 \rangle$"
     )
@@ -874,8 +874,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 3])
-    ax[1, 3].set_xlabel("Time (mins)")
-    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].set_xlabel("Time apart $T$ (min)")
+    ax[1, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 3].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
     )
@@ -922,8 +922,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
 
     maxCorr = np.max([dP2dV2, -dP2dV2])
@@ -937,8 +937,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].set_xlabel("Time apart $T$ (min)")
+    ax[2, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 1].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
 
     maxCorr = np.max([dV1dV1, -dV1dV1])
@@ -952,8 +952,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].set_xlabel("Time apart $T$ (min)")
+    ax[2, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 2].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
 
     maxCorr = np.max([dV2dV2, -dV2dV2])
@@ -967,8 +967,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 3])
-    ax[2, 3].set_xlabel("Time (mins)")
-    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].set_xlabel("Time apart $T$ (min)")
+    ax[2, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 3].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
 
     # plt.subplot_tool()
@@ -1160,8 +1160,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Time (mins)")
-    ax[0, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 0].title.set_text(
         r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
     )
@@ -1176,8 +1176,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 1])
-    ax[0, 1].set_xlabel("Time (mins)")
-    ax[0, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 1].set_xlabel("Time apart $T$ (min)")
+    ax[0, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].title.set_text(
         r"$\langle \partial_{r_1} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
@@ -1192,8 +1192,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 2])
-    ax[0, 2].set_xlabel("Time (mins)")
-    ax[0, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 2].set_xlabel("Time apart $T$ (min)")
+    ax[0, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 2].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_1 \rangle$"
     )
@@ -1208,8 +1208,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 3])
-    ax[0, 3].set_xlabel("Time (mins)")
-    ax[0, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[0, 3].set_xlabel("Time apart $T$ (min)")
+    ax[0, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 3].title.set_text(
         r"$\langle \partial_{r_2} (\delta \rho_s + \delta \rho) \delta V_2 \rangle$"
     )
@@ -1257,8 +1257,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(
         r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_1 \rangle$"
     )
@@ -1273,8 +1273,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(
         r"$\langle \partial_{r_1} \delta Q^{(1)} \delta V_2 \rangle$"
     )
@@ -1289,8 +1289,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 2])
-    ax[1, 2].set_xlabel("Time (mins)")
-    ax[1, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 2].set_xlabel("Time apart $T$ (min)")
+    ax[1, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 2].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_1 \rangle$"
     )
@@ -1305,8 +1305,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 3])
-    ax[1, 3].set_xlabel("Time (mins)")
-    ax[1, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 3].set_xlabel("Time apart $T$ (min)")
+    ax[1, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 3].title.set_text(
         r"$\langle \partial_{r_2} \delta Q^{(1)} \delta V_2 \rangle$"
     )
@@ -1358,8 +1358,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 0])
-    ax[2, 0].set_xlabel("Time (mins)")
-    ax[2, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].title.set_text(r"$\langle \delta P_1 \delta V_1 \rangle$")
 
     c = ax[2, 1].pcolor(
@@ -1372,8 +1372,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 1])
-    ax[2, 1].set_xlabel("Time (mins)")
-    ax[2, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 1].set_xlabel("Time apart $T$ (min)")
+    ax[2, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 1].title.set_text(r"$\langle \delta P_2 \delta V_2 \rangle$")
 
     c = ax[2, 2].pcolor(
@@ -1386,8 +1386,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 2])
-    ax[2, 2].set_xlabel("Time (mins)")
-    ax[2, 2].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 2].set_xlabel("Time apart $T$ (min)")
+    ax[2, 2].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 2].title.set_text(r"$\langle \delta V_1 \delta V_1 \rangle$")
 
     c = ax[2, 3].pcolor(
@@ -1400,8 +1400,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[2, 3])
-    ax[2, 3].set_xlabel("Time (mins)")
-    ax[2, 3].set_ylabel(r"$R (\mu m)$ ")
+    ax[2, 3].set_xlabel("Time apart $T$ (min)")
+    ax[2, 3].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 3].title.set_text(r"$\langle \delta V_2 \delta V_2 \rangle$")
 
     # plt.subplot_tool()
@@ -1476,7 +1476,7 @@ if False:
     ax[0, 0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
     ax[0, 0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
     # ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model")
-    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
     ax[0, 0].set_ylim([0, 5.9e-04])
     ax[0, 0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
@@ -1494,7 +1494,7 @@ if False:
     ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label="Data")
     ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
     # ax[0, 1].plot(R, Corr_dQ1_Integral_T(R, m[0]), label="Model")
-    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
     ax[0, 1].set_ylim([0, 5.9e-04])
     ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=0$")
@@ -1513,8 +1513,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"Experiment $\langle \delta Q^1 \delta Q^1 \rangle$")
 
     c = ax[1, 1].pcolor(
@@ -1527,8 +1527,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"Model $\langle \delta Q^1 \delta Q^1 \rangle$")
 
     plt.subplots_adjust(
@@ -1591,7 +1591,7 @@ if False:
         Corr_dQ2(0, T[1:])[0],
         label="Model",
     )
-    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[0, 0].set_ylim([0, 6e-04])
     ax[0, 0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
@@ -1608,7 +1608,7 @@ if False:
 
     ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26], label="Data")
     ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
-    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
     ax[0, 1].set_ylim([0, 6e-04])
     ax[0, 1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=0$")
@@ -1627,8 +1627,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"Experiment $\langle \delta Q^2 \delta Q^2 \rangle$")
 
     c = ax[1, 1].pcolor(
@@ -1641,8 +1641,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"Model $\langle \delta Q^2 \delta Q^2 \rangle$")
 
     plt.subplots_adjust(
@@ -1718,7 +1718,7 @@ if False:
 
     ax[0, 0].plot(T, dP1dP1[:, 0], label="Data")
     ax[0, 0].plot(T, Corr_dP1(0, T)[0], label="Model")
-    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta P_1$ Correlation")
     ax[0, 0].set_ylim([-2e-06, 4e-05])
     ax[0, 0].title.set_text(r"Correlation of $\delta P_1$, $R=0$")
@@ -1735,7 +1735,7 @@ if False:
 
     ax[0, 1].plot(R, dP1dP1[0][:26], label="Data")
     ax[0, 1].plot(R, Corr_dP1(R, 0), label="Model")
-    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta P_1$ Correlation")
     ax[0, 1].set_ylim([-2e-06, 4e-05])
     ax[0, 1].title.set_text(r"Correlation of $\delta P_1$, $T=0$")
@@ -1754,8 +1754,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"Exp. $\langle \delta P_1 \delta P_1 \rangle$")
 
     c = ax[1, 1].pcolor(
@@ -1768,8 +1768,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"Model $\langle \delta P_1 \delta P_1 \rangle$")
 
     plt.subplots_adjust(
@@ -1836,7 +1836,7 @@ if False:
 
     ax[0, 0].plot(T, dP2dP2[:, 0], label="Data")
     ax[0, 0].plot(T, Corr_dP2(0, T)[0], label="Model")
-    ax[0, 0].set_xlabel("Time (min)")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta P_2$ Correlation")
     ax[0, 0].set_ylim([-2e-06, 2.7e-05])
     ax[0, 0].title.set_text(r"Correlation of $\delta P_2$, $R=0$")
@@ -1844,7 +1844,7 @@ if False:
 
     ax[0, 1].plot(R, dP2dP2[0][:26], label="Data")
     ax[0, 1].plot(R, Corr_dP2(R, 0), label="Model")
-    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta P_2$ Correlation")
     ax[0, 1].set_ylim([-2e-06, 2.7e-05])
     ax[0, 1].title.set_text(r"Correlation of $\delta P_2$, $T=0$")
@@ -1863,8 +1863,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"Exp. $\langle \delta P_2 \delta P_2 \rangle$")
 
     c = ax[1, 1].pcolor(
@@ -1877,8 +1877,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"Model $\langle \delta P_2 \delta P_2 \rangle$")
 
     plt.subplots_adjust(
@@ -1945,7 +1945,7 @@ if False:
 
     ax[0, 0].plot(T, dRhodRho[1:, 0], label="Data")
     ax[0, 0].plot(T_, Corr_Rho_T(T_, m[0]), label="Model")
-    ax[0, 0].set_xlabel(r"Time (mins)")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta \rho_n$ Correlation")
     ax[0, 0].set_ylim([-2e-5, 6e-4])
     ax[0, 0].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $R=0$")
@@ -1961,7 +1961,7 @@ if False:
 
     ax[0, 1].plot(R, dRhodRho[3], label="Data")
     ax[0, 1].plot(R_, Corr_Rho_R(R_, m[0]), label="Model")
-    ax[0, 1].set_xlabel(r"$R (\mu m)$")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta \rho_n$ Correlation")
     ax[0, 1].set_ylim([-2e-5, 6e-4])
     ax[0, 1].title.set_text(r"$\langle \delta \rho_n \delta \rho_n \rangle$, $T=30$")
@@ -1979,8 +1979,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 0])
-    ax[1, 0].set_xlabel("Time (mins)")
-    ax[1, 0].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].title.set_text(r"Experiment $\langle \delta \rho_n \delta \rho_n \rangle$")
 
     R_, T_ = np.meshgrid(R_, T_)
@@ -1994,8 +1994,8 @@ if False:
         shading="auto",
     )
     fig.colorbar(c, ax=ax[1, 1])
-    ax[1, 1].set_xlabel("Time (mins)")
-    ax[1, 1].set_ylabel(r"$R (\mu m)$ ")
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].title.set_text(r"Model $\langle \delta \rho_n\delta \rho_n \rangle$")
 
     plt.subplots_adjust(
@@ -2048,7 +2048,7 @@ if False:
 
     ax.plot(R, dRho_SdRho_S, label="Data")
     ax.plot(R_, Corr_dRho_S(R_, m[0], m[1]), label="Model")
-    ax.set_xlabel(r"$R (\mu m)$")
+    ax.set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax.set_ylabel(r"$\delta \rho_s$ Correlation")
     ax.set_ylim([0, 4.5e-04])
     ax.title.set_text(r"Correlation of $\delta \rho_s$")
@@ -2108,7 +2108,7 @@ if False:
 
     ax[0].plot(R[5:], dV1dV1_r[5:], label="Data")
     ax[0].plot(R[5:], Corr_dV(R[5:], 0.08, m[1]), label="Model")
-    ax[0].set_xlabel(r"$R (\mu m)$")
+    ax[0].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0].set_ylabel(r"$\delta V_1$ Correlation")
     ax[0].set_ylim([0, 0.04])
     ax[0].title.set_text(r"Correlation of $\delta V_1$")
@@ -2124,7 +2124,7 @@ if False:
 
     ax[1].plot(R[5:], dV2dV2_r[5:], label="Data")
     ax[1].plot(R[5:], Corr_dV(R[5:], 0.08, m[1]), label="Model")
-    ax[1].set_xlabel(r"$R (\mu m)$")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta V_2$ Correlation")
     ax[1].set_ylim([0, 0.04])
     ax[1].title.set_text(r"Correlation of $\delta V_2$")
