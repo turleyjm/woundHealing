@@ -184,7 +184,7 @@ scale = 123.26 / 512
 T = 91
 
 # Nucleus velocity relative to tissue
-if False:
+if True:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -239,7 +239,7 @@ if False:
     dfVelocity.to_pickle(f"databases/dfVelocity{fileType}.pkl")
 
 # Cell division relative to tissue and wound
-if False:
+if True:
     _df = []
     for filename in filenames:
         dfDivision = pd.read_pickle(f"dat/{filename}/dfDivision{filename}.pkl")

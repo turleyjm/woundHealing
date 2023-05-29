@@ -87,7 +87,7 @@ grid = 20
 timeGrid = 30
 
 # display all correlations shape
-if False:
+if True:
     dfCor = pd.read_pickle(f"databases/dfCorrelationWound{fileType}.pkl")
 
     fig, ax = plt.subplots(3, 4, figsize=(20, 12))
@@ -493,7 +493,7 @@ if False:
     plt.close("all")
 
 # deltaQ1 (model)
-if False:
+if True:
 
     def Corr_dQ1_Integral_T(R, B, L):
         C = 0.00055
@@ -633,7 +633,7 @@ if False:
     plt.close("all")
 
 # deltaQ2 (model)
-if False:
+if True:
 
     def Corr_dQ2_Integral_T(R, B, L):
         C = 0.00055
@@ -773,11 +773,17 @@ if False:
     plt.close("all")
 
 print("")
+print(fileType)
+print("")
+print("Close")
 print(np.mean(Mlist, axis=0))
+print("")
+print("Far")
 print(np.mean(mlist, axis=0))
+print("")
 
 # deltaV (model)
-if True:
+if False:
 
     def Corr_dV(r, C, lamdba):
         return C * np.exp(-lamdba * r)

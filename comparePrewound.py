@@ -38,11 +38,12 @@ sns.set_theme(style="ticks", rc=custom_params)
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 8
+plt.rcParams.update({"font.size": 18})
 
 # -------------------
 
 # Q_0 for prewound and early unwounded
-if True:
+if False:
     _df = []
     fileType = "Unwound18h"
     filenames, fileType = util.getFilesType(fileType)
@@ -59,14 +60,29 @@ if True:
         # q = np.mean(df["q"][df["T"] < 8])[0, 0]
         # print(f"{filename}: {q}")
 
-    fileType = "Unwound28h"
+    fileType = "Unwound15h"
     filenames, fileType = util.getFilesType(fileType)
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     for filename in filenames:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwound28h wt",
+                "Type": "Unwound15h wt",
+                "Filename": filename,
+                "q": np.mean(df["q"][df["T"] < 8])[0, 0],
+            }
+        )
+        # q = np.mean(df["q"][df["T"] < 8])[0, 0]
+        # print(f"{filename}: {q}")
+
+    fileType = "Unwound26h"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    for filename in filenames:
+        df = dfShape[dfShape["Filename"] == filename]
+        _df.append(
+            {
+                "Type": "Unwound26h wt",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
@@ -221,9 +237,17 @@ if True:
         # q = np.mean(df["q"][df["T"] < 8])[0, 0]
         # print(f"{filename}: {q}")
 
+    sns.set(font_scale=1.5)
     df = pd.DataFrame(_df)
-    ax = sns.boxplot(y="q", x="Type", data=df, boxprops={"facecolor": "None"})
+    ax = sns.boxplot(
+        y="q",
+        x="Type",
+        data=df,
+        boxprops={"facecolor": "None"},
+    )
+    plt.draw()
     ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha="right")
+    ax.set_ylim([-0.005, 0.03])
     sns_plot = sns.swarmplot(data=df, y="q", x="Type")
     fig = sns_plot.get_figure()
     fig.savefig(
@@ -233,7 +257,7 @@ if True:
         bbox_inches="tight",
     )
     plt.close("all")
-    # sp.stats.ttest_ind(df["q"][df["Type"]=="Unwound Immune ab."], df["q"][df["Type"]=="Prewound rpr"])
+    # sp.stats.ttest_ind(df["q"][df["Type"]=="Unwound18h wt"], df["q"][df["Type"]=="Prewound rpr"])
 
 # division density for prewound and early unwounded
 if False:
@@ -360,3 +384,8 @@ if False:
     )
     plt.close("all")
     # sp.stats.ttest_ind(df["Divsion density"][df["Type"]=="Prewound wt"], df["Divsion density"][df["Type"]=="Prewound JNK"])
+
+if True:
+    _df = []
+
+    _df.append({"Cross": "1 X 1", "Flies": 121})

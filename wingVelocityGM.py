@@ -162,7 +162,7 @@ if True:
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Migration magnitude of cells \n in tissue {boldTitle}")
     ax.set_ylim([0, 60])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
 
     fig.savefig(
         f"results/Migration magnitude of cells in tissue {groupTitle}",

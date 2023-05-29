@@ -315,7 +315,7 @@ if False:
         )
 
 # orientation to of division shape and TCJs
-if True:
+if False:
     dfDivisionShape = pd.read_pickle(f"databases/dfDivisionShape{fileType}.pkl")
     dfDivisionTrack = pd.read_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
     dfDivisionTrack = dfDivisionTrack[dfDivisionTrack["Type"] == "parent"]
@@ -1046,7 +1046,7 @@ if False:
         tifffile.imwrite(f"results/displayProperties/tissue_dq1{filename}.tif", dQ1)
 
 # Director dQ field heatmap wound
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     cm = plt.get_cmap("RdBu_r")
     for filename in filenames:

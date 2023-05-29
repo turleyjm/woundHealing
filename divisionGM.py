@@ -274,7 +274,7 @@ if False:
     print(total)
 
 # Compare: Divison density with time
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     total = 0
     for fileType in fileTypes:
@@ -343,7 +343,7 @@ if False:
     )
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Division density with \n time " + boldTitle)
-    ax.set_ylim([0, 7])
+    ax.set_ylim([0, 9])
     ax.legend(loc="upper left", fontsize=10)
 
     fig.savefig(
@@ -356,7 +356,7 @@ if False:
     print(total)
 
 # Individual: Divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -437,6 +437,7 @@ if True:
             dd,
             vmin=0,
             vmax=6,
+            cmap="plasma",
         )
         fig.colorbar(c, ax=ax)
         if "Wound" in fileType:
@@ -462,7 +463,7 @@ if True:
         plt.close("all")
 
 # Individual: Change in divison density with distance from wound edge and time
-if True:
+if False:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -529,14 +530,15 @@ if True:
                     dd[t, r] = np.nan
                     std[t, r] = np.nan
 
-        if "18h" in fileType:
-            compare = "Unwound18h"
-        elif "JNK" in fileType:
-            compare = "UnwoundJNK"
-        elif "Ca" in fileType:
-            compare = "UnwoundCa"
-        elif "rpr" in fileType:
-            compare = "Unwoundrpr"
+        # if "18h" in fileType:
+        #     compare = "Unwound18h"
+        # elif "JNK" in fileType:
+        #     compare = "UnwoundJNK"
+        # elif "Ca" in fileType:
+        #     compare = "UnwoundCa"
+        # elif "rpr" in fileType:
+        #     compare = "Unwoundrpr"
+        compare = "Unwound18h"
         (m, c) = bestFitUnwound(compare)
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
         for r in range(dd.shape[1]):
@@ -607,3 +609,218 @@ if True:
                 dpi=300,
             )
             plt.close("all")
+
+# Individual: Change in divison density with distance from wound edge and time
+if False:
+    fileType = "WoundL18h"
+    filenames = util.getFilesType(fileType)[0]
+    count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+    for k in range(len(filenames)):
+        filename = filenames[k]
+        dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+        if "Wound" in filename:
+            t0 = util.findStartTime(filename)
+        else:
+            t0 = 0
+        t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+        for r in range(count.shape[2]):
+            for t in range(count.shape[1]):
+                df1 = dfFile[dfFile["T"] > timeStep * t]
+                df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                df3 = df2[df2["R"] > rStep * r]
+                df = df3[df3["R"] <= rStep * (r + 1)]
+                count[k, t, r] = len(df)
+
+        inPlane = 1 - (
+            sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+            / 255
+        )
+        dist = (
+            sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+            * scale
+        )
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                t1 = int(timeStep / 2 * t - t0 / 2)
+                t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                if t1 < 0:
+                    t1 = 0
+                if t2 < 0:
+                    t2 = 0
+                area[k, t, r] = (
+                    np.sum(
+                        inPlane[t1:t2][
+                            (dist[t1:t2] > rStep * r) & (dist[t1:t2] <= rStep * (r + 1))
+                        ]
+                    )
+                    * scale**2
+                )
+
+    dd = np.zeros([int(T / timeStep), int(R / rStep)])
+    std = np.zeros([int(T / timeStep), int(R / rStep)])
+    sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+    for r in range(area.shape[2]):
+        for t in range(area.shape[1]):
+            _area = area[:, t, r][area[:, t, r] > 800]
+            _count = count[:, t, r][area[:, t, r] > 800]
+            if len(_area) > 0:
+                _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                dd[t, r] = _dd
+                std[t, r] = _std
+                sumArea[t, r] = np.sum(_area)
+            else:
+                dd[t, r] = np.nan
+                std[t, r] = np.nan
+
+    # if "18h" in fileType:
+    #     compare = "Unwound18h"
+    # elif "JNK" in fileType:
+    #     compare = "UnwoundJNK"
+    # elif "Ca" in fileType:
+    #     compare = "UnwoundCa"
+    # elif "rpr" in fileType:
+    #     compare = "Unwoundrpr"
+    compare = "Unwound18h"
+    (m, c) = bestFitUnwound(compare)
+    time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
+    for r in range(dd.shape[1]):
+        dd[:, r] = dd[:, r] - (m * time + c)
+
+    dd[sumArea < 600 * len(filenames)] = np.nan
+    ddLarge = dd * 10000
+
+    for fileType in fileTypes[1:]:
+        filenames = util.getFilesType(fileType)[0]
+        count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
+        dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        for k in range(len(filenames)):
+            filename = filenames[k]
+            dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+            if "Wound" in filename:
+                t0 = util.findStartTime(filename)
+            else:
+                t0 = 0
+            t2 = int(timeStep / 2 * (int(T / timeStep) + 1) - t0 / 2)
+
+            for r in range(count.shape[2]):
+                for t in range(count.shape[1]):
+                    df1 = dfFile[dfFile["T"] > timeStep * t]
+                    df2 = df1[df1["T"] <= timeStep * (t + 1)]
+                    df3 = df2[df2["R"] > rStep * r]
+                    df = df3[df3["R"] <= rStep * (r + 1)]
+                    count[k, t, r] = len(df)
+
+            inPlane = 1 - (
+                sm.io.imread(f"dat/{filename}/outPlane{filename}.tif").astype(int)[:t2]
+                / 255
+            )
+            dist = (
+                sm.io.imread(f"dat/{filename}/distance{filename}.tif").astype(int)[:t2]
+                * scale
+            )
+
+            for r in range(area.shape[2]):
+                for t in range(area.shape[1]):
+                    t1 = int(timeStep / 2 * t - t0 / 2)
+                    t2 = int(timeStep / 2 * (t + 1) - t0 / 2)
+                    if t1 < 0:
+                        t1 = 0
+                    if t2 < 0:
+                        t2 = 0
+                    area[k, t, r] = (
+                        np.sum(
+                            inPlane[t1:t2][
+                                (dist[t1:t2] > rStep * r)
+                                & (dist[t1:t2] <= rStep * (r + 1))
+                            ]
+                        )
+                        * scale**2
+                    )
+
+        dd = np.zeros([int(T / timeStep), int(R / rStep)])
+        std = np.zeros([int(T / timeStep), int(R / rStep)])
+        sumArea = np.zeros([int(T / timeStep), int(R / rStep)])
+
+        for r in range(area.shape[2]):
+            for t in range(area.shape[1]):
+                _area = area[:, t, r][area[:, t, r] > 800]
+                _count = count[:, t, r][area[:, t, r] > 800]
+                if len(_area) > 0:
+                    _dd, _std = weighted_avg_and_std(_count / _area, _area)
+                    dd[t, r] = _dd
+                    std[t, r] = _std
+                    sumArea[t, r] = np.sum(_area)
+                else:
+                    dd[t, r] = np.nan
+                    std[t, r] = np.nan
+
+        # if "18h" in fileType:
+        #     compare = "Unwound18h"
+        # elif "JNK" in fileType:
+        #     compare = "UnwoundJNK"
+        # elif "Ca" in fileType:
+        #     compare = "UnwoundCa"
+        # elif "rpr" in fileType:
+        #     compare = "Unwoundrpr"
+        compare = "Unwound18h"
+        (m, c) = bestFitUnwound(compare)
+        time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
+        for r in range(dd.shape[1]):
+            dd[:, r] = dd[:, r] - (m * time + c)
+
+        dd[sumArea < 600 * len(filenames)] = np.nan
+        dd = dd * 10000
+
+        fileTitle = util.getFileTitle(fileType)
+        t, r = np.mgrid[
+            timeStep / 2 : T + timeStep / 2 : timeStep,
+            rStep / 2 : R + rStep / 2 : rStep,
+        ]
+        fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+        c = ax.pcolor(
+            t,
+            r,
+            dd - ddLarge,
+            vmin=-5,
+            vmax=5,
+            cmap="RdBu_r",
+        )
+        fig.colorbar(c, ax=ax)
+        if "Wound" in fileType:
+            ax.set(
+                xlabel="Time after wounded (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
+        else:
+            ax.set(
+                xlabel="Time (mins)",
+                ylabel=r"Distance from wound $(\mu m)$",
+            )
+        fileTitle = util.getFileTitle(fileType)
+        boldTitle = util.getBoldTitle(fileTitle)
+        ax.title.set_text(
+            f"Deviation in division density: \n {boldTitle} from large wt"
+        )
+
+        fig.savefig(
+            f"results/Change in Division density heatmap with large wt {fileTitle}",
+            transparent=True,
+            bbox_inches="tight",
+            dpi=300,
+        )
+        plt.close("all")
+
+# total divisions
+if True:
+    count = 0
+    for fileType in fileTypes:
+        dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
+        count += len(dfDivisions)
+
+    print(count)

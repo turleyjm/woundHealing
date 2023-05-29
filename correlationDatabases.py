@@ -701,7 +701,7 @@ if False:
 # --------- shape ----------
 
 # space time cell-cell shape correlation
-if False:
+if True:
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
     grid = 27
     timeGrid = 51

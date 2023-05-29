@@ -1418,7 +1418,7 @@ if False:
     plt.close("all")
 
 # deltaQ1 (model)
-if False:
+if True:
 
     def Corr_dQ1_Integral_T(R, L):
         B = 0.006533824439392692

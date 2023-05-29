@@ -103,7 +103,7 @@ if True:
         ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.005, 0.045])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(1)}$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $Q^{(1)}$" + " with \n time " + boldTitle)
@@ -138,7 +138,7 @@ if False:
         ax.fill_between(time, Q2 - std, Q2 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.025, 0.025])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(2)}$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $Q^{(2)}$" + " with \n time " + boldTitle)
@@ -173,7 +173,7 @@ if False:
         ax.fill_between(time, P1 - std, P1 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.002, 0.002])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{P}_1$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $P_1$" + " with \n time " + boldTitle)
@@ -208,7 +208,7 @@ if False:
         ax.fill_between(time, P2 - std, P2 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([-0.002, 0.002])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{P}_2$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $P_2$" + " with \n time " + boldTitle)
@@ -221,7 +221,7 @@ if False:
     plt.close("all")
 
 # compare: Mean rho
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
@@ -243,7 +243,7 @@ if False:
         ax.fill_between(time, rho - std, rho + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0.05, 0.1])
-    ax.legend(loc="upper left", fontsize=12)
+    ax.legend(loc="upper left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{\rho}$")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(r"Mean $\rho$" + " with \n time " + boldTitle)
@@ -344,7 +344,7 @@ if False:
         )
 
     ax.set_ylim([4, 4.65])
-    ax.legend(loc="lower left", fontsize=12)
+    ax.legend(loc="lower left", fontsize=10)
     ax.set(xlabel="Time (mins)", ylabel="Shannon entropy")
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text("Mean Shannon entropy \n with time " + boldTitle)
