@@ -743,6 +743,7 @@ if False:
 
         (T, X, Y, rgb) = focus.shape
         gray = rgb2gray(focus)
+        gray = 0.4 * focus[:, :, :, 0]
         gray = gray * (255 / np.max(gray))
         # gray = np.asarray(gray, "uint8")
         # tifffile.imwrite(f"results/gray{filename}.tif", gray)

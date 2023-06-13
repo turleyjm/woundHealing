@@ -150,7 +150,7 @@ if True:
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(r"$\delta V_1$ distance and" + f"\ntime {boldTitle}")
+        ax.title.set_text(r"$\delta V_1$ distance and time" + f"\n{boldTitle}")
 
         fig.savefig(
             f"results/v heatmap {fileTitle}",
@@ -217,7 +217,7 @@ if True:
             )
             plt.close("all")
 
-# Individual: v with distance from wound edge and time
+# Individual: compare from large wound v with distance from wound edge and time
 if True:
     fileType = "WoundL18h"
     filenames = util.getFilesType(fileType)[0]
@@ -387,7 +387,7 @@ if True:
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(
-            r"Wild type difference in $\delta V_1$" + f"\nfor {boldTitle}"
+            r"Wild type difference in $\Delta \delta V_1$" + f"\nfrom {boldTitle}"
         )
 
         fig.savefig(

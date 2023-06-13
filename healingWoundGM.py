@@ -41,7 +41,11 @@ T = 93
 if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     ax.vlines(10, -100, 1500, colors="r", linestyles="dashed")
-    ax.set_ylim([0, 1250])
+    if "WoundL" in fileTypes[0]:
+        ax.set_ylim([0, 1250])
+    else:
+        ax.set_ylim([0, 500])
+
     i = 0
     for fileType in fileTypes:
         if "Unw" in fileType:
@@ -55,8 +59,6 @@ if True:
             dfWound = pd.read_pickle(f"dat/{filename}/woundsite{filename}.pkl")
             T = len(dfWound)
             area = np.array(dfWound["Area"]) * (scale) ** 2
-            t10 = 5 - int(t0 / 2)
-            Area0.append(area[t10])
 
             for t in range(T):
                 if area[t] > area[0] * 0.2:
@@ -70,7 +72,7 @@ if True:
         std = []
         T = set(df["Time"])
         N = len(filenames)
-        Area0 = np.mean(Area0)
+        Area0 = np.mean(df["Area"][df["Time"] == 10])
         for t in T:
             if len(df[df["Time"] == t]) > N / 3:
                 if np.mean(df["Area"][df["Time"] == t]) > 0.2 * Area0:

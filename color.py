@@ -27,18 +27,18 @@ def getColorLineMarker(fileType, groupTitle):
         }
     else:
         colorDict = {
-            "Unwound18h": [0, "--", "o"],
-            "WoundL18h": [0, ":", "o"],
-            "WoundS18h": [0, "-.", "o"],
+            "Unwound18h": [3, "--", "o"],
+            "WoundL18h": [3, ":", "o"],
+            "WoundS18h": [3, "-.", "o"],
             "UnwoundJNK": [8, "--", "^"],
             "WoundLJNK": [8, ":", "^"],
             "WoundSJNK": [8, "-.", "^"],
-            "UnwoundCa": [16, "--", "s"],
-            "WoundLCa": [16, ":", "s"],
-            "WoundSCa": [16, "-.", "s"],
-            "Unwoundrpr": [22, "--", "p"],
-            "WoundLrpr": [22, ":", "p"],
-            "WoundSrpr": [22, "-.", "p"],
+            "UnwoundCa": [14, "--", "s"],
+            "WoundLCa": [14, ":", "s"],
+            "WoundSCa": [14, "-.", "s"],
+            "Unwoundrpr": [20, "--", "p"],
+            "WoundLrpr": [20, ":", "p"],
+            "WoundSrpr": [20, "-.", "p"],
         }
     n = 23
     cm = plt.get_cmap("gist_rainbow")

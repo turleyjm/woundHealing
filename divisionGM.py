@@ -343,7 +343,7 @@ if True:
     )
     boldTitle = util.getBoldTitle(groupTitle)
     ax.title.set_text(f"Division density with \n time " + boldTitle)
-    ax.set_ylim([0, 9])
+    ax.set_ylim([0, 9.5])
     ax.legend(loc="upper left", fontsize=10)
 
     fig.savefig(
@@ -356,7 +356,7 @@ if True:
     print(total)
 
 # Individual: Divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -610,8 +610,8 @@ if False:
             )
             plt.close("all")
 
-# Individual: Change in divison density with distance from wound edge and time
-if False:
+# Individual: Change in divison density with distance from wound edge and time from large wound
+if True:
     fileType = "WoundL18h"
     filenames = util.getFilesType(fileType)[0]
     count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -817,7 +817,7 @@ if False:
         plt.close("all")
 
 # total divisions
-if True:
+if False:
     count = 0
     for fileType in fileTypes:
         dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")

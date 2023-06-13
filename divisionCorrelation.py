@@ -150,7 +150,7 @@ if False:
         plt.close("all")
 
 # Division correlations figure
-if True:
+if False:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     expectedXY = df["expectedXY"].iloc[0]
     ExXExY = df["ExXExY"].iloc[0]
@@ -300,7 +300,7 @@ if True:
     plt.close("all")
 
 # Division orientation correlations by filename
-if False:
+if True:
     df = pd.read_pickle(f"databases/divCorr{fileType}.pkl")
     thetaCorr = df["thetaCorr"].iloc[0]
     df = 0

@@ -127,9 +127,9 @@ if True:
         t,
         r,
         dRhodRhoClose,
-        cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        cmap="Reds",
+        vmin=35,
+        vmax=0,
         shading="auto",
     )
     fig.colorbar(c, ax=ax[0, 0])
@@ -587,9 +587,9 @@ if True:
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model far")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[0].set_ylim([0, 5.9e-04])
+    ax[0].set_ylim([0, 7.9e-04])
     ax[0].title.set_text(r"Correlation of $\delta Q^{(1)}$, $R=0$")
-    ax[0].legend(fontsize=12)
+    ax[0].legend(fontsize=10)
 
     M = sp.optimize.curve_fit(
         f=Corr_dQ1_Integral_T,
@@ -617,7 +617,7 @@ if True:
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Model")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta Q^{(1)}$ Correlation")
-    ax[1].set_ylim([0, 5.9e-04])
+    ax[1].set_ylim([0, 7.9e-04])
     ax[1].title.set_text(r"Correlation of $\delta Q^{(1)}$, $T=0$")
     ax[1].legend(fontsize=10)
 
@@ -727,9 +727,9 @@ if True:
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Model far")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[0].set_ylim([0, 5.9e-04])
+    ax[0].set_ylim([0, 7.9e-04])
     ax[0].title.set_text(r"Correlation of $\delta Q^{(2)}$, $R=0$")
-    ax[0].legend(fontsize=12)
+    ax[0].legend(fontsize=10)
 
     M = sp.optimize.curve_fit(
         f=Corr_dQ2_Integral_T,
@@ -757,9 +757,9 @@ if True:
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Model far")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta Q^{(2)}$ Correlation")
-    ax[1].set_ylim([0, 5.9e-04])
+    ax[1].set_ylim([0, 7.9e-04])
     ax[1].title.set_text(r"Correlation of $\delta Q^{(2)}$, $T=0$")
-    ax[1].legend(fontsize=12)
+    ax[1].legend(fontsize=10)
 
     plt.subplots_adjust(
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37

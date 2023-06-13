@@ -31,14 +31,17 @@ plt.rcParams.update({"font.size": 20})
 # ---- individual conditions ----
 
 # fileType = "Unwound18h"
-# fileType = "WoundL18h"
+fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
 # fileType = "Unwound26h"
+
 # fileType = "Unwound15h"
+# fileType = "WoundL15h"
+# fileType = "WoundS15h"
 
 # fileType = "UnwoundJNK"
-fileType = "WoundLJNK"
+# fileType = "WoundLJNK"
 # fileType = "WoundSJNK"
 
 # fileType = "UnwoundCa"
@@ -160,8 +163,7 @@ def getFilesTypes(fileType=fileType):
     elif fileType == "Unwound":
         fileTypes = ["Unwound18h", "UnwoundJNK", "Unwoundrpr", "UnwoundCa"]
     elif fileType == "WoundL":
-        # fileTypes = ["WoundL18h", "WoundLJNK", "WoundLrpr", "WoundLCa"]
-        fileTypes = ["WoundL18h", "WoundLJNK", "WoundLrpr"]
+        fileTypes = ["WoundL18h", "WoundLJNK", "WoundLrpr", "WoundLCa"]
     elif fileType == "WoundS":
         fileTypes = ["WoundS18h", "WoundSJNK", "WoundSrpr"]
 
@@ -187,18 +189,18 @@ def getFileTitle(fileType):
         fileTitle = "unwounded wt 15h"
 
     elif fileType == "WoundLJNK":
-        fileTitle = "large wound JNK DN"
+        fileTitle = "large wound bsk DN"
     elif fileType == "WoundSJNK":
-        fileTitle = "small wound JNK DN"
+        fileTitle = "small wound bsk DN"
     elif fileType == "UnwoundJNK":
-        fileTitle = "unwounded JNK DN"
+        fileTitle = "unwounded bsk DN"
 
     elif fileType == "WoundLCa":
-        fileTitle = "large wound Ca RNAi"
+        fileTitle = "large wound Trpm RNAi"
     elif fileType == "WoundSCa":
-        fileTitle = "small wound Ca RNAi"
+        fileTitle = "small wound Trpm RNAi"
     elif fileType == "UnwoundCa":
-        fileTitle = "unwounded Ca RNAi"
+        fileTitle = "unwounded Trpm RNAi"
 
     elif fileType == "WoundLrpr":
         fileTitle = "large wound imm. abl."
@@ -222,9 +224,9 @@ def getgroupTitle(fileTypes):
     elif fileTypes == "wt":
         groupTitle = "wild type times"
     elif fileTypes == "JNK":
-        groupTitle = "JNK DN"
+        groupTitle = "bsk DN"
     elif fileTypes == "Ca":
-        groupTitle = "Ca RNAi"
+        groupTitle = "Trpm RNAi"
     elif fileTypes == "rpr":
         groupTitle = "immune ablation"
 
@@ -337,20 +339,20 @@ def getColorLineMarker(fileType, groupTitle):
         }
     else:
         colorDict = {
-            "Unwound18h": [0, "o"],
-            "WoundL18h": [0, "^"],
-            "WoundS18h": [0, "s"],
-            "Unwound15h": [0, "^"],
-            "Unwound26h": [0, "s"],
+            "Unwound18h": [3, "o"],
+            "WoundL18h": [3, "^"],
+            "WoundS18h": [3, "s"],
+            "Unwound15h": [3, "^"],
+            "Unwound26h": [3, "s"],
             "UnwoundJNK": [8, ">"],
             "WoundLJNK": [8, "*"],
             "WoundSJNK": [8, "+"],
-            "UnwoundCa": [16, "*"],
-            "WoundLCa": [16, "d"],
-            "WoundSCa": [16, "<"],
-            "Unwoundrpr": [22, "v"],
-            "WoundLrpr": [22, "H"],
-            "WoundSrpr": [22, "p"],
+            "UnwoundCa": [14, "*"],
+            "WoundLCa": [14, "d"],
+            "WoundSCa": [14, "<"],
+            "Unwoundrpr": [20, "v"],
+            "WoundLrpr": [20, "H"],
+            "WoundSrpr": [20, "p"],
         }
 
     n = 23

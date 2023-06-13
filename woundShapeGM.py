@@ -153,7 +153,7 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -253,7 +253,7 @@ if False:
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(r"$\delta Q^{(1)}$ distance and" + f"\n time {boldTitle}")
+        ax.title.set_text(r"$\delta Q^{(1)}$ distance and time" + f"\n{boldTitle}")
 
         fig.savefig(
             f"results/Q1 heatmap {fileTitle}",
@@ -792,7 +792,7 @@ if True:
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
         ax.title.set_text(
-            r"Wild type difference in $\delta Q^{(1)}$" + f"\nfor {boldTitle}"
+            r"Wild type difference in $\Delta \delta Q^{(1)}$" + f"\nfrom {boldTitle}"
         )
 
         fig.savefig(

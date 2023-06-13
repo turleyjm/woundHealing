@@ -38,12 +38,12 @@ sns.set_theme(style="ticks", rc=custom_params)
 filenames, fileType = util.getFilesType()
 scale = 123.26 / 512
 T = 8
-plt.rcParams.update({"font.size": 18})
+plt.rcParams.update({"font.size": 22})
 
 # -------------------
 
 # Q_0 for prewound and early unwounded
-if False:
+if True:
     _df = []
     fileType = "Unwound18h"
     filenames, fileType = util.getFilesType(fileType)
@@ -67,7 +67,7 @@ if False:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwound15h wt",
+                "Type": "Unwound14.75h wt",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
@@ -99,7 +99,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound wt",
+                    "Type": "Pre-wound wt",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"], axis=0)[0, 0],
                 }
@@ -116,7 +116,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound wt",
+                    "Type": "Pre-wound wt",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"])[0, 0],
                 }
@@ -148,7 +148,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound JNK",
+                    "Type": "Pre-wound JNK",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"])[0, 0],
                 }
@@ -165,7 +165,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound JNK",
+                    "Type": "Pre-wound JNK",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"])[0, 0],
                 }
@@ -197,7 +197,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound Immune ab.",
+                    "Type": "Pre-wound Immune ab.",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"])[0, 0],
                 }
@@ -214,7 +214,7 @@ if False:
         if len(df) > 0:
             _df.append(
                 {
-                    "Type": "Prewound Immune ab.",
+                    "Type": "Pre-wound Immune ab.",
                     "Filename": filenamePre,
                     "q": np.mean(df["q"])[0, 0],
                 }
@@ -229,13 +229,30 @@ if False:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "UnwoundCa",
+                "Type": "Unwound Ca",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
         )
         # q = np.mean(df["q"][df["T"] < 8])[0, 0]
         # print(f"{filename}: {q}")
+
+    fileType = "WoundLCa"
+    filenames, fileType = util.getFilesType(fileType)
+    dfShape = pd.read_pickle(f"databases/dfShape{util.Prewound(fileType)}.pkl")
+    for filename in filenames:
+        filenamePre = util.Prewound(filename)
+        df = dfShape[dfShape["Filename"] == filenamePre]
+        if len(df) > 0:
+            _df.append(
+                {
+                    "Type": "Pre-wound Ca",
+                    "Filename": filenamePre,
+                    "q": np.mean(df["q"])[0, 0],
+                }
+            )
+            # q = np.mean(df["q"])[0, 0]
+            # print(f"{filenamePre}: {q}")
 
     sns.set(font_scale=1.5)
     df = pd.DataFrame(_df)
@@ -385,7 +402,28 @@ if False:
     plt.close("all")
     # sp.stats.ttest_ind(df["Divsion density"][df["Type"]=="Prewound wt"], df["Divsion density"][df["Type"]=="Prewound JNK"])
 
-if True:
-    _df = []
+# cross lethality
+if False:
 
-    _df.append({"Cross": "1 X 1", "Flies": 121})
+    height = [
+        63,
+        81,
+        0,
+        117,
+        116,
+    ]
+    bars = ("1x4", "2x4", "3x5", "6x4", "6x5")
+
+    fig, ax = plt.subplots(1, 1, figsize=(3, 3))
+    # Create bars
+    ax.bar(bars, height, color=("green", "magenta", "cyan", "orange", "orange"))
+    ax.set(ylabel="Normalised number of F1 progeny")
+    ax.title.set_text(f"Lethality of F1 progeny")
+
+    fig.savefig(
+        f"results/Lethality of F1 progeny",
+        transparent=True,
+        bbox_inches="tight",
+        dpi=300,
+    )
+    plt.close("all")
