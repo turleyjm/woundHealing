@@ -98,7 +98,7 @@ def convolve2D(image, kernel, padding=0, strides=1):
 # -------------------
 
 filenames, fileType = util.getFilesType()
-# filename = "prettyWound"
+filenames = ["prettyWound"]
 scale = 123.26 / 512
 T = 93
 
@@ -1051,7 +1051,8 @@ if True:
     dfShape = pd.read_pickle(f"databases/dfShapeWound{fileType}.pkl")
     cm = plt.get_cmap("RdBu_r")
     for filename in filenames:
-        t0 = util.findStartTime(filename)
+        # t0 = util.findStartTime(filename)
+        t0 = 0
         focus = sm.io.imread(f"dat/{filename}/focus{filename}.tif").astype(int)
         (T, X, Y, rgb) = focus.shape
         binary = sm.io.imread(f"dat/{filename}/binary{filename}.tif").astype(int)

@@ -236,7 +236,7 @@ if False:
     plt.close("all")
 
 # Divison density with time best fit
-if True:
+if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
@@ -309,7 +309,7 @@ if True:
     plt.close("all")
 
 # Compare divison density with time
-if True:
+if False:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
     # legend = ["Unwounded", "Small wound", "Large wound"]

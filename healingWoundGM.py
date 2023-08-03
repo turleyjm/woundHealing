@@ -89,11 +89,11 @@ if True:
 
     plt.xlabel("Time after wounding (mins)")
     plt.ylabel(r"Area ($\mu m ^2$)")
-    boldTitle = util.getBoldTitle(groupTitle)
+    boldTitle = util.getBoldTitle(groupTitle + "s")
     plt.title(f"Mean area of wound \n {boldTitle}")
     plt.legend(loc="upper right", fontsize=12)
     fig.savefig(
-        f"results/Compared mean wound area {groupTitle}",
+        f"results/Compared mean wound area {groupTitle} Ca",
         bbox_inches="tight",
         dpi=300,
     )

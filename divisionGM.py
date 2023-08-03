@@ -452,7 +452,11 @@ if True:
             )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(f"Division density \n {boldTitle}")
+        if "wt" in boldTitle:
+            ax.title.set_text(f"Division density \n {boldTitle}")
+        else:
+            colour, mark = util.getColorLineMarker(fileType, groupTitle)
+            plt.title(f"Division density \n {boldTitle}", color=colour)
 
         fig.savefig(
             f"results/Division density heatmap {fileTitle}",
@@ -804,9 +808,16 @@ if True:
             )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(
-            f"Deviation in division density: \n {boldTitle} from large wt"
-        )
+        if "large" in boldTitle:
+            colour, mark = util.getColorLineMarker(fileType, groupTitle)
+            plt.title(
+                f"Deviation in division density: \n {boldTitle} from large wt",
+                color=colour,
+            )
+        else:
+            ax.title.set_text(
+                f"Deviation in division density: \n {boldTitle} from large wt"
+            )
 
         fig.savefig(
             f"results/Change in Division density heatmap with large wt {fileTitle}",

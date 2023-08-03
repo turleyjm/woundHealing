@@ -253,7 +253,13 @@ if True:
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(r"$\delta Q^{(1)}$ distance and time" + f"\n{boldTitle}")
+        if "wt" in boldTitle:
+            ax.title.set_text(r"$\delta Q^{(1)}$ distance and time" + f"\n{boldTitle}")
+        else:
+            colour, mark = util.getColorLineMarker(fileType, groupTitle)
+            plt.title(
+                r"$\delta Q^{(1)}$ distance and time" + f"\n{boldTitle}", color=colour
+            )
 
         fig.savefig(
             f"results/Q1 heatmap {fileTitle}",
@@ -791,9 +797,16 @@ if True:
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
-        ax.title.set_text(
-            r"Wild type difference in $\Delta \delta Q^{(1)}$" + f"\nfrom {boldTitle}"
-        )
+        if "large" in boldTitle:
+            colour, mark = util.getColorLineMarker(fileType, groupTitle)
+            plt.title(
+                r"Wild type difference in $\delta Q^{(1)}$" + f"\nfrom {boldTitle}",
+                color=colour,
+            )
+        else:
+            ax.title.set_text(
+                r"Wild type difference in $\delta Q^{(1)}$" + f"\nfrom {boldTitle}"
+            )
 
         fig.savefig(
             f"results/Q1 heatmap change large wound {fileTitle}",

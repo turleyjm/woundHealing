@@ -1006,7 +1006,7 @@ if False:
     dfDivisionTrack.to_pickle(f"databases/dfDivisionTrack{fileType}.pkl")
 
 # Nucleus velocity relative to tissue for Prewound
-if True:
+if False:
     _df2 = []
     _df = []
     for filename in filenames:
@@ -1064,7 +1064,7 @@ if True:
     dfVelocity.to_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
 
 # Cell division relative to tissue and wound for Prewound
-if True:
+if False:
     _df = []
     for filename in filenames:
         try:
@@ -1119,7 +1119,7 @@ if True:
     dfDivisions.to_pickle(f"databases/dfDivisions{util.Prewound(fileType)}.pkl")
 
 # Cell Shape relative to tissue for Prewound
-if True:
+if False:
     _df2 = []
     dfVelocity = pd.read_pickle(f"databases/dfVelocity{util.Prewound(fileType)}.pkl")
     dfVelocityMean = pd.read_pickle(
