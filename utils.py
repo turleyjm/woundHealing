@@ -46,7 +46,9 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "WoundSJNK"
 
 # fileType = "UnwoundCa"
-# fileType = "WoundLCa"
+fileType = "WoundLCa"
+# fileType = "WoundLCa_old"
+# fileType = "WoundLCa_new"
 # fileType = "WoundSCa"
 
 # fileType = "Unwoundrpr"
@@ -68,7 +70,7 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "15h"
 # fileType = "26h"
 # fileType = "wt"
-fileType = "wild type temp"
+# fileType = "control"
 
 # fileType = "Unwound"
 # fileType = "WoundL"
@@ -103,6 +105,16 @@ def getFilesType(fileType=fileType):
             filenames.remove("confocalRawLocationJNK.txt")
         if "confocalRawLocation.txt" in filenames:
             filenames.remove("confocalRawLocation_rpr.txt")
+
+    elif fileType == "WoundLCa_old":
+        filenames = [
+            "WoundLCa01",
+            "WoundLCa02",
+            "WoundLCa03",
+            "WoundLCa04",
+        ]
+    elif fileType == "WoundLCa_new":
+        filenames = ["WoundLCa05", "WoundLCa06", "WoundLCa07"]
 
     else:
         cwd = os.getcwd()
@@ -162,14 +174,15 @@ def getFilesTypes(fileType=fileType):
         fileTypes = ["Unwound15h", "UnwoundJNK", "UnwoundCa"]
     elif fileType == "26h":
         fileTypes = ["Unwound26h", "Unwoundrpr"]
-    elif fileType == "wild type temp":
-        fileTypes = ["WoundL18h", "WoundL15h", "WoundL26h"]
+    elif fileType == "control":
+        fileTypes = ["WoundS18h", "WoundL18h", "WoundL15h", "WoundL26h"]
 
     elif fileType == "Unwound":
         fileTypes = ["Unwound18h", "UnwoundJNK", "Unwoundrpr", "UnwoundCa"]
     elif fileType == "WoundL":
         fileTypes = ["WoundL18h", "WoundLJNK", "WoundLrpr", "WoundLCa"]
-        # fileTypes = ["WoundL18h", "WoundLCa"]
+        # "WoundLCa_new",
+        # "WoundLCa_old",
     elif fileType == "WoundS":
         fileTypes = ["WoundS18h", "WoundSJNK", "WoundSrpr"]
     elif fileType == "prettyWound":
@@ -186,19 +199,21 @@ def getFilesTypes(fileType=fileType):
 def getFileTitle(fileType):
 
     if fileType == "WoundL18h":
-        fileTitle = "large wound wt"
+        fileTitle = "large wound 18h AFP"
     elif fileType == "WoundS18h":
-        fileTitle = "small wound wt"
+        fileTitle = "small wound 18h AFP"
     elif fileType == "Unwound18h":
-        fileTitle = "unwounded wt"
+        fileTitle = "unwounded 18h AFP"
     elif fileType == "Unwound26h":
-        fileTitle = "unwounded wt 26h"
+        fileTitle = "unwounded wt 26h AFP"
     elif fileType == "Unwound15h":
-        fileTitle = "unwounded wt 15h"
+        fileTitle = "unwounded wt 14.75h AFP"
     elif fileType == "WoundL15h":
-        fileTitle = "large wound wt 15h"
+        fileTitle = "large wound control 14.75h AFP"
     elif fileType == "WoundL26h":
-        fileTitle = "large wound wt 26h"
+        fileTitle = "large wound control 26h AFP"
+    elif fileType == "control":
+        fileTitle = "large wound control"
 
     elif fileType == "WoundLJNK":
         fileTitle = "large wound bsk DN"
@@ -209,6 +224,10 @@ def getFileTitle(fileType):
 
     elif fileType == "WoundLCa":
         fileTitle = "large wound Trpm RNAi"
+    elif fileType == "WoundLCa_new":
+        fileTitle = "large wound Trpm RNAi_New"
+    elif fileType == "WoundLCa_old":
+        fileTitle = "large wound Trpm RNAi_Old"
     elif fileType == "WoundSCa":
         fileTitle = "small wound Trpm RNAi"
     elif fileType == "UnwoundCa":
@@ -230,6 +249,8 @@ def getgroupTitle(fileTypes):
         groupTitle = "all conditions"
     elif fileTypes == "AllWound":
         groupTitle = "all wounded conditions"
+    elif fileTypes == "control":
+        groupTitle = "control"
 
     elif fileTypes == "18h":
         groupTitle = "wild type"
@@ -296,6 +317,20 @@ def getBoldTitle(fileTitle):
             + str(fileTitle).split(" ")[3]
             + "}$"
         )
+    elif len(str(fileTitle).split(" ")) == 5:
+        boldTitle = (
+            r"$\bf{"
+            + fileTitle.split(" ")[0]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[1]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[2]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[3]
+            + r"}$ $\bf{"
+            + str(fileTitle).split(" ")[4]
+            + "}$"
+        )
 
     return boldTitle
 
@@ -346,6 +381,8 @@ def getColorLineMarker(fileType, groupTitle):
             "WoundSJNK": [20, "+"],
             "UnwoundCa": [3, "h"],
             "WoundLCa": [10, "d"],
+            "WoundLCa_new": [10, "d"],
+            "WoundLCa_old": [10, "d"],
             "WoundSCa": [20, "<"],
             "Unwoundrpr": [3, "v"],
             "WoundLrpr": [10, "H"],
@@ -356,15 +393,17 @@ def getColorLineMarker(fileType, groupTitle):
             "Unwound18h": [3, "o"],
             "WoundL18h": [3, "^"],
             "WoundS18h": [17, "s"],
-            "Unwound15h": [3, "^"],
+            "Unwound15h": [10, "^"],
             "WoundL15h": [10, "v"],
-            "Unwound26h": [3, "s"],
+            "Unwound26h": [20, "s"],
             "WoundL26h": [20, "H"],
             "UnwoundJNK": [8, ">"],
             "WoundLJNK": [8, "*"],
             "WoundSJNK": [8, "+"],
             "UnwoundCa": [14, "*"],
             "WoundLCa": [14, "d"],
+            "WoundLCa_new": [14, "d"],
+            "WoundLCa_old": [14, "d"],
             "WoundSCa": [14, "<"],
             "Unwoundrpr": [20, "v"],
             "WoundLrpr": [20, "H"],
