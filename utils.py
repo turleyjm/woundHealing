@@ -30,7 +30,7 @@ plt.rcParams.update({"font.size": 20})
 
 # ---- individual conditions ----
 
-# fileType = "Unwound18h"
+fileType = "Unwound18h"
 # fileType = "WoundL18h"
 # fileType = "WoundS18h"
 
@@ -46,7 +46,7 @@ plt.rcParams.update({"font.size": 20})
 # fileType = "WoundSJNK"
 
 # fileType = "UnwoundCa"
-fileType = "WoundLCa"
+# fileType = "WoundLCa"
 # fileType = "WoundLCa_old"
 # fileType = "WoundLCa_new"
 # fileType = "WoundSCa"
@@ -81,7 +81,6 @@ fileType = "WoundLCa"
 
 
 def getFilesType(fileType=fileType):
-
     if fileType == "All":
         cwd = os.getcwd()
         Fullfilenames = os.listdir(cwd + "/dat")
@@ -197,7 +196,6 @@ def getFilesTypes(fileType=fileType):
 
 
 def getFileTitle(fileType):
-
     if fileType == "WoundL18h":
         fileTitle = "large wound 18h AFP"
     elif fileType == "WoundS18h":
@@ -244,7 +242,6 @@ def getFileTitle(fileType):
 
 
 def getgroupTitle(fileTypes):
-
     if fileTypes == "AllTypes":
         groupTitle = "all conditions"
     elif fileTypes == "AllWound":
@@ -284,7 +281,6 @@ def getgroupTitle(fileTypes):
 
 
 def getBoldTitle(fileTitle):
-
     if len(str(fileTitle).split(" ")) == 1:
         boldTitle = r"$\bf{" + fileTitle + "}$"
     elif len(str(fileTitle).split(" ")) == 2:
@@ -362,7 +358,6 @@ def controlType(fileType):
 
 
 def getColorLineMarker(fileType, groupTitle):
-
     if (
         groupTitle == "wild type"
         or groupTitle == "JNK DN"
@@ -426,7 +421,6 @@ def ThreeD(a):
 
 
 def sortTime(df, t):
-
     tMin = t[0]
     tMax = t[1]
 
@@ -437,7 +431,6 @@ def sortTime(df, t):
 
 
 def sortRadius(dfVelocity, t, r):
-
     rMin = r[0]
     rMax = r[1]
     tMin = t[0]
@@ -452,7 +445,6 @@ def sortRadius(dfVelocity, t, r):
 
 
 def sortGrid(dfVelocity, x, y):
-
     xMin = x[0]
     xMax = x[1]
     yMin = y[0]
@@ -468,7 +460,6 @@ def sortGrid(dfVelocity, x, y):
 
 
 def sortVolume(dfShape, x, y, t):
-
     xMin = x[0]
     xMax = x[1]
     yMin = y[0]
@@ -489,7 +480,6 @@ def sortVolume(dfShape, x, y, t):
 
 
 def sortSection(dfVelocity, r, theta):
-
     rMin = r[0]
     rMax = r[1]
     thetaMin = theta[0]
@@ -505,7 +495,6 @@ def sortSection(dfVelocity, r, theta):
 
 
 def sortBand(dfRadial, band, pixelWidth):
-
     if band == 1:
         df = dfRadial[dfRadial["Wound Edge Distance"] < pixelWidth]
     else:
@@ -524,7 +513,6 @@ def createFolder(directory):
 
 
 def rotation_matrix(theta):
-
     R = np.array(
         [
             [np.cos(theta), -np.sin(theta)],
@@ -585,7 +573,6 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name="shiftedcmap"):
 
 
 def rotation_matrix(theta):
-
     R = np.array(
         [
             [np.cos(theta), -np.sin(theta)],
@@ -609,84 +596,72 @@ def findStartTime(filename):
 
 
 def vidrcxyRGB(vid):
-
     T, X, Y, C = vid.shape
 
     vidxy = np.zeros(shape=(T, X, Y, C))
 
     for x in range(X):
         for y in range(Y):
-
             vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
 
     return vidxy
 
 
 def vidxyrcRGB(vid):
-
     T, X, Y, C = vid.shape
 
     vidrc = np.zeros(shape=(T, X, Y, C))
 
     for x in range(X):
         for y in range(Y):
-
             vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
 
     return vidrc
 
 
 def vidrcxy(vid):
-
     T, X, Y = vid.shape
 
     vidxy = np.zeros(shape=(T, X, Y))
 
     for x in range(X):
         for y in range(Y):
-
             vidxy[:, x, y] = vid[:, (Y - 1) - y, x]
 
     return vidxy
 
 
 def vidxyrc(vid):
-
     T, X, Y = vid.shape
 
     vidrc = np.zeros(shape=(T, X, Y))
 
     for x in range(X):
         for y in range(Y):
-
             vidrc[:, (Y - 1) - y, x] = vid[:, x, y]
 
     return vidrc
 
 
 def imgrcxy(img):
-
     X, Y = img.shape
 
     imgxy = np.zeros(shape=(X, Y))
 
     for x in range(X):
         for y in range(Y):
-
             imgxy[x, y] = img[(Y - 1) - y, x]
 
     return imgxy
 
 
 def imgxyrc(img):
-
     X, Y = img.shape
 
     imgrc = np.zeros(shape=(X, Y))
 
     for x in range(X):
         for y in range(Y):
-
             imgrc[(Y - 1) - y, x] = img[x, y]
 
     return imgrc
