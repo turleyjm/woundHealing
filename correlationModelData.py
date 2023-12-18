@@ -1511,6 +1511,7 @@ if True:
         vmin=-maxCorr,
         vmax=maxCorr,
         shading="auto",
+        style='sci',
     )
     fig.colorbar(c, ax=ax[1, 0])
     ax[1, 0].set_xlabel("Time apart $T$ (min)")
@@ -1525,6 +1526,8 @@ if True:
         vmin=-maxCorr,
         vmax=maxCorr,
         shading="auto",
+        style='sci',
+        
     )
     fig.colorbar(c, ax=ax[1, 1])
     ax[1, 1].set_xlabel("Time apart $T$ (min)")
@@ -1543,7 +1546,7 @@ if True:
     plt.close("all")
 
 # deltaQ2 (model)
-if False:
+if True:
 
     def Corr_dQ2_Integral_T(R, C):
         B = 0.006533824439392692
@@ -1894,7 +1897,7 @@ if False:
     plt.close("all")
 
 # deltaRho_n (model)
-if False:
+if True:
 
     def Corr_Rho_T(T, C):
         return C / T
@@ -2011,7 +2014,7 @@ if False:
     plt.close("all")
 
 # deltaRho_s (model)
-if False:
+if True:
 
     def Corr_dRho_S(r, C, lamdba):
         return C * np.exp(-lamdba * r)
