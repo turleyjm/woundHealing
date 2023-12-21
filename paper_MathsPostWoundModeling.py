@@ -66,10 +66,9 @@ def inPlaneShell(x, y, t, t0, t1, r0, r1, outPlane):
     return inPlane
 
 
-def forIntegral(k, R, T, B, C, L):
+def forIntegral(k, R, T, B, mQ, L):
     k, R, T = np.meshgrid(k, R, T, indexing="ij")
-    return C * k * np.exp(-(B + L * k**2) * T) * sc.jv(0, R * k) / (B + L * k**2)
-
+    return mQ * k * np.exp(-(B + L * k**2) * T) * sc.jv(0, R * k) / (B + L * k**2)
 
 fileTypes = "Unwound18h"
 T = np.linspace(0, 89, 90)
@@ -2939,31 +2938,30 @@ if False:
     plt.close("all")
 
 # deltaQ1 (model)
-if False:
+if True:
 
-    def Corr_dQ1_Integral_T(R, L):
-        B = 0.006533824439392692
-        C = 0.00055
+    def Corr_dQ1_Integral_T(R, B, L):
+        mQ = 1
         T = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
 
     def Corr_dQ1_Integral_R(T, B, L):
-        C = 0.00055
+        mQ = 1
         R = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
 
     def Corr_dQ1(R, T):
-        B = 0.006533824439392692
-        C = 0.00055
-        L = 2.1
+        B = 0.003778
+        L = 4.68
+        mQ = 0.00048889
 
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -2990,9 +2988,9 @@ if False:
         f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1[:, 0][1:],
-        p0=(4, 0.1),
+        p0=(0.0001, 4),
     )[0]
-    # print(m)
+    print(float(m[0]), float(m[1]))
 
     ax[0, 0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
     # ax[0, 0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
@@ -3008,14 +3006,14 @@ if False:
         f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1[1][1:26],
-        p0=(4),
+        p0=(0.0001, 4),
         method="lm",
     )[0]
-    # print(m)
+    print(float(m[0]), float(m[1]))
 
-    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label="Data")
+    ax[0, 1].plot(R[1:], dQ1dQ1[0][1:26], label="Data")
     # ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[5:], Corr_dQ1_Integral_T(R, m[0])[5:], label="Model")
+    ax[0, 1].plot(R[1:], Corr_dQ1_Integral_T(R, m[0], m[1])[1:], label="Model")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[0, 1].set_ylim([0, 5.9e-04])
@@ -3023,39 +3021,39 @@ if False:
     ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 1].legend()
 
-    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
-    R, T = np.meshgrid(R, T)
-    maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
-    c = ax[1, 0].pcolor(
-        T,
-        R,
-        dQ1dQ1,
-        cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
-        shading="auto",
-    )
-    cbar = fig.colorbar(c, ax=ax[1, 0])
-    cbar.formatter.set_powerlimits((0, 0))
-    ax[1, 0].set_xlabel("Time apart $T$ (min)")
-    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
+    # Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    # R, T = np.meshgrid(R, T)
+    # maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
+    # c = ax[1, 0].pcolor(
+    #     T,
+    #     R,
+    #     dQ1dQ1,
+    #     cmap="RdBu_r",
+    #     vmin=-maxCorr,
+    #     vmax=maxCorr,
+    #     shading="auto",
+    # )
+    # cbar = fig.colorbar(c, ax=ax[1, 0])
+    # cbar.formatter.set_powerlimits((0, 0))
+    # ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    # ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    # ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
 
-    c = ax[1, 1].pcolor(
-        T,
-        R,
-        Corr_dQ1dQ1,
-        cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
-        shading="auto"
+    # c = ax[1, 1].pcolor(
+    #     T,
+    #     R,
+    #     Corr_dQ1dQ1,
+    #     cmap="RdBu_r",
+    #     vmin=-maxCorr,
+    #     vmax=maxCorr,
+    #     shading="auto"
         
-    )
-    cbar = fig.colorbar(c, ax=ax[1, 1])
-    cbar.formatter.set_powerlimits((0, 0))
-    ax[1, 1].set_xlabel("Time apart $T$ (min)")
-    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
+    # )
+    # cbar = fig.colorbar(c, ax=ax[1, 1])
+    # cbar.formatter.set_powerlimits((0, 0))
+    # ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    # ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    # ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
 
     plt.subplots_adjust(
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
@@ -3071,20 +3069,19 @@ if False:
 # deltaQ2 (model)
 if False:
 
-    def Corr_dQ2_Integral_T(R, C):
-        B = 0.006533824439392692
-        L = 2.1
+    def Corr_dQ2_Integral_T(R, B, L):
+        C = 0.00045
         T = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+        return np.sum(forIntegral2(k, R, T, B, C, L) * h, axis=0)[:, 0]
 
     def Corr_dQ2_Integral_R(T, B, L):
         C = 0.00045
         R = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+        return np.sum(forIntegral2(k, R, T, B, C, L) * h, axis=0)[0]
 
     def Corr_dQ2(R, T):
         B = 0.006533824439392692
@@ -3124,7 +3121,7 @@ if False:
         ydata=dQ2dQ2[:, 0][1:],
         p0=(4, 0.1),
     )[0]
-    # print(m)
+    print(m[0], abs(m[1])**0.5)
 
     ax[0, 0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
     # ax[0, 0].plot(
@@ -3144,14 +3141,14 @@ if False:
         f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2[1][1:26],
-        p0=(4),
+        p0=(4, 0.1),
         method="lm",
     )[0]
-    # print(m)
+    print(m[0], abs(m[1])**0.5)
 
-    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26], label="Data")
+    ax[0, 1].plot(R[1:], dQ2dQ2[0][1:26], label="Data")
     # ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[5:], Corr_dQ2_Integral_T(R, m[0])[5:], label="Model")
+    ax[0, 1].plot(R[1:], Corr_dQ2_Integral_T(R, m[0], m[1])[1:], label="Model")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[0, 1].set_ylim([0, 6e-04])
@@ -3716,12 +3713,6 @@ if False:
 def Corr_R0(t, B, D):
     return D * -sc.expi(-B * t)
 
-
-def forIntegral(k, R, T, B, C, L):
-    k, R, T = np.meshgrid(k, R, T, indexing="ij")
-    return C * k * np.exp(-(B + L * k**2) * T) * sc.jv(0, R * k) / (B + L * k**2)
-
-
 grid = 19
 timeGrid = 30
 Mlist = []
@@ -3733,28 +3724,27 @@ fileTypes = ["Unwound18h", "WoundL18h"]
 # deltaQ1 (model)
 if False:
 
-    def Corr_dQ1_Integral_T(R, B, L):
-        C = 0.00055
+    def Corr_dQ1_Integral_T(R, L):
+        B = 0.027744
         T = 0
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
+        return np.sum(integral_T(k, R, T, B, L) * h, axis=0)[:, 0]
 
-    def Corr_dQ1_Integral_R(T, B, L):
-        C = 0.00055
+    def Corr_dQ1_Integral_R(T, B, mQ):
         R = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
+        w = np.linspace(0, 4, 200000)
+        h = w[1] - w[0]
+        return np.sum(integral(w, R, T, B, mQ) * h, axis=0)[:, 0]
 
     def Corr_dQ1(R, T):
-        B = 0.006533824439392692
-        C = 0.00055
-        L = 2.1
+        B = 0.027744
+        L = 3.557
+        mQ = 0.00017233*L**0.5
 
         k = np.linspace(0, 4, 200000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[1]}.pkl")
     filenames, fileType = util.getFilesType(fileTypes[1])
@@ -3845,7 +3835,7 @@ if False:
         f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Close[0][1:],
-        p0=(0.006, 4),
+        p0=(4),
         method="lm",
     )[0]
     print(M)
@@ -3855,7 +3845,7 @@ if False:
         f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Far[0][1:],
-        p0=(0.006, 4),
+        p0=(4),
         method="lm",
     )[0]
     print(m)
@@ -3865,18 +3855,18 @@ if False:
         f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1_H[0][1:],
-        p0=(0.006, 4),
+        p0=(4),
         method="lm",
     )[0]
     print(m_H)
     m_Hlist.append(m_H)
 
     ax[1].plot(R[1:], dQ1dQ1Close[0][1:], label="close to wound", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], M[0], M[1]), label="Model close", color="g")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], M), label="Model close", color="g")
     ax[1].plot(R[1:], dQ1dQ1Far[0][1:], label="far from wound", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Model far", color="m")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m), label="Model far", color="m")
     ax[1].plot(R[1:], dQ1dQ1_H[0][1:], label="healthy", color="y", marker="o")
-    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_H[0], m_H[1]), label="Model healthy", color="y")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_H), label="Model healthy", color="y")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -4415,7 +4405,7 @@ mlist_JNK = []
 fileTypes = ["WoundL18h", "WoundLJNK"]
 
 # Close to wounds
-if True:
+if False:
 
     def Corr_dQ_Integral_T(R, B, L):
         C = 0.00055
@@ -4636,7 +4626,7 @@ mlist = []
 mlist_JNK = []
 
 # Far to wounds
-if True:
+if False:
 
     def Corr_dQ_Integral_T(R, B, L):
         C = 0.00055
@@ -4857,7 +4847,7 @@ mlist_JNK = []
 fileTypes = ["Unwound18h", "UnwoundJNK"]
 
 # Healthy wounds
-if True:
+if False:
 
     def Corr_dQ_Integral_T(R, B, L):
         C = 0.00055
