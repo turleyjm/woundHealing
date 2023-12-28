@@ -95,7 +95,7 @@ if False:
     ax.plot(time, rho, color=colour, marker=mark, markevery=10)
     ax.fill_between(time, rho - std, rho + std, alpha=0.15, color=colour)
 
-    ax.set_ylim([0.05, 0.09])
+    ax.set_ylim([0.055, 0.09])
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{\rho}$")
     ax.set_title(r"Mean $\rho$" + " with \n time unwounded")
     fig.savefig(
@@ -128,9 +128,9 @@ if False:
     ax.plot(time, Q1, label=fileTitle, color=colour, marker=mark, markevery=10)
     ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
 
-    ax.set_ylim([-0.005, 0.035])
-    ax.set(xlabel="Time (mins)", ylabel=r"$\bar{q}^{(1)}$")
-    ax.set_title(r"Mean $q^{(1)}$" + " with \n time unwounded")
+    ax.set_ylim([0.002, 0.035])
+    ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(1)}$")
+    ax.set_title(r"Mean $Q^{(1)}$" + " with \n time unwounded")
     fig.savefig(
         f"results/mathPostWoundPaper/mean Q1 {fileType}",
         dpi=300,
@@ -2941,25 +2941,25 @@ if False:
 if True:
 
     def Corr_dQ1_Integral_T(R, B, L):
-        mQ = 1
+        mQ = 0.00055
         T = 0
-        k = np.linspace(0, 4, 200000)
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
         return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
 
     def Corr_dQ1_Integral_R(T, B, L):
-        mQ = 1
-        R = 0
-        k = np.linspace(0, 4, 200000)
+        mQ = 0.00055
+        R = 10
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
         return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
 
     def Corr_dQ1(R, T):
-        B = 0.003778
-        L = 4.68
-        mQ = 0.00048889
+        mQ = 0.00055
+        B = 0.0033
+        L = 6
 
-        k = np.linspace(0, 4, 200000)
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
         return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
 
@@ -2987,73 +2987,78 @@ if True:
     m = sp.optimize.curve_fit(
         f=Corr_dQ1_Integral_R,
         xdata=T[1:],
-        ydata=dQ1dQ1[:, 0][1:],
-        p0=(0.0001, 4),
+        ydata=dQ1dQ1[:, 5][1:],
+        p0=(0.001, 1),
+        bounds=([0, 0], [np.inf, np.inf]),
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 0].plot(T[1:], dQ1dQ1[:, 0][1:], label="Data")
-    # ax[0, 0].plot(T[1:], Corr_dQ1(0, T[1:])[0], label="Model")
-    ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model")
+    ax[0, 0].plot(T[1:], dQ1dQ1[:, 5][1:], label="Data")
+    ax[0, 0].plot(T[1:], Corr_dQ1(5, T[1:])[0], label="Model")
+    ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Fit")
     ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[0, 0].set_ylim([0, 5.9e-04])
-    ax[0, 0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0, 0].set_ylim([0, 1.8e-04])
+    ax[0, 0].set_title(r"$C^{11}_{qq}(10,T)$")
     ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 0].legend()
 
     m = sp.optimize.curve_fit(
         f=Corr_dQ1_Integral_T,
-        xdata=R[1:],
-        ydata=dQ1dQ1[1][1:26],
-        p0=(0.0001, 4),
+        xdata=R[5:],
+        ydata=dQ1dQ1[0][5:26],
+        p0=(0.001, 1),
         method="lm",
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 1].plot(R[1:], dQ1dQ1[0][1:26], label="Data")
-    # ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[1:], Corr_dQ1_Integral_T(R, m[0], m[1])[1:], label="Model")
+    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
+    ax[0, 1].plot(R[5:], Corr_dQ1_Integral_T(R, m[0], m[1])[5:], label="Fit")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[0, 1].set_ylim([0, 5.9e-04])
+    ax[0, 1].set_ylim([0, 1.8e-04])
     ax[0, 1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 1].legend()
 
-    # Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
-    # R, T = np.meshgrid(R, T)
-    # maxCorr = np.max([dQ1dQ1, -dQ1dQ1])
-    # c = ax[1, 0].pcolor(
-    #     T,
-    #     R,
-    #     dQ1dQ1,
-    #     cmap="RdBu_r",
-    #     vmin=-maxCorr,
-    #     vmax=maxCorr,
-    #     shading="auto",
-    # )
-    # cbar = fig.colorbar(c, ax=ax[1, 0])
-    # cbar.formatter.set_powerlimits((0, 0))
-    # ax[1, 0].set_xlabel("Time apart $T$ (min)")
-    # ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    # ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dQ1dQ1[:, 5:], -dQ1dQ1[:, 5:]])
+    c = ax[1, 0].pcolor(
+        T[:, 5:],
+        R[:, 5:],
+        dQ1dQ1[:, 5:],
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 0])
+    cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
 
-    # c = ax[1, 1].pcolor(
-    #     T,
-    #     R,
-    #     Corr_dQ1dQ1,
-    #     cmap="RdBu_r",
-    #     vmin=-maxCorr,
-    #     vmax=maxCorr,
-    #     shading="auto"
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), grid)
+    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[1, 1].pcolor(
+        T,
+        R,
+        Corr_dQ1dQ1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto"
         
-    # )
-    # cbar = fig.colorbar(c, ax=ax[1, 1])
-    # cbar.formatter.set_powerlimits((0, 0))
-    # ax[1, 1].set_xlabel("Time apart $T$ (min)")
-    # ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    # ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 1])
+    cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
 
     plt.subplots_adjust(
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
@@ -3067,30 +3072,30 @@ if True:
     plt.close("all")
 
 # deltaQ2 (model)
-if False:
+if True:
 
     def Corr_dQ2_Integral_T(R, B, L):
-        C = 0.00045
+        mQ = 0.0002
         T = 0
-        k = np.linspace(0, 4, 200000)
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
-        return np.sum(forIntegral2(k, R, T, B, C, L) * h, axis=0)[:, 0]
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
 
     def Corr_dQ2_Integral_R(T, B, L):
-        C = 0.00045
-        R = 0
-        k = np.linspace(0, 4, 200000)
+        mQ = 0.0002
+        R = 10
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
-        return np.sum(forIntegral2(k, R, T, B, C, L) * h, axis=0)[0]
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
 
     def Corr_dQ2(R, T):
-        B = 0.006533824439392692
-        C = 0.00045
-        L = 2.1
+        mQ = 0.0002
+        B = 0.0033
+        L = 6
 
-        k = np.linspace(0, 4, 200000)
+        k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)
+        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -3118,51 +3123,46 @@ if False:
     m = sp.optimize.curve_fit(
         f=Corr_dQ2_Integral_R,
         xdata=T[1:],
-        ydata=dQ2dQ2[:, 0][1:],
-        p0=(4, 0.1),
+        ydata=dQ2dQ2[:, 5][1:],
+        p0=(0.001, 1),
     )[0]
-    print(m[0], abs(m[1])**0.5)
+    print(float(m[0]), float(m[1]))
 
-    ax[0, 0].plot(T[1:], dQ2dQ2[:, 0][1:], label="Data")
-    # ax[0, 0].plot(
-    #     T[1:],
-    #     Corr_dQ2(0, T[1:])[0],
-    #     label="Model",
-    # )
-    ax[0, 0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Model")
+    ax[0, 0].plot(T[1:], dQ2dQ2[:, 5][1:], label="Data")
+    ax[0, 0].plot(T[1:], Corr_dQ2(5, T[1:])[0], label="Model")
+    ax[0, 0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Fit")
     ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
-    ax[0, 0].set_ylim([0, 6e-04])
-    ax[0, 0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[0, 0].set_ylim([0, 8e-05])
+    ax[0, 0].set_title(r"$C^{22}_{qq}(10,T)$")
     ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 0].legend()
 
     m = sp.optimize.curve_fit(
         f=Corr_dQ2_Integral_T,
-        xdata=R[1:],
-        ydata=dQ2dQ2[1][1:26],
-        p0=(4, 0.1),
+        xdata=R[5:],
+        ydata=dQ2dQ2[1][5:26],
+        p0=(0.001, 1),
         method="lm",
     )[0]
-    print(m[0], abs(m[1])**0.5)
+    print(float(m[0]), float(m[1]))
 
-    ax[0, 1].plot(R[1:], dQ2dQ2[0][1:26], label="Data")
-    # ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[1:], Corr_dQ2_Integral_T(R, m[0], m[1])[1:], label="Model")
+    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26], label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
+    ax[0, 1].plot(R[5:], Corr_dQ2_Integral_T(R, m[0], m[1])[5:], label="Fit")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
-    ax[0, 1].set_ylim([0, 6e-04])
+    ax[0, 1].set_ylim([0, 8e-05])
     ax[0, 1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 1].legend()
 
-    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
-    maxCorr = np.max([dQ2dQ2, -dQ2dQ2])
+    maxCorr = np.max([dQ2dQ2[:, 5:], -dQ2dQ2[:, 5:]])
     c = ax[1, 0].pcolor(
-        T,
-        R,
-        dQ2dQ2,
+        T[:, 5:],
+        R[:, 5:],
+        dQ2dQ2[:, 5:],
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
@@ -3173,6 +3173,11 @@ if False:
     ax[1, 0].set_xlabel("Time apart $T$ (min)")
     ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].set_title(r"Experiment $C^{22}_{qq}(R,T)$", y=1.1)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), grid)
+    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
 
     c = ax[1, 1].pcolor(
         T,
@@ -3204,18 +3209,12 @@ if False:
 # deltaRho_n (model)
 if False:
 
-    def Corr_Rho_T(T, C):
-        return C / T
-
-    def Corr_Rho_R(R, D):
-        C = 0.0042179
-        T = 30
-        return C / T * np.exp(-(R**2) / (4 * D * T))
-
-    def Corr_Rho(R, T):
-        C = 0.0042179
-        D = 3.78862204
-        return C / T * np.exp(-(R**2) / (4 * D * T))
+    def Corr_Rho_fit(M, mrho, D):
+        R, T = M
+        return mrho / (32 * np.pi**3 * T * D**2) * np.exp(-(R**2) / (4 * D * T))
+    
+    def Corr_Rho(R, T, mrho, D):
+        return mrho / (32 * np.pi**3 * T * D**2) * np.exp(-(R**2) / (4 * D * T))
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -3234,84 +3233,54 @@ if False:
 
     dRhodRho = dRho_SdRho_S - np.mean(dRho_SdRho_S[10:-1], axis=0)
 
-    R = np.linspace(0, 60, 7)
-    R_ = np.linspace(0, 60, 61)
+    R = np.linspace(10, 60, 6)
+    R_ = np.linspace(10, 60, 501)
     T = np.linspace(10, 170, 17)
-    T_ = np.linspace(10, 170, 170)
-
-    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
-    plt.subplots_adjust(wspace=0.4)
-    plt.gcf().subplots_adjust(bottom=0.15)
-
-    m = sp.optimize.curve_fit(
-        f=Corr_Rho_T,
-        xdata=T[2:],
-        ydata=dRhodRho[3:, 0],
-        p0=0.003,
-    )[0]
-    print(m[0])
-
-    ax[0, 0].plot(T, dRhodRho[1:, 0], label="Data")
-    ax[0, 0].plot(T_, Corr_Rho_T(T_, m[0]), label="Model")
-    ax[0, 0].set_xlabel("Time apart $T$ (min)")
-    ax[0, 0].set_ylabel(r"$\delta \rho_n$ Correlation")
-    ax[0, 0].set_ylim([-2e-5, 6e-4])
-    ax[0, 0].set_title(r"$C^{nn}_{\rho\rho}(0,T)$")
-    ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    ax[0, 0].legend()
-
-    m = sp.optimize.curve_fit(
-        f=Corr_Rho_R,
-        xdata=R[1:],
-        ydata=dRhodRho[3][1:],
-        p0=(10),
-    )[0]
-    print(m[0])
-
-    ax[0, 1].plot(R, dRhodRho[3], label="Data")
-    ax[0, 1].plot(R_, Corr_Rho_R(R_, m[0]), label="Model")
-    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
-    ax[0, 1].set_ylabel(r"$\delta \rho_n$ Correlation")
-    ax[0, 1].set_ylim([-2e-5, 6e-4])
-    ax[0, 1].set_title(r"$C^{nn}_{\rho\rho}(R,30)$")
-    ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    ax[0, 1].legend()
+    T_ = np.linspace(10, 170, 511)
 
     R, T = np.meshgrid(R, T)
-    maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])
-    c = ax[1, 0].pcolor(
+    xdata = np.vstack((R.ravel(), T.ravel()))
+
+    popt = sp.optimize.curve_fit(Corr_Rho_fit, xdata, dRhodRho[1:, 1:].ravel(), [0.003, 4])[0]
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 3))
+
+    maxCorr = np.max([dRhodRho[1:, 1:], -dRhodRho[1:, 1:]])
+    c = ax[0].pcolor(
         T,
         R,
-        dRhodRho[1:],
+        dRhodRho[1:, 1:],
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
         shading="auto",
     )
-    cbar = fig.colorbar(c, ax=ax[1, 0])
+    cbar = fig.colorbar(c, ax=ax[0])
     cbar.formatter.set_powerlimits((0, 0))
-    ax[1, 0].set_xlabel("Time apart $T$ (min)")
-    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    ax[1, 0].set_title(r"Experiment $C^{nn}_{\rho\rho}(R,T)$", y=1.1)
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[0].set_title(r"Experiment $C^{nn}_{\rho\rho}(R,T)$", y=1.1)
 
     R_, T_ = np.meshgrid(R_, T_)
-    c = ax[1, 1].pcolor(
+    c = ax[1].pcolor(
         T_,
         R_,
-        Corr_Rho(R_, T_),
+        Corr_Rho(R_, T_, *popt),
         cmap="RdBu_r",
         vmin=-maxCorr,
         vmax=maxCorr,
         shading="auto",
     )
-    cbar = fig.colorbar(c, ax=ax[1, 1])
+    cbar = fig.colorbar(c, ax=ax[1])
     cbar.formatter.set_powerlimits((0, 0))
-    ax[1, 1].set_xlabel("Time apart $T$ (min)")
-    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-    ax[1, 1].set_title(r"Model $C^{nn}_{\rho\rho}(R,T)$", y=1.1)
+    ax[1].set_xlabel("Time apart $T$ (min)")
+    ax[1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_title(r"Model $C^{nn}_{\rho\rho}(R,T)$", y=1.1)
+
+    print(popt)
 
     plt.subplots_adjust(
-        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.4, hspace=0.50
     )
 
     fig.savefig(
@@ -3326,7 +3295,7 @@ if False:
 if False:
 
     def Corr_dRho_S(r, C, lamdba):
-        return C * np.exp(-lamdba * r)
+        return C * np.exp(- r/lamdba)
 
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
@@ -3354,7 +3323,7 @@ if False:
         f=Corr_dRho_S,
         xdata=R,
         ydata=dRho_SdRho_S,
-        p0=(0.0003, 0.04),
+        p0=(0.0003, 20),
     )[0]
     print(m)
 
