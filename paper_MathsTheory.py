@@ -2903,7 +2903,7 @@ if False:
     plt.close("all")
 
 # deltaQ1 (model)
-if True:
+if False:
 
     def Corr_dQ1_Integral_T(R, B, L):
         mQ = 0.0005
@@ -2921,8 +2921,8 @@ if True:
 
     def Corr_dQ1(R, T):
         mQ = 0.0005
-        B = 0.0038
-        L = 4.8
+        B = 0.0041
+        L = 4.4
 
         k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
@@ -2947,7 +2947,7 @@ if True:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    fig, ax = plt.subplots(3, 2, figsize=(8, 12))
 
     m = sp.optimize.curve_fit(
         f=Corr_dQ1_Integral_R,
@@ -3004,8 +3004,8 @@ if True:
     ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
 
-    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 2)
-    R = np.linspace(10, 2 * (grid - 1), grid * 2)
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 3)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5) * 3)
     Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
 
@@ -3024,6 +3024,26 @@ if True:
     ax[1, 1].set_xlabel("Time apart $T$ (min)")
     ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5))
+    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[2, 0].pcolor(
+        T,
+        R,
+        dQ1dQ1[:, 5:] - Corr_dQ1dQ1,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[2, 0])
+    cbar.formatter.set_powerlimits((0, 0))
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[2, 0].set_title(r"Difference $C^{11}_{qq}(R,T)$", y=1.1)
 
     plt.subplots_adjust(
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
@@ -3055,8 +3075,8 @@ if True:
 
     def Corr_dQ2(R, T):
         mQ = 0.0002
-        B = 0.0038
-        L = 4.8
+        B = 0.0041
+        L = 4.4
 
         k = np.linspace(0, 20, 100000)
         h = k[1] - k[0]
@@ -3081,7 +3101,7 @@ if True:
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
 
-    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+    fig, ax = plt.subplots(3, 2, figsize=(8, 12))
     plt.subplots_adjust(wspace=0.4)
     plt.gcf().subplots_adjust(bottom=0.15)
 
@@ -3139,8 +3159,8 @@ if True:
     ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].set_title(r"Experiment $C^{22}_{qq}(R,T)$", y=1.1)
 
-    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 2)
-    R = np.linspace(10, 2 * (grid - 1), grid * 2)
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 3)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5) * 3)
     Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
     R, T = np.meshgrid(R, T)
 
@@ -3158,6 +3178,26 @@ if True:
     ax[1, 1].set_xlabel("Time apart $T$ (min)")
     ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].set_title(r"Model $C^{22}_{qq}(R,T)$", y=1.1)
+    
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5))
+    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[2, 0].pcolor(
+        T,
+        R,
+        dQ2dQ2[:, 5:] - Corr_dQ2dQ2,
+        cmap="RdBu_r",
+        vmin=-maxCorr,
+        vmax=maxCorr,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[2, 0])
+    cbar.formatter.set_powerlimits((0, 0))
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[2, 0].set_title(r"Difference $C^{22}_{qq}(R,T)$", y=1.1)
 
     plt.subplots_adjust(
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50

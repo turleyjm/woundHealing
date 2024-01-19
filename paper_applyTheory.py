@@ -118,12 +118,12 @@ if False:
                     for col in range(timeGrid)
                 ]  # t, r, theta
 
-                print(datetime.now().strftime("%H:%M:%S ") + filename)
+                print(datetime.now().strftime("%H:%M:%S ") + filename + f"{times}")
                 dfShapef = dfShape[dfShape["Filename"] == filename].copy()
                 dfTimepoint = dfShapef[
                     np.array(dfShapef["T"] >= times[0]) & np.array(dfShapef["T"] < times[1])
                 ]
-                n = int(len(dfTimepoint) / 2)
+                n = int(len(dfTimepoint))
                 random.seed(10)
                 count = 0
                 Is = []
@@ -252,8 +252,9 @@ if False:
     df.to_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
 
 timepoints = [[0,29],[30,59],[60,89]]
+
 # space time cell density correlation
-if True:
+if False:
     for times in timepoints:
         grid = 5
         timeGrid = 6
@@ -382,12 +383,12 @@ if True:
             df.to_pickle(f"databases/postWoundPaperCorrelations/dfCorRho{filename}_T=[{times}].pkl")
 
 # collect all correlations
-if True:
+if False:
     _df = []
     for filename in filenames:
         for times in timepoints:
             dfCorRho = pd.read_pickle(
-                f"databases/postWoundPaperCorrelations/dfCorRho{filename}.pkl"
+                f"databases/postWoundPaperCorrelations/dfCorRho{filename}_T=[{times}].pkl"
             )
 
             dRhodRho = np.nan_to_num(dfCorRho["dRhodRhoCorrelation"].iloc[0])
@@ -405,7 +406,155 @@ if True:
             )
 
     df = pd.DataFrame(_df)
-    df.to_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
+    df.to_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}_rho.pkl")
+
+
+# --------- Heatmaps of unwounded at different timepoints ----------
+    
+
+# display all correlations shape
+if True:
+    fig, ax = plt.subplots(6, 3, figsize=(12, 24))
+
+    timepoints = [[0,29],[30,59],[60,89]]   
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}_rho.pkl")
+
+    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
+    df = dfCor.iloc[2::3]
+
+    dRhodRho = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+        RhoCount = df["Count Rho_S"].iloc[i][:, :, :-1]
+        dRhodRho[i] = np.sum(
+            df["dRho_SdRho_S"].iloc[i][:, :, :-1] * RhoCount, axis=2
+        ) / np.sum(RhoCount, axis=2)
+
+    dRhodRho = np.mean(dRhodRho, axis=0)
+
+    maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])*1.1
+
+    for j in range(len(timepoints)):
+        times = np.array(timepoints[j])*2
+
+        T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
+
+        df = dfCor.iloc[j::3]
+
+        dRhodRho = np.zeros([len(filenames), T, R])
+        for i in range(len(filenames)):
+            RhoCount = df["Count Rho_S"].iloc[i][:, :, :-1]
+            dRhodRho[i] = np.sum(
+                df["dRho_SdRho_S"].iloc[i][:, :, :-1] * RhoCount, axis=2
+            ) / np.sum(RhoCount, axis=2)
+
+        dRhodRho = np.mean(dRhodRho, axis=0)
+
+        t, r = np.mgrid[0:60:10, 0:50:10]
+        c = ax[0, j].pcolor(
+            t,
+            r,
+            dRhodRho,
+            cmap="RdBu_r",
+            vmin=-maxCorr,
+            vmax=maxCorr,
+            shading="auto",
+        )
+        cbar = fig.colorbar(c, ax=ax[0, j])
+        cbar.formatter.set_powerlimits((0, 0))
+        ax[0, j].set_xlabel("Time apart $T$ (min)")
+        ax[0, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[0, j].set_title(r"$C_{\rho\rho}(R,T)$" + f" {times}", y=1.1)
+
+        c = ax[1, j].pcolor(
+            t,
+            r,
+            dRhodRho - np.mean(dRhodRho[4:], axis=0),
+            cmap="RdBu_r",
+            vmin=-maxCorr/3,
+            vmax=maxCorr/3,
+            shading="auto",
+        )
+        cbar = fig.colorbar(c, ax=ax[1, j])
+        cbar.formatter.set_powerlimits((0, 0))
+        ax[1, j].set_xlabel("Time apart $T$ (min)")
+        ax[1, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[1, j].set_title(r"$C^{nn}_{\rho\rho}(R,T)$" + f" {times}", y=1.1)
+
+
+    timepoints = [[0,14],[15,29],[30,44],[45,59],[60,74],[75,89]]
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
+
+    for j in range(len(timepoints)):
+        times = np.array(timepoints[j])*2
+        T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
+
+        df = dfCor.iloc[j::6]
+        dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
+        dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
+        for i in range(len(filenames)):
+            dQ1dQ1total = df["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+            dQ1dQ1[i] = np.sum(
+                df["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+            ) / np.sum(dQ1dQ1total, axis=2)
+
+            dQ2dQ2total = df["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+            dQ2dQ2[i] = np.sum(
+                df["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+            ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+        dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+
+        t, r = np.mgrid[0:28:2, 0:38:2]
+
+        if j == 0:
+            maxCorrdQ1 = np.max([dQ1dQ1, -dQ1dQ1])
+            maxCorrdQ2 = np.max([dQ2dQ2, -dQ2dQ2])
+
+        c = ax[int(2 + j // 3), int(j % 3)].pcolor(
+            t,
+            r,
+            dQ1dQ1,
+            cmap="RdBu_r",
+            vmin=-maxCorrdQ1,
+            vmax=maxCorrdQ1,
+            shading="auto",
+        )
+        cbar = fig.colorbar(c, ax=ax[int(2 + j // 3), int(j % 3)])
+        cbar.formatter.set_powerlimits((0, 0))
+        ax[int(2 + j // 3), int(j % 3)].set_xlabel("Time apart $T$ (min)")
+        ax[int(2 + j // 3), int(j % 3)].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[int(2 + j // 3), int(j % 3)].set_title(r"$C^{11}_{qq}(R,T)$" + f" {times}", y=1.1)
+
+        c = ax[int(4 + j // 3), int(j % 3)].pcolor(
+            t,
+            r,
+            dQ2dQ2,
+            cmap="RdBu_r",
+            vmin=-maxCorrdQ2,
+            vmax=maxCorrdQ2,
+            shading="auto",
+        )
+        cbar = fig.colorbar(c, ax=ax[int(4 + j // 3), int(j % 3)])
+        cbar.formatter.set_powerlimits((0, 0))
+        ax[int(4 + j // 3), int(j % 3)].set_xlabel("Time apart $T$ (min)")
+        ax[int(4 + j // 3), int(j % 3)].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[int(4 + j // 3), int(j % 3)].set_title(r"$C^{22}_{qq}(R,T)$" + f" {times}", y=1.1)
+
+    # plt.subplot_tool()
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.4, hspace=0.6
+    )
+
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlations {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
 
 
 # --------- Visualise wounded ----------
