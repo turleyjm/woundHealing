@@ -187,6 +187,14 @@ def getFilesTypes(fileType=fileType):
     elif fileType == "prettyWound":
         fileTypes = ["prettyWound"]
 
+
+    elif fileType == "JNK control":
+        fileTypes = ["Unwound15h", "UnwoundJNK"]
+    elif fileType == "Ca control":
+        fileTypes = ["Unwound15h", "UnwoundCa"]
+    elif fileType == "rpr control":
+        fileTypes = ["Unwound26h", "Unwoundrpr"]
+
     else:
         fileTypes = [fileType]
 
@@ -197,19 +205,19 @@ def getFilesTypes(fileType=fileType):
 
 def getFileTitle(fileType):
     if fileType == "WoundL18h":
-        fileTitle = "large wound 18h AFP"
+        fileTitle = "large wound 18h APF"
     elif fileType == "WoundS18h":
-        fileTitle = "small wound 18h AFP"
+        fileTitle = "small wound 18h APF"
     elif fileType == "Unwound18h":
-        fileTitle = "unwounded 18h AFP"
+        fileTitle = "unwounded 18h APF"
     elif fileType == "Unwound26h":
-        fileTitle = "unwounded wt 26h AFP"
+        fileTitle = "unwounded control 26h APF"
     elif fileType == "Unwound15h":
-        fileTitle = "unwounded wt 14.75h AFP"
+        fileTitle = "unwounded control 14.75h APF"
     elif fileType == "WoundL15h":
-        fileTitle = "large wound control 14.75h AFP"
+        fileTitle = "large wound control 14.75h APF"
     elif fileType == "WoundL26h":
-        fileTitle = "large wound control 26h AFP"
+        fileTitle = "large wound control 26h APF"
     elif fileType == "control":
         fileTitle = "large wound control"
 
@@ -273,6 +281,13 @@ def getgroupTitle(fileTypes):
         groupTitle = "large wound"
     elif fileTypes == "WoundS":
         groupTitle = "small wound"
+
+    elif fileTypes == "JNK control":
+        groupTitle = "bsk DN control"
+    elif fileTypes == "Ca control":
+        groupTitle = "Trpm RNAi control"
+    elif fileTypes == "rpr control":
+        groupTitle = "immune ablation control"
 
     else:
         groupTitle = getFileTitle(fileTypes[0])
@@ -367,14 +382,14 @@ def getColorLineMarker(fileType, groupTitle):
     ):
         colorDict = {
             "Unwound18h": [3, "o"],
-            "Unwound26h": [10, "^"],
-            "Unwound15h": [20, "V"],
+            "Unwound26h": [3, "^"],
+            "Unwound15h": [3, "V"],
             "WoundL18h": [10, "^"],
             "WoundS18h": [20, "s"],
-            "UnwoundJNK": [3, ">"],
+            "UnwoundJNK": [10, ">"],
             "WoundLJNK": [10, "*"],
             "WoundSJNK": [20, "+"],
-            "UnwoundCa": [3, "h"],
+            "UnwoundCa": [10, "h"],
             "WoundLCa": [10, "d"],
             "WoundLCa_new": [10, "d"],
             "WoundLCa_old": [10, "d"],
@@ -388,9 +403,9 @@ def getColorLineMarker(fileType, groupTitle):
             "Unwound18h": [3, "o"],
             "WoundL18h": [3, "^"],
             "WoundS18h": [17, "s"],
-            "Unwound15h": [10, "^"],
+            "Unwound15h": [3, "^"],
             "WoundL15h": [10, "v"],
-            "Unwound26h": [20, "s"],
+            "Unwound26h": [3, "s"],
             "WoundL26h": [20, "H"],
             "UnwoundJNK": [8, ">"],
             "WoundLJNK": [8, "*"],
@@ -408,8 +423,14 @@ def getColorLineMarker(fileType, groupTitle):
     n = 23
     cm = plt.get_cmap("gist_rainbow")
     i, mark = colorDict[fileType]
+    color = cm(1.0 * i / n)
 
-    return cm(1.0 * i / n), mark
+    if "JNK" in fileType:
+        cm = plt.get_cmap("ocean")
+        color = cm(0)
+
+
+    return color, mark
 
 
 # ---------------

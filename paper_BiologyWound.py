@@ -64,7 +64,7 @@ def ControlFor(fileType):
 fileTypes, groupTitle = util.getFilesTypes(fileType="18h")
 scale = 123.26 / 512
 T = 93
-Q1Norm = 0.02711975609416364
+Q1Norm = 0.01217946447300043
 
 # Compare wounds: Large and small
 if False:
@@ -115,7 +115,7 @@ if False:
 
     plt.xlabel("Time after wounding (mins)")
     plt.ylabel(r"Area ($\mu m ^2$)")
-    boldTitle = util.getBoldTitle(groupTitle + "s")
+    boldTitle = util.getBoldTitle(groupTitle)
     plt.title(f"Mean area of\n{boldTitle} wounds")
     plt.legend(loc="upper right", fontsize=9)
     fig.savefig(
@@ -390,8 +390,8 @@ if False:
             t,
             r,
             Q1 / Q1Norm,
-            vmin=-1.4,
-            vmax=1.4,
+            vmin=-3.1,
+            vmax=3.1,
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
@@ -503,7 +503,7 @@ if False:
         fig.colorbar(c, ax=ax)
         if "Wound" in fileType:
             ax.set(
-                xlabel="Time after wounded (mins)",
+                xlabel="Time after wounding (mins)",
                 ylabel=r"Distance from wound $(\mu m)$",
             )
         else:
@@ -528,7 +528,7 @@ if False:
         plt.close("all")
 
 
-# ------------------- Figure 3, 4, 5 and S2
+# ------------------- Figure 3, 4, 5
 
 fileTypes, groupTitle = util.getFilesTypes(fileType="WoundL")
 
@@ -618,7 +618,7 @@ if False:
         plt.xlabel("Time after wounding (mins)")
         plt.ylabel(r"Area ($\mu m ^2$)")
         boldTitle = util.getBoldTitle(groupTitle + "s")
-        plt.title(f"Mean area of\n{boldTitle} wounds")
+        plt.title(f"Mean area of\n{boldTitle}")
         plt.legend(loc="upper right", fontsize=9)
         fig.savefig(
             f"results/biologyWoundPaper/Mean area of {fileType} wounds",
@@ -833,8 +833,8 @@ if False:
             t,
             r,
             Q1 / Q1Norm,
-            vmin=-1.4,
-            vmax=1.4,
+            vmin=-3.1,
+            vmax=3.1,
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
@@ -1204,8 +1204,8 @@ if False:
             t,
             r,
             (Q1 - Q1Large) / Q1Norm,
-            vmin=-0.7,
-            vmax=0.7,
+            vmin=-1.5,
+            vmax=1.5,
             cmap="RdBu_r",
         )
         fig.colorbar(c, ax=ax)
@@ -1238,7 +1238,7 @@ rStep = 10
 
 # Individual: Divison density with distance from wound edge and time
 if False:
-    for fileType in fileTypes[1:]:
+    for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
         area = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -1323,7 +1323,7 @@ if False:
         fig.colorbar(c, ax=ax)
         if "Wound" in fileType:
             ax.set(
-                xlabel="Time after wounded (mins)",
+                xlabel="Time after wounding (mins)",
                 ylabel=r"Distance from wound $(\mu m)$",
             )
         else:
@@ -1337,7 +1337,7 @@ if False:
         plt.title(f"Division density\n{boldTitle}", color=colour)
 
         fig.savefig(
-            f"results/biologyWoundPaper/Division density heatmap {fileTitle}",
+            f"results/biologyWoundPaper/Division density heatmap {fileType}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,
@@ -1502,7 +1502,7 @@ if False:
         )
         fig.colorbar(c, ax=ax)
         ax.set(
-            xlabel="Time after wounded (mins)",
+            xlabel="Time after wounding (mins)",
             ylabel=r"Distance from wound $(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
@@ -1521,6 +1521,7 @@ if False:
             dpi=300,
         )
         plt.close("all")
+
 
 
 # ------------------- Figure S2
@@ -1579,7 +1580,7 @@ if False:
     plt.xlabel("Time after wounding (mins)")
     plt.ylabel(r"Area ($\mu m ^2$)")
     boldTitle = util.getBoldTitle(groupTitle + "s")
-    plt.title(f"Mean area of\n{boldTitle} wounds")
+    plt.title(f"Mean area of\n{boldTitle}")
     plt.legend(loc="upper right", fontsize=9)
     fig.savefig(
         f"results/biologyWoundPaper/Mean area of {fileType} wounds",
@@ -1666,7 +1667,7 @@ if False:
 
 
 # Q_0 for prewound and early unwounded
-if True:
+if False:
     _df = []
     fileType = "Unwound18h"
     filenames, fileType = util.getFilesType(fileType)
@@ -1675,7 +1676,7 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwounded 18h AFP",
+                "Type": "Unwounded 18h APF ",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
@@ -1690,7 +1691,7 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwounded 14.75h AFP",
+                "Type": "Unwounded 14.75h APF ",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }
@@ -1705,7 +1706,7 @@ if True:
         df = dfShape[dfShape["Filename"] == filename]
         _df.append(
             {
-                "Type": "Unwounded 26h AFP",
+                "Type": "Unwounded 26h APF ",
                 "Filename": filename,
                 "q": np.mean(df["q"][df["T"] < 8])[0, 0],
             }

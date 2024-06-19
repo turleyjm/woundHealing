@@ -2943,6 +2943,7 @@ if False:
     dfCor = 0
 
     dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ1dQ1Norm = dQ1dQ1[0,0]
 
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -2958,14 +2959,14 @@ if False:
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 0].plot(T[1:], dQ1dQ1[:, 5][1:], label="Data")
-    ax[0, 0].plot(T[1:], Corr_dQ1(5, T[1:])[0], label="Model")
-    ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Fit")
+    ax[0, 0].plot(T[1:], dQ1dQ1[:, 5][1:]/dQ1dQ1Norm, label="Data")
+    ax[0, 0].plot(T[1:], Corr_dQ1(5, T[1:])[0]/dQ1dQ1Norm, label="Model")
+    ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1])/dQ1dQ1Norm, label="Fit")
     ax[0, 0].set_xlabel("Time apart $T$ (min)")
-    ax[0, 0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[0, 0].set_ylim([0, 1.8e-04])
+    ax[0, 0].set_ylabel(r"Norm. $\delta q^{(1)}$ Correlation")
+    ax[0, 0].set_ylim([0, 1.8e-04/dQ1dQ1Norm])
     ax[0, 0].set_title(r"$C^{11}_{qq}(10,T)$")
-    ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    # ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 0].legend()
 
     m = sp.optimize.curve_fit(
@@ -2977,14 +2978,14 @@ if False:
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label="Data")
-    ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[5:], Corr_dQ1_Integral_T(R, m[0], m[1])[5:], label="Fit")
+    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26]/dQ1dQ1Norm, label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0)/dQ1dQ1Norm, label="Model")
+    ax[0, 1].plot(R[5:], Corr_dQ1_Integral_T(R, m[0], m[1])[5:]/dQ1dQ1Norm, label="Fit")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
-    ax[0, 1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[0, 1].set_ylim([0, 1.8e-04])
+    ax[0, 1].set_ylabel(r"Norm. $\delta q^{(1)}$ Correlation")
+    ax[0, 1].set_ylim([0, 1.8e-04/dQ1dQ1Norm])
     ax[0, 1].set_title(r"$C^{11}_{qq}(R,0)$")
-    ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    # ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 1].legend()
 
     R, T = np.meshgrid(R, T)
@@ -2992,14 +2993,14 @@ if False:
     c = ax[1, 0].pcolor(
         T[:, 5:],
         R[:, 5:],
-        dQ1dQ1[:, 5:],
+        dQ1dQ1[:, 5:]/dQ1dQ1Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[1, 0])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[1, 0].set_xlabel("Time apart $T$ (min)")
     ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
@@ -3012,15 +3013,14 @@ if False:
     c = ax[1, 1].pcolor(
         T,
         R,
-        Corr_dQ1dQ1,
+        Corr_dQ1dQ1/dQ1dQ1Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
         shading="auto"
-        
     )
     cbar = fig.colorbar(c, ax=ax[1, 1])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[1, 1].set_xlabel("Time apart $T$ (min)")
     ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
@@ -3033,14 +3033,14 @@ if False:
     c = ax[2, 0].pcolor(
         T,
         R,
-        dQ1dQ1[:, 5:] - Corr_dQ1dQ1,
+        (dQ1dQ1[:, 5:] - Corr_dQ1dQ1)/dQ1dQ1Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[2, 0])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[2, 0].set_xlabel("Time apart $T$ (min)")
     ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].set_title(r"Difference $C^{11}_{qq}(R,T)$", y=1.1)
@@ -3057,7 +3057,7 @@ if False:
     plt.close("all")
 
 # deltaQ2 (model)
-if True:
+if False:
 
     def Corr_dQ2_Integral_T(R, B, L):
         mQ = 0.0002
@@ -3097,6 +3097,7 @@ if True:
     dfCor = 0
 
     dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+    dQ2dQ2Norm = dQ2dQ2[0,0]
 
     T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
     R = np.linspace(0, 2 * (grid - 1), grid)
@@ -3113,14 +3114,14 @@ if True:
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 0].plot(T[1:], dQ2dQ2[:, 5][1:], label="Data")
-    ax[0, 0].plot(T[1:], Corr_dQ2(5, T[1:])[0], label="Model")
-    ax[0, 0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Fit")
+    ax[0, 0].plot(T[1:], dQ2dQ2[:, 5][1:]/dQ2dQ2Norm, label="Data")
+    ax[0, 0].plot(T[1:], Corr_dQ2(5, T[1:])[0]/dQ2dQ2Norm, label="Model")
+    ax[0, 0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1])/dQ2dQ2Norm, label="Fit")
     ax[0, 0].set_xlabel("Time apart $T$ (min)")
     ax[0, 0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
-    ax[0, 0].set_ylim([0, 8e-05])
+    ax[0, 0].set_ylim([0, 8e-05/dQ2dQ2Norm])
     ax[0, 0].set_title(r"$C^{22}_{qq}(10,T)$")
-    ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    # ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 0].legend()
 
     m = sp.optimize.curve_fit(
@@ -3132,14 +3133,14 @@ if True:
     )[0]
     print(float(m[0]), float(m[1]))
 
-    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26], label="Data")
-    ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0), label="Model")
-    ax[0, 1].plot(R[5:], Corr_dQ2_Integral_T(R, m[0], m[1])[5:], label="Fit")
+    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26]/dQ2dQ2Norm, label="Data")
+    ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0)/dQ2dQ2Norm, label="Model")
+    ax[0, 1].plot(R[5:], Corr_dQ2_Integral_T(R, m[0], m[1])[5:]/dQ2dQ2Norm, label="Fit")
     ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[0, 1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
-    ax[0, 1].set_ylim([0, 8e-05])
+    ax[0, 1].set_ylim([0, 8e-05/dQ2dQ2Norm])
     ax[0, 1].set_title(r"$C^{22}_{qq}(R,0)$")
-    ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    # ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax[0, 1].legend()
 
     R, T = np.meshgrid(R, T)
@@ -3147,14 +3148,14 @@ if True:
     c = ax[1, 0].pcolor(
         T[:, 5:],
         R[:, 5:],
-        dQ2dQ2[:, 5:],
+        dQ2dQ2[:, 5:]/dQ2dQ2Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[1, 0])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[1, 0].set_xlabel("Time apart $T$ (min)")
     ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 0].set_title(r"Experiment $C^{22}_{qq}(R,T)$", y=1.1)
@@ -3167,14 +3168,14 @@ if True:
     c = ax[1, 1].pcolor(
         T,
         R,
-        Corr_dQ2dQ2,
+        Corr_dQ2dQ2/dQ2dQ2Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[1, 1])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[1, 1].set_xlabel("Time apart $T$ (min)")
     ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[1, 1].set_title(r"Model $C^{22}_{qq}(R,T)$", y=1.1)
@@ -3187,14 +3188,14 @@ if True:
     c = ax[2, 0].pcolor(
         T,
         R,
-        dQ2dQ2[:, 5:] - Corr_dQ2dQ2,
+        (dQ2dQ2[:, 5:] - Corr_dQ2dQ2)/dQ2dQ2Norm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[2, 0])
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.formatter.set_powerlimits((0, 0))
     ax[2, 0].set_xlabel("Time apart $T$ (min)")
     ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
     ax[2, 0].set_title(r"Difference $C^{22}_{qq}(R,T)$", y=1.1)
@@ -3212,7 +3213,7 @@ if True:
     plt.close("all")
 
 # deltaRho_n (model)
-if False:
+if True:
 
     def Corr_Rho_fit(M, mrho, D):
         R, T = M
@@ -3235,6 +3236,7 @@ if False:
     dfCor = 0
 
     dRho_SdRho_S = np.mean(dRho_SdRho_S, axis=0)
+    dRhodRhoNorm = dRho_SdRho_S[0,0]
 
     dRhodRho = dRho_SdRho_S - np.mean(dRho_SdRho_S[10:-1], axis=0)
 
@@ -3254,10 +3256,10 @@ if False:
     c = ax[0].pcolor(
         T,
         R,
-        dRhodRho[1:, 1:],
+        dRhodRho[1:, 1:]/dRhodRhoNorm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dRhodRhoNorm,
+        vmax=maxCorr/dRhodRhoNorm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[0])
@@ -3270,10 +3272,10 @@ if False:
     c = ax[1].pcolor(
         T_,
         R_,
-        Corr_Rho(R_, T_, *popt),
+        Corr_Rho(R_, T_, *popt)/dRhodRhoNorm,
         cmap="RdBu_r",
-        vmin=-maxCorr,
-        vmax=maxCorr,
+        vmin=-maxCorr/dRhodRhoNorm,
+        vmax=maxCorr/dRhodRhoNorm,
         shading="auto",
     )
     cbar = fig.colorbar(c, ax=ax[1])
@@ -3297,7 +3299,7 @@ if False:
     plt.close("all")
 
 # deltaRho_s (model)
-if False:
+if True:
 
     def Corr_dRho_S(r, C, lamdba):
         return C * np.exp(- r/lamdba)
@@ -3316,6 +3318,7 @@ if False:
     dfCor = 0
 
     dRho_SdRho_S = np.mean(dRho_SdRho_S, axis=0)
+    dRhodRhoNorm = dRho_SdRho_S[0,0]
 
     dRho_SdRho_S = np.mean(dRho_SdRho_S[10:-1], axis=0)
 
@@ -3332,13 +3335,13 @@ if False:
     )[0]
     print(m)
 
-    ax.plot(R, dRho_SdRho_S, label="Data")
-    ax.plot(R_, Corr_dRho_S(R_, m[0], m[1]), label="Model")
+    ax.plot(R, dRho_SdRho_S/dRhodRhoNorm, label="Data")
+    ax.plot(R_, Corr_dRho_S(R_, m[0], m[1])/dRhodRhoNorm, label="Model")
     ax.set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax.set_ylabel(r"$\delta \rho_s$ Correlation")
-    ax.set_ylim([0, 4.5e-04])
+    ax.set_ylim([0, 4.5e-04/dRhodRhoNorm])
     ax.set_title(r"$C^{ss}_{\rho\rho}(R)$")
-    ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    # ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     ax.legend()
 
     plt.subplots_adjust(
