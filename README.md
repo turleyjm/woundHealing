@@ -13,7 +13,7 @@ The deep learning algorithms used in this workflow are discussed in a previous [
 "databases.py" collects the data about cell behaviours from individual videos and pools them with others in the same condition.
 
 [biorxiv]: https://www.biorxiv.org/content/10.1101/2024.04.10.588842v2.abstract
-[Zenodo]: [https://zenodo.org/records/10846684]
+[Zenodo]: https://zenodo.org/records/10846684
 [git_processData]: https://github.com/turleyjm/processData
-[cell-division-dl-plugin]: [https://github.com/turleyjm/processData](https://github.com/turleyjm/cell-division-dl-plugin)
+[cell-division-dl-plugin]: https://github.com/turleyjm/processData
 [paper]: https://www.biorxiv.org/content/10.1101/2023.03.20.533343v3.abstract
