@@ -1668,7 +1668,7 @@ p0_1 = 0.003
 p0_2 = 1.6
 
 # Close to wounds
-if True:
+if False:
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
     filenames, fileType = util.getFilesType(fileTypes[0])
@@ -1742,7 +1742,7 @@ if True:
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[0].set_ylim([8e-5, 5.6e-04])
+    # ax[0].set_ylim([8e-5, 5.6e-04])
     ax[0].set_title(r"$C^{11}_{qq}(0,T)$")
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -1773,7 +1773,7 @@ if True:
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
-    ax[1].set_ylim([-4e-5, 2.8e-04])
+    # ax[1].set_ylim([-4e-5, 2.8e-04])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -1874,7 +1874,7 @@ mlist = []
 mlist_JNK = []
 
 # Far to wounds
-if True:
+if False:
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
     filenames, fileType = util.getFilesType(fileTypes[0])
@@ -2081,7 +2081,7 @@ mlist_JNK = []
 fileTypes = ["Unwound18h", "UnwoundJNK"]
 
 # Healthy wounds
-if True:
+if False:
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelationsWoundLJNK.pkl")
     T, R, Theta = dfCor["dQ1dQ1Far"].iloc[0].shape
@@ -2284,35 +2284,35 @@ if True:
     print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
 
 
-B_close_wt = 0.0110
-B_close_wt_std = 0.00956
-B_close_JNK = 0.00363
-B_close_JNK_std = 0.00232
-L_close_wt = 0.708
-L_close_wt_std = 0.500
-L_close_JNK = 0.545
-L_close_JNK_std = 0.361
+B_close_wt = 0.00699
+B_close_wt_std = 0.00344
+B_close_JNK = 0.00250
+B_close_JNK_std = 0.000421
+L_close_wt = 0.580
+L_close_wt_std = 0.305
+L_close_JNK = 0.477
+L_close_JNK_std = 0.264
 
-B_far_wt = 0.00331
-B_far_wt_std = 0.00126
-B_far_JNK = 0.00140
-B_far_JNK_std = 0.00129
-L_far_wt = 0.773
-L_far_wt_std = 0.625
+B_far_wt = 0.00290
+B_far_wt_std = 0.00160
+B_far_JNK = 0.00130
+B_far_JNK_std = 0.00115
+L_far_wt = 0.590
+L_far_wt_std = 0.380
 L_far_JNK = 1.09
-L_far_JNK_std = 0.852
+L_far_JNK_std = 0.700
 
-B_healthy_wt = 0.00364
-B_healthy_wt_std = 0.00112
-B_healthy_JNK = 0.00424
-B_healthy_JNK_std = 0.00128
-L_healthy_wt = 1.02
-L_healthy_wt_std = 0.836
-L_healthy_JNK = 0.972
-L_healthy_JNK_std = 0.802
+B_healthy_wt = 0.00284
+B_healthy_wt_std = 0.000630
+B_healthy_JNK = 0.00342
+B_healthy_JNK_std = 0.00127
+L_healthy_wt = 0.773
+L_healthy_wt_std = 0.536
+L_healthy_JNK = 0.733
+L_healthy_JNK_std = 0.490
 
 # plotting the B and L values for close, far, and healthy wounds for control and JNK
-if False:
+if True:
 
     fileTypes = ["WoundL18h", "WoundLJNK"]
     
