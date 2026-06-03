@@ -73,7 +73,7 @@ def star(p):
 
 # -------------------
 
-# Divison orientation with respect to tissue over time
+# Division orientation with respect to tissue over time
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
@@ -97,19 +97,19 @@ if False:
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (mins)", ylabel="Orientation")
     ax.title.set_text(
-        f"Divison orientation with respect to tissue over time {fileType}"
+        f"Division orientation with respect to tissue over time {fileType}"
     )
 
     fig.savefig(
-        f"results/Divison orientation with respect to tissue over time {fileType}",
+        f"results/Division orientation with respect to tissue over time {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to tissue
-if False:
+# Division orientation with respect to tissue
+if True:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
     fileTitle = util.getBoldTitle(fileTitle)
@@ -121,17 +121,17 @@ if False:
     n, bins, patches = ax.hist(dfDivisions["Orientation"], color="g")
 
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    ax.title.set_text(f"Divison orientation with respect \n to wing " + fileTitle)
+    ax.title.set_text(f"Division orientation with respect \n to wing " + fileTitle)
 
     fig.savefig(
-        f"results/Divison orientation with respect to tissue {fileType}",
+        f"results/Division orientation with respect to tissue {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to a wound over time
+# Division orientation with respect to a wound over time
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
@@ -155,18 +155,18 @@ if False:
     fig.colorbar(c, ax=ax)
     ax.set(xlabel="Time (mins)", ylabel="Orientation")
     ax.title.set_text(
-        f"Divison orientation with respect to a wound over time {fileType}"
+        f"Division orientation with respect to a wound over time {fileType}"
     )
 
     fig.savefig(
-        f"results/Divison orientation with respect to a wound over time {fileType}",
+        f"results/Division orientation with respect to a wound over time {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to a wound
+# Division orientation with respect to a wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
@@ -176,7 +176,7 @@ if False:
     cm = plt.cm.get_cmap("RdBu_r")
     n, bins, patches = ax.hist(dfDivisions["Orientation Wound"])
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    ax.title.set_text(f"Divison orientation with \n respect to a " + fileTitle)
+    ax.title.set_text(f"Division orientation with \n respect to a " + fileTitle)
     if "Wound" in fileType:
         bin_centers = 0.5 * (bins[:-1] + bins[1:])
         col = bin_centers - min(bin_centers)
@@ -186,14 +186,14 @@ if False:
             plt.setp(p, "facecolor", cm(c))
 
     fig.savefig(
-        f"results/Divison orientation with respect to a wound {fileType}",
+        f"results/Division orientation with respect to a wound {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to a wound over distance from wound
+# Division orientation with respect to a wound over distance from wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
@@ -228,18 +228,18 @@ if False:
     ax[1].set(xlabel=r"Distance from wound ($\mu m$)", ylabel="Orientation")
 
     fig.suptitle(
-        f"Divison orientation with respect to a wound over distance from wound {fileType}"
+        f"Division orientation with respect to a wound over distance from wound {fileType}"
     )
 
     fig.savefig(
-        f"results/Divison orientation with respect to a wound over distance from wound {fileType}",
+        f"results/Division orientation with respect to a wound over distance from wound {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to a wound over distance from wound
+# Division orientation with respect to a wound over distance from wound
 if False:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
 
@@ -275,18 +275,18 @@ if False:
     ax[1].set(xlabel=r"Distance from wound ($\mu m^{-2}$)", ylabel="Orientation")
 
     fig.suptitle(
-        f"Divison orientation with respect to a wound over distance from wound {fileType}"
+        f"Division orientation with respect to a wound over distance from wound {fileType}"
     )
 
     fig.savefig(
-        f"results/Divison orientation WRTW over distance from wound {fileType} short time",
+        f"results/Division orientation WRTW over distance from wound {fileType} short time",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
     )
     plt.close("all")
 
-# Divison orientation with respect to a wound over distance from wound t-tests
+# Division orientation with respect to a wound over distance from wound t-tests
 if False:
     alpha = 0.05
     dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound.pkl")
@@ -360,7 +360,7 @@ if False:
         )
 
     fig.savefig(
-        f"results/Divison orientation with respect to a wound",
+        f"results/Division orientation with respect to a wound",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -396,7 +396,7 @@ if False:
     # ax[1].title.set_text(f"Large wound")
 
     # fig.suptitle(
-    #     f"Divison orientation with respect to a wound over distance from wound"
+    #     f"Division orientation with respect to a wound over distance from wound"
     # )
 
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
@@ -410,11 +410,11 @@ if False:
     ax.legend(loc="lower right")
     ax.set(xlabel=r"Distance from wound ($\mu m$)", ylabel="Mean orientation")
     # ax.title.set_text(
-    #     f"Divison orientation with respect to a wound over distance from wound"
+    #     f"Division orientation with respect to a wound over distance from wound"
     # )
 
     fig.savefig(
-        f"results/Divison orientation with respect to a wound over distance from wound t-test",
+        f"results/Division orientation with respect to a wound over distance from wound t-test",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
@@ -426,7 +426,7 @@ timeStep = 16
 R = 80
 rStep = 20
 
-# Divison orientation with distance from wound edge and time
+# Division orientation with distance from wound edge and time
 if False:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
     ori_skew = np.zeros([int(T / timeStep), int(R / rStep)])
@@ -501,7 +501,7 @@ if False:
     )
     plt.close("all")
 
-# Divison orientation with direction from wound
+# Division orientation with direction from wound
 if False:
     ori = np.zeros([int(T / timeStep), int(R / rStep)])
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")

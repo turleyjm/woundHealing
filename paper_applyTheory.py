@@ -33,6 +33,43 @@ pd.options.mode.chained_assignment = None  # default='warn'
 plt.rcParams.update({"font.size": 16})
 
 
+_ORIGINAL_CURVE_FIT = sp.optimize.curve_fit
+
+
+def _fit_is_same_as_p0(popt, p0):
+    popt = np.asarray(popt, dtype=float)
+    p0 = np.asarray(p0, dtype=float)
+    if popt.shape != p0.shape:
+        return False
+    return np.allclose(popt, p0, rtol=1e-12, atol=1e-12)
+
+
+def positive_curve_fit(*args, **kwargs):
+    # Enforce strictly positive fit parameters for all model fits.
+    kwargs.setdefault("bounds", (1e-12, np.inf))
+    if kwargs.get("method") == "lm":
+        kwargs["method"] = "trf"
+
+    result = _ORIGINAL_CURVE_FIT(*args, **kwargs)
+
+    base_p0 = kwargs.get("p0")
+    if base_p0 is None:
+        return result
+
+    if not _fit_is_same_as_p0(result[0], base_p0):
+        return result
+
+    base_p0_arr = np.asarray(base_p0, dtype=float)
+    for scale in (2.0, 0.5):
+        retry_kwargs = dict(kwargs)
+        retry_kwargs["p0"] = tuple(base_p0_arr * scale)
+        retry_result = _ORIGINAL_CURVE_FIT(*args, **retry_kwargs)
+        if not _fit_is_same_as_p0(retry_result[0], retry_kwargs["p0"]):
+            return retry_result
+
+    return result
+
+
 # -------------------
 
 filenames, fileType = util.getFilesType()
@@ -74,14 +111,14 @@ def forIntegral(k, R, T, B, mQ, L):
 # --------- Unwounded at different timepoints ----------
 
 filenames, fileType = util.getFilesType("Unwound18h")
-timepoints = [[0,14],[15,29],[30,44],[45,59],[60,74],[75,89]]
+timepoints = [[0,29],[30,59],[60,89]]
 
 # space time cell-cell shape correlation
 if False:
     for times in timepoints:
         dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
-        grid = 20
-        timeGrid = 15
+        grid = 26
+        timeGrid = 30
 
         T = np.linspace(0, (timeGrid - 1), timeGrid)
         R = np.linspace(0, 2 * (grid - 1), grid)
@@ -413,26 +450,12 @@ if False:
     
 
 # display all correlations shape
-if True:
-    fig, ax = plt.subplots(6, 3, figsize=(12, 24))
+if False:
+    fig, ax = plt.subplots(4, 3, figsize=(12, 16))
 
-    timepoints = [[0,29],[30,59],[60,89]]   
+    timepoints = [[0,29],[30,59],[60,89]]  
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}_rho.pkl")
-
-    T, R, Theta = dfCor["dRho_SdRho_S"].iloc[0].shape
-    df = dfCor.iloc[2::3]
-
-    dRhodRho = np.zeros([len(filenames), T, R])
-    for i in range(len(filenames)):
-        RhoCount = df["Count Rho_S"].iloc[i][:, :, :-1]
-        dRhodRho[i] = np.sum(
-            df["dRho_SdRho_S"].iloc[i][:, :, :-1] * RhoCount, axis=2
-        ) / np.sum(RhoCount, axis=2)
-
-    dRhodRho = np.mean(dRhodRho, axis=0)
-
-    maxCorr = np.max([dRhodRho[1:], -dRhodRho[1:]])*1.1
 
     for j in range(len(timepoints)):
         times = np.array(timepoints[j])*2
@@ -449,6 +472,9 @@ if True:
             ) / np.sum(RhoCount, axis=2)
 
         dRhodRho = np.mean(dRhodRho, axis=0)
+        if j == 0:
+            dRhodRho_0 = dRhodRho[0,0]
+        dRhodRho = dRhodRho / dRhodRho_0
 
         t, r = np.mgrid[0:60:10, 0:50:10]
         c = ax[0, j].pcolor(
@@ -456,12 +482,12 @@ if True:
             r,
             dRhodRho,
             cmap="RdBu_r",
-            vmin=-maxCorr,
-            vmax=maxCorr,
+            vmin=-1,
+            vmax=1,
             shading="auto",
         )
         cbar = fig.colorbar(c, ax=ax[0, j])
-        cbar.formatter.set_powerlimits((0, 0))
+        # cbar.formatter.set_powerlimits((0, 0))
         ax[0, j].set_xlabel("Time apart $T$ (min)")
         ax[0, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
         ax[0, j].set_title(r"$C_{\rho\rho}(R,T)$" + f" {times}", y=1.1)
@@ -471,18 +497,16 @@ if True:
             r,
             dRhodRho - np.mean(dRhodRho[4:], axis=0),
             cmap="RdBu_r",
-            vmin=-maxCorr/3,
-            vmax=maxCorr/3,
+            vmin=-1/3,
+            vmax=1/3,
             shading="auto",
         )
         cbar = fig.colorbar(c, ax=ax[1, j])
-        cbar.formatter.set_powerlimits((0, 0))
+        # cbar.formatter.set_powerlimits((0, 0))
         ax[1, j].set_xlabel("Time apart $T$ (min)")
         ax[1, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
         ax[1, j].set_title(r"$C^{nn}_{\rho\rho}(R,T)$" + f" {times}", y=1.1)
 
-
-    timepoints = [[0,14],[15,29],[30,44],[45,59],[60,74],[75,89]]
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
 
@@ -490,7 +514,7 @@ if True:
         times = np.array(timepoints[j])*2
         T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
 
-        df = dfCor.iloc[j::6]
+        df = dfCor.iloc[j::len(timepoints)]
         dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
         dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
         for i in range(len(filenames)):
@@ -506,42 +530,48 @@ if True:
 
         dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
         dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
-
-        t, r = np.mgrid[0:28:2, 0:38:2]
-
         if j == 0:
-            maxCorrdQ1 = np.max([dQ1dQ1, -dQ1dQ1])
-            maxCorrdQ2 = np.max([dQ2dQ2, -dQ2dQ2])
+            dQ1dQ1_0 = dQ1dQ1[0,0]
+            dQ2dQ2_0 = dQ2dQ2[0,0]
 
-        c = ax[int(2 + j // 3), int(j % 3)].pcolor(
+        dQ1dQ1 = dQ1dQ1 / dQ1dQ1_0
+        dQ2dQ2 = dQ2dQ2 / dQ2dQ2_0
+
+        t, r = np.mgrid[0:58:2, 0:50:2]
+
+        # if j == 0:
+        #     maxCorrdQ1 = np.max([dQ1dQ1, -dQ1dQ1])
+        #     maxCorrdQ2 = np.max([dQ2dQ2, -dQ2dQ2])
+
+        c = ax[2, j].pcolor(
             t,
             r,
             dQ1dQ1,
             cmap="RdBu_r",
-            vmin=-maxCorrdQ1,
-            vmax=maxCorrdQ1,
+            vmin=-1,
+            vmax=1,
             shading="auto",
         )
-        cbar = fig.colorbar(c, ax=ax[int(2 + j // 3), int(j % 3)])
-        cbar.formatter.set_powerlimits((0, 0))
-        ax[int(2 + j // 3), int(j % 3)].set_xlabel("Time apart $T$ (min)")
-        ax[int(2 + j // 3), int(j % 3)].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-        ax[int(2 + j // 3), int(j % 3)].set_title(r"$C^{11}_{qq}(R,T)$" + f" {times}", y=1.1)
+        cbar = fig.colorbar(c, ax=ax[2, j])
+        # cbar.formatter.set_powerlimits((0, 0))
+        ax[2, j].set_xlabel("Time apart $T$ (min)")
+        ax[2, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[2, j].set_title(r"$C^{11}_{qq}(R,T)$" + f" {times}", y=1.1)
 
-        c = ax[int(4 + j // 3), int(j % 3)].pcolor(
+        c = ax[3, j].pcolor(
             t,
             r,
             dQ2dQ2,
             cmap="RdBu_r",
-            vmin=-maxCorrdQ2,
-            vmax=maxCorrdQ2,
+            vmin=-1,
+            vmax=1,
             shading="auto",
         )
-        cbar = fig.colorbar(c, ax=ax[int(4 + j // 3), int(j % 3)])
-        cbar.formatter.set_powerlimits((0, 0))
-        ax[int(4 + j // 3), int(j % 3)].set_xlabel("Time apart $T$ (min)")
-        ax[int(4 + j // 3), int(j % 3)].set_ylabel(r"Distance apart $R$ $(\mu m)$")
-        ax[int(4 + j // 3), int(j % 3)].set_title(r"$C^{22}_{qq}(R,T)$" + f" {times}", y=1.1)
+        cbar = fig.colorbar(c, ax=ax[3, j])
+        # cbar.formatter.set_powerlimits((0, 0))
+        ax[3, j].set_xlabel("Time apart $T$ (min)")
+        ax[3, j].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax[3, j].set_title(r"$C^{22}_{qq}(R,T)$" + f" {times}", y=1.1)
 
     # plt.subplot_tool()
     plt.subplots_adjust(
@@ -556,6 +586,683 @@ if True:
     )
     plt.close("all")
 
+grid = 25
+timeGrid = 30
+# fit correlations over different time points
+if False:
+
+    def forIntegral_abs(k, R, T, B, mQ, L):
+        k, R, T = np.meshgrid(k, R, T, indexing="ij")
+        return mQ * k * np.exp(-(abs(B) + L * k**2) * T) * sc.jv(0, R * k) / (abs(B) + L * k**2)
+
+    def Corr_dQ_Integral_T(R, B, L):
+        C = 1
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0]
+    
+    def Corr_dQ_Integral_R(T, B, L):
+        C = 1
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+        
+    timepoints = [[0,29],[30,59],[60,89]]  
+    colors = ["m", "g", "b"]
+    mlist = []
+    B = [[], [], []]
+    L = [[], [], []]
+    C_dQ1 = []
+    C_dQ2 = []
+
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig_norm, ax_norm = plt.subplots(1, 2, figsize=(8, 4))
+
+    print("B    L")
+    for j in range(len(timepoints)):
+
+        times = np.array(timepoints[j])*2
+        T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
+
+        df = dfCor.iloc[j::len(timepoints)]
+        dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
+        for i in range(len(filenames)):
+            dQ1dQ1total = df["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+            dQ1dQ1[i] = np.sum(
+                df["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+            ) / np.sum(dQ1dQ1total, axis=2)
+
+        dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+        dQ1dQ1_0 = dQ1dQ1[0,0]
+        C_dQ1.append(dQ1dQ1_0)
+        dQ1dQ1 = dQ1dQ1 / dQ1dQ1_0
+
+        T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+        R = np.linspace(0, 2 * (grid - 1), grid)
+
+        # print("dQ1")
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        mlist.append(m)
+        print(timepoints[j])
+        print(m)
+        B[j].append(m[0])
+        L[j].append(m[1])
+
+        ax[0].plot(T[1:], dQ1dQ1_0*dQ1dQ1[:, 5][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[0].plot(T[1:], dQ1dQ1_0*Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color=colors[j])
+
+        ax_norm[0].plot(T[1:], dQ1dQ1[:, 5][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax_norm[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color=colors[j])
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        print(m)
+        B[j].append(m[0])
+        L[j].append(m[1])
+
+        ax[1].plot(R[5:], dQ1dQ1_0*dQ1dQ1[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[1].plot(R[5:], dQ1dQ1_0*Corr_dQ_Integral_T(R[5:], m[0], m[1]), label="Model", color=colors[j])
+
+        ax_norm[1].plot(R[5:], dQ1dQ1[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax_norm[1].plot(R[5:], Corr_dQ_Integral_T(R[5:], m[0], m[1]), label="Model", color=colors[j])
+
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0].set_ylim([0, 1.3e-04])
+    ax[0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0].set_ylim([0, 1.3e-04])
+    ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ1 wound timepoints",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+
+
+    ax_norm[0].set_xlabel("Time apart $T$ (min)")
+    ax_norm[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax_norm[0].set_ylim([0, 0.2])
+    ax_norm[0].set_title(r"$C^{11}_{qq}(0,T)$ normalised")
+    ax_norm[0].legend(fontsize=10)
+    # ax_norm[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax_norm[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax_norm[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax_norm[1].set_ylim([0, 0.2])
+    ax_norm[1].set_title(r"$C^{11}_{qq}(R,0)$ normalised")
+    ax_norm[1].legend(fontsize=10)
+    # ax_norm[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig_norm.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ1 wound timepoints norm",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig_norm, ax_norm = plt.subplots(1, 2, figsize=(8, 4))
+
+    for j in range(len(timepoints)):
+
+        times = np.array(timepoints[j])*2
+        T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
+
+        df = dfCor.iloc[j::len(timepoints)]
+        dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
+        for i in range(len(filenames)):
+            dQ2dQ2total = df["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+            dQ2dQ2[i] = np.sum(
+                df["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+            ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+        dQ2dQ2_0 = dQ2dQ2[0,0]
+        C_dQ2.append(dQ2dQ2_0)
+        dQ2dQ2 = dQ2dQ2 / dQ2dQ2_0
+
+        T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+        R = np.linspace(0, 2 * (grid - 1), grid)
+
+        # print("dQ1")
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 0][1:],
+            p0=(0.006, 4),
+        )[0]
+        print(timepoints[j])
+        print(m)
+        B[j].append(m[0])
+        L[j].append(m[1])
+
+        ax[0].plot(T[1:], dQ2dQ2_0*dQ2dQ2[:, 5][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[0].plot(T[1:], dQ2dQ2_0*Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color=colors[j])
+
+        ax_norm[0].plot(T[1:], dQ2dQ2[:, 0][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax_norm[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color=colors[j])
+
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        print(m)
+        B[j].append(m[0])
+        L[j].append(m[1])
+
+        ax[1].plot(R[5:], dQ2dQ2_0*dQ2dQ2[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[1].plot(R[5:], dQ2dQ2_0*Corr_dQ_Integral_T(R[5:], m[0], m[1]), label="Model", color=colors[j])
+
+        ax_norm[1].plot(R[5:], dQ2dQ2[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax_norm[1].plot(R[5:], Corr_dQ_Integral_T(R[5:], m[0], m[1]), label="Model", color=colors[j])
+
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[0].set_ylim([0, 1.3e-04])
+    ax[0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_ylim([0, 1.3e-04])
+    ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ2 wound timepoints",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+
+    ax_norm[0].set_xlabel("Time apart $T$ (min)")
+    ax_norm[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax_norm[0].set_ylim([0, 0.2])
+    ax_norm[0].set_title(r"$C^{22}_{qq}(0,T)$ normalised")
+    ax_norm[0].legend(fontsize=10)
+    # ax_norm[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax_norm[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax_norm[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax_norm[1].set_ylim([0, 0.2])
+    ax_norm[1].set_title(r"$C^{22}_{qq}(R,0)$ normalised")
+    ax_norm[1].legend(fontsize=10)
+    # ax_norm[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig_norm.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ2 wound timepoints norm",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    B = np.array(B) 
+    L = np.array(L)
+    B = np.mean(B, axis=1)
+    L = np.mean(L, axis=1)
+
+    print("dQ1 C -" + f"{C_dQ1}")
+    print("dQ2 C -" + f"{C_dQ2}")
+    print(f"{timepoints[0]}" + " B mean - " + f"{B[0]}" + " L mean - " + f"{L[0]}")
+    print(f"{timepoints[1]}" + " B mean - " + f"{B[1]}" + " L mean - " + f"{L[1]}")
+    print(f"{timepoints[2]}" + " B mean - " + f"{B[2]}" + " L mean - " + f"{L[2]}")
+
+    # print(mlist)
+
+    fig, ax = plt.subplots(2, 2, figsize=(8, 8))
+
+    for j in range(len(timepoints)):
+
+        times = np.array(timepoints[j])*2
+        T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
+
+        df = dfCor.iloc[j::len(timepoints)]
+        dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
+        dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
+        for i in range(len(filenames)):
+            dQ1dQ1total = df["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+            dQ1dQ1[i] = np.sum(
+                df["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+            ) / np.sum(dQ1dQ1total, axis=2)
+            dQ2dQ2total = df["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+            dQ2dQ2[i] = np.sum(
+                df["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+            ) / np.sum(dQ2dQ2total, axis=2)
+
+
+        dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+        dQ1dQ1_0 = dQ1dQ1[0,0]
+        dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+        dQ2dQ2_0 = dQ2dQ2[0,0]
+        T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+        R = np.linspace(0, 2 * (grid - 1), grid)
+
+        ax[0, 0].plot(T[1:], dQ1dQ1[:, 5][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[0, 0].plot(T[1:], dQ1dQ1_0*Corr_dQ_Integral_R(T[1:], B[j], L[j]), label="Model", color=colors[j])
+
+        ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[0, 1].plot(R[5:], dQ1dQ1_0*Corr_dQ_Integral_T(R[5:], B[j], L[j]), label="Model", color=colors[j])
+
+        ax[1, 0].plot(T[1:], dQ2dQ2[:, 5][1:], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[1, 0].plot(T[1:], dQ2dQ2_0*Corr_dQ_Integral_R(T[1:], B[j], L[j]), label="Model", color=colors[j])
+
+        ax[1, 1].plot(R[5:], dQ2dQ2[0][5:26], label=f"{j+1} hr", color=colors[j], marker="o")
+        ax[1, 1].plot(R[5:], dQ2dQ2_0*Corr_dQ_Integral_T(R[5:], B[j], L[j]), label="Model", color=colors[j])
+    
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0, 0].set_ylim([0, 1.3e-04])
+    ax[0, 0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0, 0].legend(fontsize=10)
+    ax[0, 0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[0, 1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0, 1].set_ylim([0, 1.3e-04])
+    ax[0, 1].set_title(r"$C^{11}_{qq}(R,0)$")
+    ax[0, 1].legend(fontsize=10)
+    ax[0, 1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1, 0].set_ylim([0, 1.3e-04])
+    ax[1, 0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[1, 0].legend(fontsize=10)
+    ax[1, 0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1, 1].set_ylim([0, 1.3e-04])
+    ax[1, 1].set_title(r"$C^{22}_{qq}(R,0)$")
+    ax[1, 1].legend(fontsize=10)
+    ax[1, 1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation wound timepoints model",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# find optimisation of 
+if False:
+
+    def forIntegral_abs(k, R, T, B, mQ, L):
+        k, R, T = np.meshgrid(k, R, T, indexing="ij")
+        return mQ * k * np.exp(-(abs(B) + L * k**2) * T) * sc.jv(0, R * k) / (abs(B) + L * k**2)
+
+    def Corr_dQ_Integral_T_10(R, B, L):
+        C = 10
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0] 
+    def Corr_dQ_Integral_T_1(R, B, L):
+        C = 1
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0] 
+    def Corr_dQ_Integral_T_01(R, B, L):
+        C = 0.1
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0] 
+    def Corr_dQ_Integral_T_001(R, B, L):
+        C = 0.01
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0] 
+    def Corr_dQ_Integral_T_0001(R, B, L):
+        C = 0.001
+        T = 0
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[:, 0] 
+
+    C = [100, 50, 10, 5, 1, 0.5, 0.1]
+    def Corr_dQ_Integral_R_10(T, B, L):
+        C = 500
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+    def Corr_dQ_Integral_R_1(T, B, L):
+        C = 1000
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+    def Corr_dQ_Integral_R_01(T, B, L):
+        C = 5000
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+    def Corr_dQ_Integral_R_001(T, B, L):
+        C = 10000
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+    def Corr_dQ_Integral_R_0001(T, B, L):
+        C = 50000
+        R = 10
+        k = np.linspace(0, 4, 200000)
+        h = k[1] - k[0]
+        return np.sum(forIntegral_abs(k, R, T, B, C, L) * h, axis=0)[0]
+
+    timepoints = [[0,29],[30,59],[60,89]]
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations_timepoints{fileType}.pkl")
+    
+    std_B = [[], [], []]
+    std_L = [[], [], []]
+    timepoints = [timepoints[0]]
+    for j in range(len(timepoints)):
+        print(j)
+        B = []
+        L = []
+
+        times = np.array(timepoints[j])*2
+        T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0].shape
+
+        df = dfCor.iloc[j::len(timepoints)]
+        dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
+        dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
+        for i in range(len(filenames)):
+            dQ1dQ1total = df["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+            dQ1dQ1[i] = np.sum(
+                df["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+            ) / np.sum(dQ1dQ1total, axis=2)
+            dQ2dQ2total = df["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+            dQ2dQ2[i] = np.sum(
+                df["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+            ) / np.sum(dQ2dQ2total, axis=2)
+
+        dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+        dQ1dQ1_0 = dQ1dQ1[0,0]
+        dQ1dQ1 = dQ1dQ1 / dQ1dQ1_0
+        dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+        dQ2dQ2_0 = dQ2dQ2[0,0]
+        dQ2dQ2 = dQ2dQ2 / dQ2dQ2_0
+
+        T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+        R = np.linspace(0, 2 * (grid - 1), grid)
+
+        # print("dQ1")
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_10,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_10,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])        
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_10,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_10,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        std_B[j].append(np.std(B)/np.mean(B))
+        std_L[j].append(np.std(L)/np.mean(L))
+        B = []
+        L = []
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_1,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_1,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])        
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_1,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_1,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        std_B[j].append(np.std(B)/np.mean(B))
+        std_L[j].append(np.std(L)/np.mean(L))
+        B = []
+        L = []
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_01,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_01,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])        
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_01,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_01,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        std_B[j].append(np.std(B)/np.mean(B))
+        std_L[j].append(np.std(L)/np.mean(L))
+        B = []
+        L = []
+        print("60%")
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_001,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_001,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])        
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_001,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_001,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        std_B[j].append(np.std(B)/np.mean(B))
+        std_L[j].append(np.std(L)/np.mean(L))
+        B = []
+        L = []
+
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_0001,
+            xdata=T[1:],
+            ydata=dQ1dQ1[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_0001,
+            xdata=R[5:],
+            ydata=dQ1dQ1[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])        
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_R_0001,
+            xdata=T[1:],
+            ydata=dQ2dQ2[:, 5][1:],
+            p0=(0.006, 4),
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        m = positive_curve_fit(
+            f=Corr_dQ_Integral_T_0001,
+            xdata=R[5:],
+            ydata=dQ2dQ2[0][5:26],
+            p0=(0.006, 4),
+            method="lm",
+        )[0]
+        B.append(m[0])
+        L.append(m[1])
+        std_B[j].append(np.std(B)/np.mean(B))
+        std_L[j].append(np.std(L)/np.mean(L))
+        B = []
+        L = []
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(C, std_B[0], color="m")
+    ax[0].plot(C, std_B[1], color="g")
+    ax[0].plot(C, std_B[2], color="b")
+    ax[0].set_title(r"$B$")
+    ax[0].set_xscale('log')
+
+    ax[1].plot(C, std_L[0], color="m")
+    ax[1].plot(C, std_L[1], color="g")
+    ax[1].plot(C, std_L[2], color="b")
+    ax[1].set_title(r"$L$")
+    ax[1].set_xscale('log')
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )   
+    fig.savefig(
+        f"results/mathPostWoundPaper/change C",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
 
 # --------- Visualise wounded ----------
 
@@ -928,23 +1635,40 @@ mlist = []
 mlist_JNK = []
 fileTypes = ["WoundL18h", "WoundLJNK"]
 
+
+def Corr_dQ1_Integral_T(R, B, L):
+    mQ = 0.0001
+    T = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
+
+def Corr_dQ1_Integral_R(T, B, L):
+    mQ = 0.0001
+    R = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
+
+def Corr_dQ2_Integral_T(R, B, L):
+    mQ = 0.00004
+    T = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
+
+def Corr_dQ2_Integral_R(T, B, L):
+    mQ = 0.00004
+    R = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
+
+p0_1 = 0.003
+p0_2 = 1.6
+
 # Close to wounds
-if False:
-
-    def Corr_dQ_Integral_T(R, B, L):
-        C = 0.00055
-        T = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
-
-    def Corr_dQ_Integral_R(T, B, L):
-        C = 0.00055
-        R = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
-
+if True:
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
     filenames, fileType = util.getFilesType(fileTypes[0])
@@ -994,28 +1718,28 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     # print("dQ1")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1Close[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1Close_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ1dQ1Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1023,30 +1747,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Close[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Close_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ1dQ1Close[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ1dQ1Close_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1069,28 +1793,28 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     # print("dQ2")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2Close[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2Close_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ2dQ2Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1098,30 +1822,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2Close[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2Close_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ2dQ2Close[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ2dQ2Close_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1141,31 +1865,16 @@ if False:
     plt.close("all")
 
     print("B    L")
-    print("control - close")
-    print(np.mean(mlist, axis=0)[0], np.mean(mlist, axis=0)[1])
-    print("JNK - close")
-    print(np.mean(mlist_JNK, axis=0)[0], np.mean(mlist_JNK, axis=0)[1])
+    print("control - close (mean +- std)")
+    print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
+    print("JNK - close (mean +- std)")
+    print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
 
 mlist = []
 mlist_JNK = []
 
 # Far to wounds
-if False:
-
-    def Corr_dQ_Integral_T(R, B, L):
-        C = 0.00055
-        T = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
-
-    def Corr_dQ_Integral_R(T, B, L):
-        C = 0.00055
-        R = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
-
+if True:
 
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
     filenames, fileType = util.getFilesType(fileTypes[0])
@@ -1213,29 +1922,30 @@ if False:
     R = np.linspace(0, 2 * (grid - 1), grid)
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    # print("dQ1")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1Far[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1Far_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ1dQ1Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1243,30 +1953,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Far[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1Far_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ1dQ1Far[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ1dQ1Far_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1289,28 +1999,28 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     # print("dQ2")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2Far[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2Far_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ2dQ2Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1318,30 +2028,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2Far[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2Far_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ2dQ2Far[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ2dQ2Far_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1360,10 +2070,10 @@ if False:
     )
     plt.close("all")
 
-    print("control - Far")
-    print(np.mean(mlist, axis=0)[0], np.mean(mlist, axis=0)[1])
-    print("JNK - Far")
-    print(np.mean(mlist_JNK, axis=0)[0], np.mean(mlist_JNK, axis=0)[1])
+    print("control - Far (mean +- std)")
+    print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
+    print("JNK - Far (mean +- std)")
+    print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
 
 mlist = []
 mlist_JNK = []
@@ -1371,21 +2081,8 @@ mlist_JNK = []
 fileTypes = ["Unwound18h", "UnwoundJNK"]
 
 # Healthy wounds
-if False:
+if True:
 
-    def Corr_dQ_Integral_T(R, B, L):
-        C = 0.00055
-        T = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[:, 0]
-
-    def Corr_dQ_Integral_R(T, B, L):
-        C = 0.00055
-        R = 0
-        k = np.linspace(0, 4, 200000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, C, L) * h, axis=0)[0]
     dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelationsWoundLJNK.pkl")
     T, R, Theta = dfCor["dQ1dQ1Far"].iloc[0].shape
 
@@ -1433,29 +2130,30 @@ if False:
     R = np.linspace(0, 2 * (grid - 1), grid)
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    # print("dQ1")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_R,
         xdata=T[1:],
         ydata=dQ1dQ1_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ1dQ1_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1463,30 +2161,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ1_Integral_T,
         xdata=R[1:],
         ydata=dQ1dQ1_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ1dQ1[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ1dQ1_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1509,28 +2207,28 @@ if False:
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     # print("dQ2")
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_R,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_R,
         xdata=T[1:],
         ydata=dQ2dQ2_JNK[:, 0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="control", color="m", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Model", color="m")
     ax[0].plot(T[1:], dQ2dQ2_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
-    ax[0].plot(T[1:], Corr_dQ_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[0].set_xlabel("Time apart $T$ (min)")
     ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[0].set_ylim([8e-5, 5.6e-04])
@@ -1538,30 +2236,30 @@ if False:
     ax[0].legend(fontsize=10)
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 
-    m = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m[0]), float(m[1]))
     mlist.append(m)
 
-    m_JNK = sp.optimize.curve_fit(
-        f=Corr_dQ_Integral_T,
+    m_JNK = positive_curve_fit(
+        f=Corr_dQ2_Integral_T,
         xdata=R[1:],
         ydata=dQ2dQ2_JNK[0][1:],
-        p0=(0.006, 4),
+        p0=(p0_1, p0_2),
         method="lm",
     )[0]
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
     ax[1].plot(R[1:], dQ2dQ2[0][1:], label="control", color="m", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Model", color="m")
     ax[1].plot(R[1:], dQ2dQ2_JNK[0][1:], label="bsk DN", color="g", marker="o")
-    ax[1].plot(R[1:], Corr_dQ_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Model", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
@@ -1581,6 +2279,381 @@ if False:
     plt.close("all")
 
     print("control - Healthy")
-    print(np.mean(mlist, axis=0)[0], np.mean(mlist, axis=0)[1])
+    print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
     print("JNK - Healthy")
-    print(np.mean(mlist_JNK, axis=0)[0], np.mean(mlist_JNK, axis=0)[1])
+    print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
+
+
+B_close_wt = 0.0110
+B_close_wt_std = 0.00956
+B_close_JNK = 0.00363
+B_close_JNK_std = 0.00232
+L_close_wt = 0.708
+L_close_wt_std = 0.500
+L_close_JNK = 0.545
+L_close_JNK_std = 0.361
+
+B_far_wt = 0.00331
+B_far_wt_std = 0.00126
+B_far_JNK = 0.00140
+B_far_JNK_std = 0.00129
+L_far_wt = 0.773
+L_far_wt_std = 0.625
+L_far_JNK = 1.09
+L_far_JNK_std = 0.852
+
+B_healthy_wt = 0.00364
+B_healthy_wt_std = 0.00112
+B_healthy_JNK = 0.00424
+B_healthy_JNK_std = 0.00128
+L_healthy_wt = 1.02
+L_healthy_wt_std = 0.836
+L_healthy_JNK = 0.972
+L_healthy_JNK_std = 0.802
+
+# plotting the B and L values for close, far, and healthy wounds for control and JNK
+if False:
+
+    fileTypes = ["WoundL18h", "WoundLJNK"]
+    
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[0])
+
+    T, R, Theta = dfCor["dQ1dQ1Close"].iloc[0].shape
+
+    dQ1dQ1Close = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2Close = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1Closetotal = dfCor["dQ1dQ1Closetotal"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1Close[i] = np.sum(
+            dfCor["dQ1dQ1Close"].iloc[i][:-1, :-1, :-1] * dQ1dQ1Closetotal, axis=2
+        ) / np.sum(dQ1dQ1Closetotal, axis=2)
+        dQ2dQ2Closetotal = dfCor["dQ2dQ2Closetotal"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2Close[i] = np.sum(
+            dfCor["dQ2dQ2Close"].iloc[i][:-1, :-1, :-1] * dQ2dQ2Closetotal, axis=2
+        ) / np.sum(dQ2dQ2Closetotal, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1Close = np.mean(dQ1dQ1Close, axis=0)
+    dQ2dQ2Close = np.mean(dQ2dQ2Close, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[1]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[1])
+
+    dQ1dQ1Close_JNK = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2Close_JNK = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1Closetotal = dfCor["dQ1dQ1Closetotal"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1Close_JNK[i] = np.sum(
+            dfCor["dQ1dQ1Close"].iloc[i][:-1, :-1, :-1] * dQ1dQ1Closetotal, axis=2
+        ) / np.sum(dQ1dQ1Closetotal, axis=2)
+        dQ2dQ2Closetotal = dfCor["dQ2dQ2Closetotal"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2Close_JNK[i] = np.sum(
+            dfCor["dQ2dQ2Close"].iloc[i][:-1, :-1, :-1] * dQ2dQ2Closetotal, axis=2
+        ) / np.sum(dQ2dQ2Closetotal, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1Close_JNK = np.mean(dQ1dQ1Close_JNK, axis=0)
+    dQ2dQ2Close_JNK = np.mean(dQ2dQ2Close_JNK, axis=0)
+
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[0])
+
+    dQ1dQ1Far = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2Far = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1Fartotal = dfCor["dQ1dQ1Fartotal"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1Far[i] = np.sum(
+            dfCor["dQ1dQ1Far"].iloc[i][:-1, :-1, :-1] * dQ1dQ1Fartotal, axis=2
+        ) / np.sum(dQ1dQ1Fartotal, axis=2)
+        dQ2dQ2Fartotal = dfCor["dQ2dQ2Fartotal"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2Far[i] = np.sum(
+            dfCor["dQ2dQ2Far"].iloc[i][:-1, :-1, :-1] * dQ2dQ2Fartotal, axis=2
+        ) / np.sum(dQ2dQ2Fartotal, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1Far = np.mean(dQ1dQ1Far, axis=0)
+    dQ2dQ2Far = np.mean(dQ2dQ2Far, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[1]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[1])
+
+    dQ1dQ1Far_JNK = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2Far_JNK = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1Fartotal = dfCor["dQ1dQ1Fartotal"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1Far_JNK[i] = np.sum(
+            dfCor["dQ1dQ1Far"].iloc[i][:-1, :-1, :-1] * dQ1dQ1Fartotal, axis=2
+        ) / np.sum(dQ1dQ1Fartotal, axis=2)
+        dQ2dQ2Fartotal = dfCor["dQ2dQ2Fartotal"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2Far_JNK[i] = np.sum(
+            dfCor["dQ2dQ2Far"].iloc[i][:-1, :-1, :-1] * dQ2dQ2Fartotal, axis=2
+        ) / np.sum(dQ2dQ2Fartotal, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1Far_JNK = np.mean(dQ1dQ1Far_JNK, axis=0)
+    dQ2dQ2Far_JNK = np.mean(dQ2dQ2Far_JNK, axis=0)
+
+
+    fileTypes = ["Unwound18h", "UnwoundJNK"]
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[0]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[0])
+
+    dQ1dQ1 = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2 = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+
+    dfCor = pd.read_pickle(f"databases/postWoundPaperCorrelations/dfCorrelations{fileTypes[1]}.pkl")
+    filenames, fileType = util.getFilesType(fileTypes[1])
+
+    dQ1dQ1_JNK = np.zeros([len(filenames), T-1, R - 1])
+    dQ2dQ2_JNK = np.zeros([len(filenames), T-1, R - 1])
+    for i in range(len(filenames)):
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:-1, :-1, :-1]
+        dQ1dQ1_JNK[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:-1, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:-1, :-1, :-1]
+        dQ2dQ2_JNK[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:-1, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+    dfCor = 0
+
+    dQ1dQ1_JNK = np.mean(dQ1dQ1_JNK, axis=0)
+    dQ2dQ2_JNK = np.mean(dQ2dQ2_JNK, axis=0)
+
+
+    T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_close_wt, L_close_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ1dQ1Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_close_JNK, L_close_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ1dQ1Close[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_close_wt, L_close_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ1dQ1Close_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_close_JNK, L_close_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK close to wounds averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_close_wt, L_close_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ2dQ2Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_close_JNK, L_close_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ2dQ2Close[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_close_wt, L_close_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ2dQ2Close_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_close_JNK, L_close_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK close to wounds averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_far_wt, L_far_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ1dQ1Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_far_JNK, L_far_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ1dQ1Far[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_far_wt, L_far_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ1dQ1Far_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_far_JNK, L_far_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK far from wounds averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_far_wt, L_far_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ2dQ2Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_far_JNK, L_far_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ2dQ2Far[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_far_wt, L_far_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ2dQ2Far_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_far_JNK, L_far_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK far from wounds averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_healthy_wt, L_healthy_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ1dQ1_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_healthy_JNK, L_healthy_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{11}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ1dQ1[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_healthy_wt, L_healthy_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ1dQ1_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_healthy_JNK, L_healthy_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK healthy averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_healthy_wt, L_healthy_wt), label="Model", color="m")
+    ax[0].plot(T[1:], dQ2dQ2_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
+    ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_healthy_JNK, L_healthy_JNK), label="Model", color="g")
+    ax[0].set_xlabel("Time apart $T$ (min)")
+    ax[0].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[0].set_ylim([8e-5, 5.6e-04])
+    ax[0].set_title(r"$C^{22}_{qq}(0,T)$")
+    ax[0].legend(fontsize=10)
+    ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    ax[1].plot(R[1:], dQ2dQ2[0][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_healthy_wt, L_healthy_wt), label="Model", color="m")
+    ax[1].plot(R[1:], dQ2dQ2_JNK[0][1:], label="bsk DN", color="g", marker="o")
+    ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_healthy_JNK, L_healthy_JNK), label="Model", color="g")
+    ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
+    ax[1].legend(fontsize=10)
+    ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK healthy averaged model parameters",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")

@@ -205,11 +205,17 @@ def getFilesTypes(fileType=fileType):
 
 def getFileTitle(fileType):
     if fileType == "WoundL18h":
-        fileTitle = "large wound 18h APF"
+        fileTitle = "large wound"
     elif fileType == "WoundS18h":
-        fileTitle = "small wound 18h APF"
+        fileTitle = "small wound"
     elif fileType == "Unwound18h":
-        fileTitle = "unwounded 18h APF"
+        fileTitle = "unwounded"
+    # if fileType == "WoundL18h":
+    #     fileTitle = "large wound 18h APF"
+    # elif fileType == "WoundS18h":
+    #     fileTitle = "small wound 18h APF"
+    # elif fileType == "Unwound18h":
+    #     fileTitle = "unwounded 18h APF"
     elif fileType == "Unwound26h":
         fileTitle = "unwounded control 26h APF"
     elif fileType == "Unwound15h":

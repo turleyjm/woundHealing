@@ -633,7 +633,7 @@ R = 50
 rStep = 10
 
 # Individual: v with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes[1:]:
         filenames = util.getFilesType(fileType)[0]
         v1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -728,7 +728,7 @@ if False:
         fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=f"Distance from\nwound edge" + r"$(\mu m)$",
+            ylabel=f"Distance from\nwound edge " + r"$(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
@@ -744,7 +744,7 @@ if False:
         plt.close("all")
 
 # Individual: Q1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes[1:]:
         filenames = util.getFilesType(fileType)[0]
         q1 = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -840,7 +840,7 @@ if False:
         fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=f"Distance from\nwound edge" + r"$(\mu m)$",
+            ylabel=f"Distance from\nwound edge " + r"$(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
@@ -859,7 +859,7 @@ if False:
         plt.close("all")
 
 # Compare with wt Large wound: V1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes[1:]:
         fileTypeControl = ControlFor(fileType)
         filenames = util.getFilesType(fileTypeControl)[0]
@@ -1024,7 +1024,7 @@ if False:
         fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            ylabel=f"Distance from \n wound edge " + r"$(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)
@@ -1044,7 +1044,7 @@ if False:
         plt.close("all")
 
 # Compare with wt Large wound: Q1 with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes[1:]:
         fileTypeControl = ControlFor(fileType)
         filenames = util.getFilesType(fileTypeControl)[0]
@@ -1211,7 +1211,7 @@ if False:
         fig.colorbar(c, ax=ax)
         ax.set(
             xlabel="Time after wounding (mins)",
-            ylabel=f"Distance from \n wound edge" + r"$(\mu m)$",
+            ylabel=f"Distance from \n wound edge " + r"$(\mu m)$",
         )
         fileTitle = util.getFileTitle(fileType)
         boldTitle = util.getBoldTitle(fileTitle)

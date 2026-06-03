@@ -2303,6 +2303,52 @@ grid = 26
 timeGrid = 51
 filenames, fileType = util.getFilesType("Unwound18h")
 
+def Corr_dQ1_Integral_T(R, B, L):
+    mQ = 0.0001
+    T = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
+
+def Corr_dQ1_Integral_R(T, B, L):
+    mQ = 0.0001
+    R = 10
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
+
+def Corr_dQ1(R, T):
+    mQ = 0.0001
+    B_u = 0.0015530297198002442
+    L_u = 0.7553106121769322
+
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B_u, mQ, L_u) * h, axis=0)
+
+def Corr_dQ2_Integral_T(R, B, L):
+    mQ = 0.00004
+    T = 0
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
+
+def Corr_dQ2_Integral_R(T, B, L):
+    mQ = 0.00004
+    R = 10
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
+
+def Corr_dQ2(R, T):
+    mQ = 0.00004
+    B_u = 0.0015530297198002442
+    L_u = 0.7553106121769322
+
+    k = np.linspace(0, 20, 100000)
+    h = k[1] - k[0]
+    return np.sum(forIntegral(k, R, T, B_u, mQ, L_u) * h, axis=0)
+
 # display all correlations shape
 if False:
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
@@ -2905,29 +2951,6 @@ if False:
 # deltaQ1 (model)
 if False:
 
-    def Corr_dQ1_Integral_T(R, B, L):
-        mQ = 0.0005
-        T = 0
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
-
-    def Corr_dQ1_Integral_R(T, B, L):
-        mQ = 0.0005
-        R = 10
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
-
-    def Corr_dQ1(R, T):
-        mQ = 0.0005
-        B = 0.0041
-        L = 4.4
-
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
-
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0][:, :-1, :-1].shape
@@ -3059,29 +3082,6 @@ if False:
 # deltaQ2 (model)
 if False:
 
-    def Corr_dQ2_Integral_T(R, B, L):
-        mQ = 0.0002
-        T = 0
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[:, 0]
-
-    def Corr_dQ2_Integral_R(T, B, L):
-        mQ = 0.0002
-        R = 10
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)[0]
-
-    def Corr_dQ2(R, T):
-        mQ = 0.0002
-        B = 0.0041
-        L = 4.4
-
-        k = np.linspace(0, 20, 100000)
-        h = k[1] - k[0]
-        return np.sum(forIntegral(k, R, T, B, mQ, L) * h, axis=0)
-
     dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
 
     T, R, Theta = dfCor["dQ2dQ2Correlation"].iloc[0][:, :-1, :-1].shape
@@ -3212,8 +3212,245 @@ if False:
     )
     plt.close("all")
 
-# deltaRho_n (model)
+# weighted average parameter for deltaQ1 and deltaQ2 (model)
 if True:
+        
+    dfCor = pd.read_pickle(f"databases/dfCorrelations{fileType}.pkl")
+
+    T, R, Theta = dfCor["dQ1dQ1Correlation"].iloc[0][:, :-1, :-1].shape
+
+    dQ1dQ1 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+
+        dQ1dQ1total = dfCor["dQ1dQ1Count"].iloc[i][:, :-1, :-1]
+        dQ1dQ1[i] = np.sum(
+            dfCor["dQ1dQ1Correlation"].iloc[i][:, :-1, :-1] * dQ1dQ1total, axis=2
+        ) / np.sum(dQ1dQ1total, axis=2)
+
+    dQ1dQ1 = np.mean(dQ1dQ1, axis=0)
+    dQ1dQ1Norm = dQ1dQ1[0,0]
+
+    T, R, Theta = dfCor["dQ2dQ2Correlation"].iloc[0][:, :-1, :-1].shape
+
+    dQ2dQ2 = np.zeros([len(filenames), T, R])
+    for i in range(len(filenames)):
+
+        dQ2dQ2total = dfCor["dQ2dQ2Count"].iloc[i][:, :-1, :-1]
+        dQ2dQ2[i] = np.sum(
+            dfCor["dQ2dQ2Correlation"].iloc[i][:, :-1, :-1] * dQ2dQ2total, axis=2
+        ) / np.sum(dQ2dQ2total, axis=2)
+
+    dfCor = 0
+
+    dQ2dQ2 = np.mean(dQ2dQ2, axis=0)
+    dQ2dQ2Norm = dQ2dQ2[0,0]
+
+    B = [0.001975065026740219, 0.001080408467632364, 0.002094519994363154, 0.001062125390465241]
+    L = [0.7451425653849012, 0.810251780163260, 0.7464103617895231, 0.7194377413700441]
+    W = [1, 1, 1, 1]
+
+    B_u = np.sum(np.array(B) * np.array(W)) / np.sum(W)
+    L_u = np.sum(np.array(L) * np.array(W)) / np.sum(W)
+    B_std = np.sqrt(np.sum((np.array(B) - B_u)**2 * np.array(W)) / np.sum(W))
+    L_std = np.sqrt(np.sum((np.array(L) - L_u)**2 * np.array(W)) / np.sum(W))
+    
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(3, 2, figsize=(8, 12))
+
+    ax[0, 0].plot(T[1:], dQ1dQ1[:, 5][1:]/dQ1dQ1Norm, label="Exp. data")
+    ax[0, 0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B[0], L[0])/dQ1dQ1Norm, label="Indiv. Fit")
+    ax[0, 0].plot(T[1:], Corr_dQ1(10, T[1:])[0]/dQ1dQ1Norm, label="Mean param.")
+    ax[0, 0].fill_between(T[1:], Corr_dQ1_Integral_R(T[1:], B_u-B_std, L_u-L_std)/dQ1dQ1Norm, Corr_dQ1_Integral_R(T[1:], B_u+B_std, L_u+L_std)/dQ1dQ1Norm, color="gray", alpha=0.5, label=r"Mean $\pm$ std. param.")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Norm. $\delta q^{(1)}$ Correlation")
+    ax[0, 0].set_ylim([0, 1.8e-04/dQ1dQ1Norm])
+    ax[0, 0].set_title(r"$C^{11}_{qq}(10,T)$")
+    # ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    ax[0, 0].legend(fontsize=8)
+
+    ax[0, 1].plot(R[5:], dQ1dQ1[0][5:26]/dQ1dQ1Norm, label="Exp. data")
+    ax[0, 1].plot(R[5:], Corr_dQ1_Integral_T(R, B[1], L[1])[5:]/dQ1dQ1Norm, label="Indiv. Fit")
+    ax[0, 1].plot(R[5:], Corr_dQ1(R[5:], 0)/dQ1dQ1Norm, label="Mean param.")
+    ax[0, 1].fill_between(R[5:], Corr_dQ1_Integral_T(R, B_u-B_std, L_u-L_std)[5:]/dQ1dQ1Norm, Corr_dQ1_Integral_T(R, B_u+B_std, L_u+L_std)[5:]/dQ1dQ1Norm, color="gray", alpha=0.5, label=r"Mean $\pm$ std. param.")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[0, 1].set_ylabel(r"Norm. $\delta q^{(1)}$ Correlation")
+    ax[0, 1].set_ylim([0, 1.8e-04/dQ1dQ1Norm])
+    ax[0, 1].set_title(r"$C^{11}_{qq}(R,0)$")
+    # ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    ax[0, 1].legend(fontsize=8)
+
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dQ1dQ1[:, 5:], -dQ1dQ1[:, 5:]])
+    c = ax[1, 0].pcolor(
+        T[:, 5:],
+        R[:, 5:],
+        dQ1dQ1[:, 5:]/dQ1dQ1Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 0])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 0].set_title(r"Experiment $C^{11}_{qq}(R,T)$", y=1.1)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 3)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5) * 3)
+    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[1, 1].pcolor(
+        T,
+        R,
+        Corr_dQ1dQ1/dQ1dQ1Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
+        shading="auto"
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 1])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 1].set_title(r"Model $C^{11}_{qq}(R,T)$", y=1.1)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5))
+    Corr_dQ1dQ1 = np.swapaxes(Corr_dQ1(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[2, 0].pcolor(
+        T,
+        R,
+        (dQ1dQ1[:, 5:] - Corr_dQ1dQ1)/dQ1dQ1Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ1dQ1Norm,
+        vmax=maxCorr/dQ1dQ1Norm,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[2, 0])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[2, 0].set_title(r"Difference $C^{11}_{qq}(R,T)$", y=1.1)
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+    fig.savefig(
+        f"results/mathPostWoundPaper/Mean parameterised correlation dQ1 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(0, 2 * (grid - 1), grid)
+
+    fig, ax = plt.subplots(3, 2, figsize=(8, 12))
+    plt.subplots_adjust(wspace=0.4)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    ax[0, 0].plot(T[1:], dQ2dQ2[:, 5][1:]/dQ2dQ2Norm, label="Exp. data")
+    ax[0, 0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B[2], L[2])/dQ2dQ2Norm, label="Indiv. Fit")
+    ax[0, 0].plot(T[1:], Corr_dQ2(10, T[1:])[0]/dQ2dQ2Norm, label="Mean param.")
+    ax[0, 0].fill_between(T[1:], Corr_dQ2_Integral_R(T[1:], B_u-B_std, L_u-L_std)/dQ2dQ2Norm, Corr_dQ2_Integral_R(T[1:], B_u+B_std, L_u+L_std)/dQ2dQ2Norm, color="gray", alpha=0.5, label=r"Mean $\pm$ std. param.")
+    ax[0, 0].set_xlabel("Time apart $T$ (min)")
+    ax[0, 0].set_ylabel(r"Norm. $\delta q^{(2)}$ Correlation")
+    ax[0, 0].set_ylim([0, 8e-05/dQ2dQ2Norm])
+    ax[0, 0].set_title(r"$C^{22}_{qq}(10,T)$")
+    # ax[0, 0].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    ax[0, 0].legend(fontsize=8)
+
+    ax[0, 1].plot(R[5:], dQ2dQ2[0][5:26]/dQ2dQ2Norm, label="Exp. data")
+    ax[0, 1].plot(R[5:], Corr_dQ2_Integral_T(R, B[3], L[3])[5:]/dQ2dQ2Norm, label="Indiv. Fit")
+    ax[0, 1].plot(R[5:], Corr_dQ2(R[5:], 0)/dQ2dQ2Norm, label="Mean param.")
+    ax[0, 1].fill_between(R[5:], Corr_dQ2_Integral_T(R, B_u-B_std, L_u-L_std)[5:]/dQ2dQ2Norm, Corr_dQ2_Integral_T(R, B_u+B_std, L_u+L_std)[5:]/dQ2dQ2Norm, color="gray", alpha=0.5, label=r"Mean $\pm$ std. param.")
+    ax[0, 1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
+    ax[0, 1].set_ylabel(r"Norm. $\delta q^{(2)}$ Correlation")
+    ax[0, 1].set_ylim([0, 8e-05/dQ2dQ2Norm])
+    ax[0, 1].set_title(r"$C^{22}_{qq}(R,0)$")
+    # ax[0, 1].ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    ax[0, 1].legend(fontsize=8)
+
+    R, T = np.meshgrid(R, T)
+    maxCorr = np.max([dQ2dQ2[:, 5:], -dQ2dQ2[:, 5:]])
+    c = ax[1, 0].pcolor(
+        T[:, 5:],
+        R[:, 5:],
+        dQ2dQ2[:, 5:]/dQ2dQ2Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 0])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 0].set_xlabel("Time apart $T$ (min)")
+    ax[1, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 0].set_title(r"Experiment $C^{22}_{qq}(R,T)$", y=1.1)
+
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid * 3)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5) * 3)
+    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[1, 1].pcolor(
+        T,
+        R,
+        Corr_dQ2dQ2/dQ2dQ2Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[1, 1])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[1, 1].set_xlabel("Time apart $T$ (min)")
+    ax[1, 1].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[1, 1].set_title(r"Model $C^{22}_{qq}(R,T)$", y=1.1)
+    
+    T = np.linspace(0, 2 * (timeGrid - 1), timeGrid)
+    R = np.linspace(10, 2 * (grid - 1), (grid-5))
+    Corr_dQ2dQ2 = np.swapaxes(Corr_dQ2(R, T), 0, 1)
+    R, T = np.meshgrid(R, T)
+
+    c = ax[2, 0].pcolor(
+        T,
+        R,
+        (dQ2dQ2[:, 5:] - Corr_dQ2dQ2)/dQ2dQ2Norm,
+        cmap="RdBu_r",
+        vmin=-maxCorr/dQ2dQ2Norm,
+        vmax=maxCorr/dQ2dQ2Norm,
+        shading="auto",
+    )
+    cbar = fig.colorbar(c, ax=ax[2, 0])
+    # cbar.formatter.set_powerlimits((0, 0))
+    ax[2, 0].set_xlabel("Time apart $T$ (min)")
+    ax[2, 0].set_ylabel(r"Distance apart $R$ $(\mu m)$")
+    ax[2, 0].set_title(r"Difference $C^{22}_{qq}(R,T)$", y=1.1)
+
+    plt.subplots_adjust(
+        left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
+    )
+
+    fig.savefig(
+        f"results/mathPostWoundPaper/Mean parameterised correlation dQ2 in T and R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+# deltaRho_n (model)
+if False:
 
     def Corr_Rho_fit(M, mrho, D):
         R, T = M
@@ -3299,7 +3536,7 @@ if True:
     plt.close("all")
 
 # deltaRho_s (model)
-if True:
+if False:
 
     def Corr_dRho_S(r, C, lamdba):
         return C * np.exp(- r/lamdba)

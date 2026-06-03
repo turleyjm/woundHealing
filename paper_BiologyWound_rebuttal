@@ -59,51 +59,33 @@ def ControlFor(fileType):
     return fileTypeControl
 
 
-def OLSfit(x, y, dy=None):
-    """Find the best fitting parameters of a linear fit to the data through the
-    method of ordinary least squares estimation. (i.e. find m and b for
-    y = m*x + b)
-
-    Args:
-        x: Numpy array of independent variable data
-        y: Numpy array of dependent variable data. Must have same size as x.
-        dy: Numpy array of dependent variable standard deviations. Must be same
-            size as y.
-
-    Returns: A list with four floating point values. [m, dm, b, db]
-    """
-    if dy is None:
-        # if no error bars, weight every point the same
-        dy = np.ones(x.size)
-    denom = np.sum(1 / dy**2) * np.sum((x / dy) ** 2) - (np.sum(x / dy**2)) ** 2
-    m = (
-        np.sum(1 / dy**2) * np.sum(x * y / dy**2)
-        - np.sum(x / dy**2) * np.sum(y / dy**2)
-    ) / denom
-    b = (
-        np.sum(x**2 / dy**2) * np.sum(y / dy**2)
-        - np.sum(x / dy**2) * np.sum(x * y / dy**2)
-    ) / denom
-    dm = np.sqrt(np.sum(1 / dy**2) / denom)
-    db = np.sqrt(np.sum(x / dy**2) / denom)
-    return [m, dm, b, db]
-
-
-def bestFitUnwound(fileType):
+def smoothUnwound(fileType, timeStep):
     if fileType == "WoundL18h" or fileType == "WoundS18h":
         fileType = "Unwound18h"
-    if fileType == "WoundLJNK" or fileType == "WoundLCa":
+    if fileType == "WoundLJNK":
+        fileType = "UnwoundJNK"
+    if fileType == "WoundLCa":
+        fileType = "UnwoundCa"
+    if fileType == "WoundL15h":
         fileType = "Unwound15h"
     if fileType == "WoundLrpr":
+        fileType = "Unwoundrpr"
+    if fileType == "WoundL26h":
         fileType = "Unwound26h"
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     filenames = util.getFilesType(fileType)[0]
+
+    
+    filenames = util.getFilesType(fileType)[0]
+
     count = np.zeros([len(filenames), int(T / timeStep)])
     area = np.zeros([len(filenames), int(T / timeStep)])
+    dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     for k in range(len(filenames)):
         filename = filenames[k]
         t0 = util.findStartTime(filename)
         dfFile = dfDivisions[dfDivisions["Filename"] == filename]
+
         for t in range(count.shape[1]):
             df1 = dfFile[dfFile["T"] > timeStep * t]
             df = df1[df1["T"] <= timeStep * (t + 1)]
@@ -120,24 +102,27 @@ def bestFitUnwound(fileType):
             if t2 < 0:
                 t2 = 0
             area[k, t] = np.sum(inPlane[t1:t2]) * scale**2
+
     time = []
     dd = []
-    std = []
     for t in range(area.shape[1]):
         _area = area[:, t][area[:, t] > 0]
         _count = count[:, t][area[:, t] > 0]
         if len(_area) > 0:
             _dd, _std = weighted_avg_and_std(_count / _area, _area)
-            dd.append(_dd)
-            std.append(_std)
-            time.append(t * 10 + timeStep / 2)
-    time = np.array(time)
-    dd = np.array(dd)
-    std = np.array(std)
-    bestfit = OLSfit(time, dd)
-    (m, c) = (bestfit[0], bestfit[2])
+            dd.append(_dd * 10000)
+            time.append(t * timeStep + timeStep / 2)
 
-    return m, c
+    dd_Unw = np.array(dd)
+
+    dd0 = (dd_Unw[1] + dd_Unw[0])/2
+    ddf = (dd_Unw[-1] + dd_Unw[-2])/2
+
+    dd_Unw[1:-1] = (dd_Unw[0:-2]+ dd_Unw[1:-1] + dd_Unw[2:])/3
+    dd_Unw[0] = dd0
+    dd_Unw[-1] = ddf
+
+    return dd_Unw
 
 scale = 123.26 / 512
 T = 93
@@ -2032,7 +2017,7 @@ R = 110
 rStep = 10
 
 # Individual: Divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes:
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -2098,15 +2083,13 @@ if False:
                 else:
                     dd[t, r] = np.nan
                     std[t, r] = np.nan
-
-        
-        (m, c) = bestFitUnwound(fileType)
-        time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
-        for r in range(dd.shape[1]):
-            dd[:, r] = dd[:, r] - (m * time + c)
-
-        dd[sumArea < 600 * len(filenames)] = np.nan
+                    
         dd = dd * 10000
+        Unw_dd = smoothUnwound(fileType, timeStep)
+        time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
+        for t in range(dd.shape[0]):
+            dd[t] = dd[t] - Unw_dd[t]
+        dd[sumArea < 600 * len(filenames)] = np.nan
 
         t, r = np.mgrid[
             timeStep / 2 : T + timeStep / 2 : timeStep,
@@ -2141,7 +2124,7 @@ if False:
             plt.title("Deviation in division density: \n " + boldTitle + " from linear model", color=colour)
 
         fig.savefig(
-            f"results/biologyWoundPaper/Division density heatmap {fileType}",
+            f"results/biologyWoundPaper/Change in Division density heatmap {fileType}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,
@@ -2149,7 +2132,7 @@ if False:
         plt.close("all")
 
 # Compare with wt Large wound: Divison density with distance from wound edge and time
-if False:
+if True:
     for fileType in fileTypes[1:]:
         fileTypeControl = ControlFor(fileType)
         filenames = util.getFilesType(fileTypeControl)[0]
@@ -2217,14 +2200,15 @@ if False:
                     dd[t, r] = np.nan
                     std[t, r] = np.nan
 
-        (m, c) = bestFitUnwound(fileTypeControl)
+        dd = dd * 10000
+        Unw_dd = smoothUnwound(fileTypeControl, timeStep)
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
-        for r in range(dd.shape[1]):
-            dd[:, r] = dd[:, r] - (m * time + c)
+        for t in range(dd.shape[0]):
+            dd[t] = dd[t] - Unw_dd[t]
+        dd[sumArea < 600 * len(filenames)] = np.nan
+        ddLarge = dd
 
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
-        dd[sumArea < 600 * len(filenames)] = np.nan
-        ddLarge = dd * 10000
 
         filenames = util.getFilesType(fileType)[0]
         count = np.zeros([len(filenames), int(T / timeStep), int(R / rStep)])
@@ -2291,14 +2275,14 @@ if False:
                     dd[t, r] = np.nan
                     std[t, r] = np.nan
 
-        (m, c) = bestFitUnwound(fileType)
+        dd = dd * 10000
+        Unw_dd = smoothUnwound(fileType, timeStep)
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
-        for r in range(dd.shape[1]):
-            dd[:, r] = dd[:, r] - (m * time + c)
+        for t in range(dd.shape[0]):
+            dd[t] = dd[t] - Unw_dd[t]
+        dd[sumArea < 600 * len(filenames)] = np.nan
 
         time = np.linspace(0, T, int(T / timeStep) + 1)[:-1]
-        dd[sumArea < 600 * len(filenames)] = np.nan
-        dd = dd * 10000
 
         fileTitle = util.getFileTitle(fileType)
         t, r = np.mgrid[
@@ -2329,7 +2313,7 @@ if False:
         )
 
         fig.savefig(
-            f"results/biologyWoundPaper/Change in Division density heatmap with large wt {fileTitle}",
+            f"results/biologyWoundPaper/Change in Change in Division density heatmap with large wt {fileTitle}",
             transparent=True,
             bbox_inches="tight",
             dpi=300,

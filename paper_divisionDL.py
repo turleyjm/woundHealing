@@ -150,7 +150,7 @@ timeStep = 10
 R = 110
 rStep = 10
 
-# Divison density with time best fit Unwound18h
+# Division density with time best fit Unwound18h
 fileType = "Unwound18h"
 filenames = util.getFilesType(fileType)[0]
 dfDivisions = pd.read_pickle(f"databases/dfDivisionsUnwound18h.pkl")
@@ -199,8 +199,8 @@ bestfit = OLSfit(time, dd, dy=std)
 ax.plot(time, dd, marker="o", label=f"Unwounded", color="tab:blue")
 ax.fill_between(time, dd - std, dd + std, alpha=0.15, color="tab:blue")
 ax.plot(time, m * time + c, color="r", label=f"Linear model")
-ax.set(xlabel="Time", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
-ax.title.set_text(f"Divison density with time {fileType}")
+ax.set(xlabel="Time", ylabel=r"Division density ($10^{-4}\mu m^{-2}$)")
+ax.title.set_text(f"Division density with time {fileType}")
 ax.set_ylim([0, 7])
 
 fileTitle = util.getBoldTitle("unwounded")
@@ -208,21 +208,21 @@ ax.title.set_text(f"Division density with \n time " + fileTitle)
 if "Wound" in fileType:
     ax.set(
         xlabel="Time after wounding (mins)",
-        ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)",
+        ylabel=r"Division density ($10^{-4}\mu m^{-2}$)",
     )
 else:
-    ax.set(xlabel="Time (mins)", ylabel=r"Divison density ($10^{-4}\mu m^{-2}$)")
+    ax.set(xlabel="Time (mins)", ylabel=r"Division density ($10^{-4}\mu m^{-2}$)")
 
 ax.legend(loc="upper left", fontsize=12)
 fig.savefig(
-    f"results/figure/Divison density with time best fit {fileType}",
+    f"results/figure/Division density with time best fit {fileType}",
     transparent=True,
     bbox_inches="tight",
     dpi=300,
 )
 plt.close("all")
 
-# Compare divison density with time
+# Compare Division density with time
 
 fig, ax = plt.subplots(1, 1, figsize=(4, 4))
 # labels = ["Unwound18h", "WoundS18h", "WoundL18h"]
@@ -365,7 +365,7 @@ for fileType in fileTypes:
 
 
 
-# Change in divison density with distance from wound edge and time
+# Change in Division density with distance from wound edge and time
 for fileType in fileTypes:
     filenames = util.getFilesType(fileType)[0]
     for filename in filenames:
@@ -473,7 +473,7 @@ for fileType in fileTypes:
 
 
 
-# Divison orientation with respect to tissue
+# Division orientation with respect to tissue
 for fileType in fileTypes:
     dfDivisions = pd.read_pickle(f"databases/dfDivisions{fileType}.pkl")
     fileTitle = util.getFileTitle(fileType)
@@ -486,10 +486,10 @@ for fileType in fileTypes:
     n, bins, patches = ax.hist(dfDivisions["Orientation"], color="g")
 
     ax.set(xlabel="Orientation", ylabel="Number of Divisions")
-    ax.title.set_text(f"Divison orientation with respect \n to wing " + fileTitle)
+    ax.title.set_text(f"Division orientation with respect \n to wing " + fileTitle)
 
     fig.savefig(
-        f"results/figure/Divison orientation with respect to tissue {fileType}",
+        f"results/figure/Division orientation with respect to tissue {fileType}",
         transparent=True,
         bbox_inches="tight",
         dpi=300,
