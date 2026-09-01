@@ -1418,7 +1418,7 @@ if False:
     plt.close("all")
 
 # deltaQ1 (model)
-if True:
+if False:
 
     def Corr_dQ1_Integral_T(R, L):
         B = 0.006533824439392692
@@ -1546,7 +1546,7 @@ if True:
     plt.close("all")
 
 # deltaQ2 (model)
-if True:
+if False:
 
     def Corr_dQ2_Integral_T(R, C):
         B = 0.006533824439392692
@@ -1897,7 +1897,7 @@ if False:
     plt.close("all")
 
 # deltaRho_n (model)
-if True:
+if False:
 
     def Corr_Rho_T(T, C):
         return C / T
@@ -2014,7 +2014,7 @@ if True:
     plt.close("all")
 
 # deltaRho_s (model)
-if True:
+if False:
 
     def Corr_dRho_S(r, C, lamdba):
         return C * np.exp(-lamdba * r)
@@ -2069,7 +2069,7 @@ if True:
     plt.close("all")
 
 # deltaV (model)
-if False:
+if True:
 
     def Corr_dV(r, C, lamdba):
         return C * np.exp(-lamdba * r)
@@ -2137,7 +2137,58 @@ if False:
         left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
     )
     fig.savefig(
-        f"results/Correlation dV in T and R {fileType}",
+        f"results/Correlation dV in R {fileType}",
+        dpi=300,
+        transparent=True,
+        bbox_inches="tight",
+    )
+    plt.close("all")
+
+
+    dV1dV1_t = dV1dV1[0:-1, 0]
+    dV2dV2_t = dV2dV2[0:-1, 0]
+
+    T = np.linspace(0, 2 * (timeGrid - 2), timeGrid-1)
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=T,
+        ydata=dV1dV1_t,
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[0].plot(T, dV1dV1_t, label="Data")
+    ax[0].plot(T, Corr_dV(T, m[0], m[1]), label="Model")
+    ax[0].set_xlabel(r"Time $T$ $(\mu s)$")
+    ax[0].set_ylabel(r"$\delta V_1$ Correlation")
+    ax[0].set_ylim([0, 0.04])
+    ax[0].title.set_text(r"Correlation of $\delta V_1$")
+    ax[0].legend()
+
+    m = sp.optimize.curve_fit(
+        f=Corr_dV,
+        xdata=T,
+        ydata=dV2dV2_t,
+        p0=(0.23, 0.04),
+    )[0]
+    print(m)
+
+    ax[1].plot(T, dV2dV2_t, label="Data")
+    ax[1].plot(T, Corr_dV(T, m[0], m[1]), label="Model")
+    ax[1].set_xlabel(r"Time $T$ $(\mu s)$")
+    ax[1].set_ylabel(r"$\delta V_2$ Correlation")
+    ax[1].set_ylim([0, 0.04])
+    ax[1].title.set_text(r"Correlation of $\delta V_2$")
+    ax[1].legend()
+
+    plt.subplots_adjust(
+        left=0.22, bottom=0.1, right=0.93, top=0.9, wspace=0.55, hspace=0.37
+    )
+    fig.savefig(
+        f"results/Correlation dV in T {fileType}",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
