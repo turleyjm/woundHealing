@@ -74,7 +74,7 @@ fileTypes = "Unwound18h"
 T = np.linspace(0, 89, 90)
 
 # compare: Mean rho
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     filenames = util.getFilesType(fileType)[0]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -92,12 +92,12 @@ if False:
     rho = np.mean(rho, axis=0)
     colour, mark = util.getColorLineMarker(fileType, "18h")
     fileTitle = util.getFileTitle(fileType)
-    ax.plot(time, rho, color=colour, marker=mark, markevery=10)
+    ax.plot(time, rho, color=colour)
     ax.fill_between(time, rho - std, rho + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0.055, 0.09])
-    ax.set(xlabel="Time (mins)", ylabel=r"$\bar{\rho}$")
-    ax.set_title(r"Mean $\rho$" + " with \n time unwounded")
+    ax.set(xlabel="Time (mins)", ylabel=r"$\bar{\rho}$ $(\mu m^{-2})$")
+    ax.set_title(r"$\bar{\rho}$" + " with time \n unwounded")
     fig.savefig(
         f"results/mathPostWoundPaper/mean rho {fileType}",
         dpi=300,
@@ -107,7 +107,7 @@ if False:
     plt.close("all")
 
 # compare: Mean Q1 tensor
-if False:
+if True:
     fig, ax = plt.subplots(1, 1, figsize=(4, 4))
     filenames = util.getFilesType(fileType)[0]
     dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
@@ -125,12 +125,12 @@ if False:
     Q1 = np.mean(q1, axis=0)
     colour, mark = util.getColorLineMarker(fileType, "18h")
     fileTitle = util.getFileTitle(fileType)
-    ax.plot(time, Q1, label=fileTitle, color=colour, marker=mark, markevery=10)
+    ax.plot(time, Q1, label=fileTitle, color=colour)
     ax.fill_between(time, Q1 - std, Q1 + std, alpha=0.15, color=colour)
 
     ax.set_ylim([0.002, 0.035])
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(1)}$")
-    ax.set_title(r"Mean $Q^{(1)}$" + " with \n time unwounded")
+    ax.set_title(r"$\bar{Q}^{(1)}$" + " with time \n unwounded")
     fig.savefig(
         f"results/mathPostWoundPaper/mean Q1 {fileType}",
         dpi=300,

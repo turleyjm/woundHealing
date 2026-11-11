@@ -1736,7 +1736,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ1dQ1Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -1767,12 +1767,13 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ1dQ1Close[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1Close[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ1dQ1Close_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
+    ax[1].set_xlim([0, 40])
     # ax[1].set_ylim([-4e-5, 2.8e-04])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
@@ -1782,7 +1783,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK close to wounds",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK close to wounds",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -1811,7 +1812,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ2dQ2Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -1842,12 +1843,13 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ2dQ2Close[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2Close[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ2dQ2Close_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_xlim([0, 40])
     ax[1].set_ylim([-4e-5, 2.8e-04])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
@@ -1857,7 +1859,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK close to wounds",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK close to wounds",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -1865,7 +1867,7 @@ if True:
     plt.close("all")
 
     print("B    L")
-    print("control - close (mean +- std)")
+    print("wild type - close (mean +- std)")
     print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
     print("JNK - close (mean +- std)")
     print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
@@ -1942,7 +1944,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ1dQ1Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -1973,13 +1975,14 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ1dQ1Far[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1Far[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ1dQ1Far_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -1988,7 +1991,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK far from wounds",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK far from wounds",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2017,7 +2020,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ2dQ2Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -2048,13 +2051,14 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ2dQ2Far[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2Far[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ2dQ2Far_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2063,14 +2067,14 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK far from wounds",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK far from wounds",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
     )
     plt.close("all")
 
-    print("control - Far (mean +- std)")
+    print("wild type - Far (mean +- std)")
     print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
     print("JNK - Far (mean +- std)")
     print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
@@ -2150,7 +2154,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ1dQ1_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -2181,13 +2185,14 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ1dQ1[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ1dQ1_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2196,7 +2201,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK healthy",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK healthy",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2225,7 +2230,7 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[0].plot(T[1:], dQ2dQ2_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
@@ -2256,13 +2261,14 @@ if True:
     # print(float(m_JNK[0]), float(m_JNK[1]))
     mlist_JNK.append(m_JNK)
 
-    ax[1].plot(R[1:], dQ2dQ2[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m[0], m[1]), label="Indiv. fit", color="m")
     ax[1].plot(R[1:], dQ2dQ2_JNK[1][1:], label="bsk DN", color="g", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], m_JNK[0], m_JNK[1]), label="Indiv. fit", color="g")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2271,14 +2277,14 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK healthy",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK healthy",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
     )
     plt.close("all")
 
-    print("control - Healthy")
+    print("wild type - Healthy")
     print(f"{np.mean(mlist, axis=0)[0]:.3e} +- {np.std(mlist, axis=0)[0]:.3e}, {np.mean(mlist, axis=0)[1]:.3e} +- {np.std(mlist, axis=0)[1]:.3e}")
     print("JNK - Healthy")
     print(f"{np.mean(mlist_JNK, axis=0)[0]:.3e} +- {np.std(mlist_JNK, axis=0)[0]:.3e}, {np.mean(mlist_JNK, axis=0)[1]:.3e} +- {np.std(mlist_JNK, axis=0)[1]:.3e}")
@@ -2311,7 +2317,7 @@ L_healthy_wt_std = 0.612
 L_healthy_JNK = 0.693
 L_healthy_JNK_std = 0.535
 
-# plotting the B and L values for close, far, and healthy wounds for control and JNK
+# plotting the B and L values for close, far, and healthy wounds for wild type and JNK
 if True:
 
     fileTypes = ["WoundL18h", "WoundLJNK"]
@@ -2448,7 +2454,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1Close[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_close_wt, L_close_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ1_Integral_R(T[1:], B_close_wt-B_close_wt_std, L_close_wt-L_close_wt_std), Corr_dQ1_Integral_R(T[1:], B_close_wt+B_close_wt_std, L_close_wt+L_close_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ1dQ1Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2462,7 +2468,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ1dQ1Close[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1Close[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_close_wt, L_close_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ1_Integral_T(R[1:], B_close_wt-B_close_wt_std, L_close_wt-L_close_wt_std), Corr_dQ1_Integral_T(R[1:], B_close_wt+B_close_wt_std, L_close_wt+L_close_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ1dQ1Close_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2471,6 +2477,7 @@ if True:
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2480,7 +2487,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK close to wounds averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK close to wounds averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2490,7 +2497,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2Close[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_close_wt, L_close_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ2_Integral_R(T[1:], B_close_wt-B_close_wt_std, L_close_wt-L_close_wt_std), Corr_dQ2_Integral_R(T[1:], B_close_wt+B_close_wt_std, L_close_wt+L_close_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ2dQ2Close_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2504,7 +2511,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ2dQ2Close[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2Close[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_close_wt, L_close_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ2_Integral_T(R[1:], B_close_wt-B_close_wt_std, L_close_wt-L_close_wt_std), Corr_dQ2_Integral_T(R[1:], B_close_wt+B_close_wt_std, L_close_wt+L_close_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ2dQ2Close_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2512,6 +2519,7 @@ if True:
     ax[1].fill_between(R[1:], Corr_dQ2_Integral_T(R[1:], B_close_JNK-B_close_JNK_std, L_close_JNK-L_close_JNK_std), Corr_dQ2_Integral_T(R[1:], B_close_JNK+B_close_JNK_std, L_close_JNK+L_close_JNK_std), color="g", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
+    ax[1].set_xlim([0, 40])
     ax[1].set_ylim([-4e-5, 2.8e-04])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
@@ -2522,7 +2530,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK close to wounds averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK close to wounds averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2531,7 +2539,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1Far[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_far_wt, L_far_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ1_Integral_R(T[1:], B_far_wt-B_far_wt_std, L_far_wt-L_far_wt_std), Corr_dQ1_Integral_R(T[1:], B_far_wt+B_far_wt_std, L_far_wt+L_far_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ1dQ1Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2545,7 +2553,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ1dQ1Far[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1Far[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_far_wt, L_far_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ1_Integral_T(R[1:], B_far_wt-B_far_wt_std, L_far_wt-L_far_wt_std), Corr_dQ1_Integral_T(R[1:], B_far_wt+B_far_wt_std, L_far_wt+L_far_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ1dQ1Far_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2554,6 +2562,7 @@ if True:
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2563,7 +2572,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK far from wounds averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK far from wounds averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2572,7 +2581,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2Far[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_far_wt, L_far_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ2_Integral_R(T[1:], B_far_wt-B_far_wt_std, L_far_wt-L_far_wt_std), Corr_dQ2_Integral_R(T[1:], B_far_wt+B_far_wt_std, L_far_wt+L_far_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ2dQ2Far_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2586,7 +2595,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ2dQ2Far[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2Far[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_far_wt, L_far_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ2_Integral_T(R[1:], B_far_wt-B_far_wt_std, L_far_wt-L_far_wt_std), Corr_dQ2_Integral_T(R[1:], B_far_wt+B_far_wt_std, L_far_wt+L_far_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ2dQ2Far_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2595,6 +2604,7 @@ if True:
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2604,7 +2614,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK far from wounds averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK far from wounds averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2613,7 +2623,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ1dQ1[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ1_Integral_R(T[1:], B_healthy_wt, L_healthy_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ1_Integral_R(T[1:], B_healthy_wt-B_healthy_wt_std, L_healthy_wt-L_healthy_wt_std), Corr_dQ1_Integral_R(T[1:], B_healthy_wt+B_healthy_wt_std, L_healthy_wt+L_healthy_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ1dQ1_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2627,7 +2637,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ1dQ1[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ1dQ1[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ1_Integral_T(R[1:], B_healthy_wt, L_healthy_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ1_Integral_T(R[1:], B_healthy_wt-B_healthy_wt_std, L_healthy_wt-L_healthy_wt_std), Corr_dQ1_Integral_T(R[1:], B_healthy_wt+B_healthy_wt_std, L_healthy_wt+L_healthy_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ1dQ1_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2636,6 +2646,7 @@ if True:
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(1)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{11}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2645,7 +2656,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ1 control and JNK healthy averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ1 wild type and JNK healthy averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
@@ -2655,7 +2666,7 @@ if True:
 
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="control", color="m", marker="o")
+    ax[0].plot(T[1:], dQ2dQ2[:, 0][1:], label="wild type", color="m", marker="o")
     ax[0].plot(T[1:], Corr_dQ2_Integral_R(T[1:], B_healthy_wt, L_healthy_wt), label="Model param.", color="m")
     ax[0].fill_between(T[1:], Corr_dQ2_Integral_R(T[1:], B_healthy_wt-B_healthy_wt_std, L_healthy_wt-L_healthy_wt_std), Corr_dQ2_Integral_R(T[1:], B_healthy_wt+B_healthy_wt_std, L_healthy_wt+L_healthy_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[0].plot(T[1:], dQ2dQ2_JNK[:, 0][1:], label="bsk DN", color="g", marker="o")
@@ -2669,7 +2680,7 @@ if True:
     ax[0].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     ax[0].legend(fontsize=8)
 
-    ax[1].plot(R[1:], dQ2dQ2[1][1:], label="control", color="m", marker="o")
+    ax[1].plot(R[1:], dQ2dQ2[1][1:], label="wild type", color="m", marker="o")
     ax[1].plot(R[1:], Corr_dQ2_Integral_T(R[1:], B_healthy_wt, L_healthy_wt), label="Model param.", color="m")
     ax[1].fill_between(R[1:], Corr_dQ2_Integral_T(R[1:], B_healthy_wt-B_healthy_wt_std, L_healthy_wt-L_healthy_wt_std), Corr_dQ2_Integral_T(R[1:], B_healthy_wt+B_healthy_wt_std, L_healthy_wt+L_healthy_wt_std), color="m", alpha=0.25, label=r"Mean $\pm$ std. param.")
     ax[1].plot(R[1:], dQ2dQ2_JNK[1][1:], label="bsk DN", color="g", marker="o")
@@ -2678,6 +2689,7 @@ if True:
     ax[1].set_xlabel(r"Distance apart $R$ $(\mu m)$")
     ax[1].set_ylabel(r"$\delta q^{(2)}$ Correlation")
     ax[1].set_ylim([-4e-5, 2.8e-04])
+    ax[1].set_xlim([0, 40])
     ax[1].set_title(r"$C^{22}_{qq}(R,0)$")
     ax[1].legend(fontsize=10)
     ax[1].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
@@ -2687,7 +2699,7 @@ if True:
         left=0.08, bottom=0.1, right=0.92, top=0.9, wspace=0.35, hspace=0.50
     )
     fig.savefig(
-        f"results/mathPostWoundPaper/Correlation dQ2 control and JNK healthy averaged model parameters",
+        f"results/mathPostWoundPaper/Correlation dQ2 wild type and JNK healthy averaged model parameters",
         dpi=300,
         transparent=True,
         bbox_inches="tight",
