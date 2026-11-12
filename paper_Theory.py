@@ -4,6 +4,7 @@ import shutil
 from math import floor, log10, factorial
 
 from collections import Counter
+from functools import lru_cache
 import cv2
 import matplotlib
 import matplotlib.lines as lines
@@ -43,12 +44,10 @@ def healthyName(name):
     return (name.replace("Unwounded", "Healthy").replace("Unwound", "Healthy")
             .replace("unwounded", "healthy").replace("unwound", "healthy"))
 
-
 def enlargeHeatmapText(fig):
     fig.canvas.draw()
     for text in fig.findobj(match=matplotlib.text.Text):
         text.set_fontsize(text.get_fontsize() * 1.125)
-
 
 def spaceTimeDensityCorrelation(density, observed, grid=7, windowSize=5):
     """Correlate centered density maps over forward non-overlapping windows."""
@@ -497,7 +496,7 @@ if True:
 
     ax.set_ylim([0.055, 0.09])
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{\rho}$ $(\mu m^{-2})$")
-    ax.set_title(r"$\bar{\rho}$" + " with time \n healthy")
+    ax.set_title(r"$\bar{\rho}$" + " with time in healthy tissue")
     fig.savefig(
         f"results/paperTheory/mean rho {fileType}",
         dpi=300,
@@ -542,7 +541,7 @@ if True:
 
     ax.set_ylim([0.002, 0.035])
     ax.set(xlabel="Time (mins)", ylabel=r"$\bar{Q}^{(1)}$")
-    ax.set_title(r"$\bar{Q}^{(1)}$" + " with time \n healthy")
+    ax.set_title(r"$\bar{Q}^{(1)}$" + " with time in healthy tissue")
     ax.legend()
     fig.savefig(
         f"results/paperTheory/mean Q1 {fileType}",
@@ -561,20 +560,53 @@ def densityAnnealedModel(coordinates, m_rho, D):
 def densityQuenchedModel(R, m_s, decayLength):
     return m_s * np.exp(-R / decayLength)
 
+def finerHeatmapGrid(coordinates, factor=4):
+    """Subdivide each original heatmap cell while preserving its boundaries."""
+    coordinates = np.asarray(coordinates, dtype=float)
+    if coordinates.ndim != 1 or len(coordinates) < 2:
+        raise ValueError("Heatmap coordinates must contain at least two points")
+    steps = np.diff(coordinates)
+    if factor < 1 or not np.all(steps > 0) or not np.allclose(steps, steps[0]):
+        raise ValueError("Heatmap coordinates must be regularly spaced and increasing")
+    spacing = steps[0] / factor
+    return coordinates[0] - steps[0] / 2 + spacing * (np.arange(len(coordinates) * factor) + 0.5)
+
+
+def poolCorrelations(correlations, counts):
+    """Pool correlation bins using their contributing pair counts."""
+    correlations = np.asarray(correlations, dtype=float)
+    counts = np.asarray(counts, dtype=float)
+    if correlations.shape != counts.shape or correlations.ndim < 2:
+        raise ValueError("Correlation and count arrays must have matching shapes")
+    if (np.any(~np.isfinite(counts)) or np.any(counts < 0)
+            or np.any((counts > 0) & ~np.isfinite(correlations))):
+        raise ValueError("Invalid pair counts or populated correlation bins")
+    total = counts.sum(axis=0)
+    weighted = (np.where(counts > 0, correlations, 0) * counts).sum(axis=0)
+    return np.divide(weighted, total, out=np.full(total.shape, np.nan),
+                     where=total > 0), total
+
 def plotParameterBoxplots(parameters, fileType, outputName):
     fig, axes = plt.subplots(1, len(parameters), figsize=(2 * len(parameters), 3))
-    for ax, (values, ylabel) in zip(np.atleast_1d(axes), parameters):
+    for ax, (values, pooledValue, ylabel) in zip(np.atleast_1d(axes), parameters):
+        if not np.isfinite(pooledValue):
+            raise ValueError(f"{ylabel}: pooled parameter must be finite")
         ax.boxplot(values, positions=[0], widths=0.5, showfliers=False)
         sns.swarmplot(y=values, ax=ax, color="tab:blue", size=6, zorder=3)
+        ax.scatter(0, pooledValue, marker="*", s=120, color="gold",
+                   edgecolor="black", linewidth=0.7, zorder=5, label="Pooled fit")
         ax.set_ylabel(ylabel)
         ax.set_xticks([])
-        ax.set_ylim(bottom=0)
+        if pooledValue >= 0 and np.all(np.asarray(values) >= 0):
+            ax.set_ylim(bottom=0)
+    np.atleast_1d(axes)[-1].legend(loc="upper left", bbox_to_anchor=(1.03, 1),
+                                  fontsize=8)
     fig.tight_layout()
     fig.savefig(f"results/paperTheory/{outputName} {fileType}",
                 dpi=300, transparent=True, bbox_inches="tight")
     plt.close(fig)
 
-# Fit annealed and quenched density correlations independently for each video.
+# Fit each video and a pair-count-weighted pooled correlation.
 if True:
     filenames, fileType = util.getFilesType("Unwound18h")
     gridSize = 10
@@ -586,6 +618,8 @@ if True:
     sampleAnnealed = []
     sampleQuenched = []
     sampleTotal = []
+    densityCorrelations = []
+    densityCounts = []
 
     for filename in filenames:
         path = f"databases/correlations/dfCorRho{filename}.pkl"
@@ -601,6 +635,16 @@ if True:
         if np.any((count > 0) & ~np.isfinite(correlation)):
             raise ValueError(f"{path}: non-finite correlation in a populated bin")
 
+        densityCorrelations.append(correlation)
+        densityCounts.append(count)
+
+    if not densityCorrelations:
+        raise ValueError(f"No recordings found for {fileType}")
+    pooledDensity, pooledDensityCount = poolCorrelations(densityCorrelations, densityCounts)
+    densityInputs = list(zip(filenames, densityCorrelations, densityCounts))
+    densityInputs.append((f"pooled {fileType}", pooledDensity, pooledDensityCount))
+
+    for filename, correlation, count in densityInputs:
         thetaCount = np.sum(count, axis=2)
         correlationRT = np.divide(
             np.sum(np.where(count > 0, correlation, 0) * count, axis=2),
@@ -659,10 +703,9 @@ if True:
                 f"the {gridSize} um radial bin size and may not be resolved",
                 RuntimeWarning,
             )
-        sampleFits.append(
-            {"Filename": filename, "m_rho": m_rho, "D": D,
-             "m_s": m_s, "lambda": decayLength}
-        )
+        fit = {"Filename": filename, "m_rho": m_rho, "D": D,
+               "m_s": m_s, "lambda": decayLength}
+        sampleFits.append(fit)
         sampleAnnealed.append(annealed)
         sampleQuenched.append(quenched)
         sampleTotal.append(correlationRT)
@@ -673,9 +716,12 @@ if True:
 
     if not sampleFits:
         raise ValueError(f"No recordings found for {fileType}")
-    dfDensityFits = pd.DataFrame(sampleFits)
+    dfDensityFits = pd.DataFrame(sampleFits[:-1])
     dfDensityFits.to_csv(f"results/paperTheory/density fits {fileType}.csv", index=False)
-    print(f"Density model parameters (n={len(sampleFits)}, population SD):")
+    pd.DataFrame([sampleFits[-1]]).to_csv(
+        f"results/paperTheory/density pooled fit {fileType}.csv", index=False
+    )
+    print(f"Density model parameters (n={len(dfDensityFits)}, population SD):")
     for parameter in ("m_rho", "D", "m_s", "lambda"):
         values = dfDensityFits[parameter].to_numpy()
         print(f"{parameter} = {np.mean(values):.4g} +- {np.std(values):.4g}")
@@ -691,22 +737,48 @@ if True:
                 f"{filename}: cannot normalize density plots; "
                 "zero-lag correlation is not positive"
             )
+        totalTGrid, totalRGrid = np.meshgrid(times, radii, indexing="ij")
+        maxTotal = np.nanmax(np.abs(total))
+        if not np.isfinite(maxTotal) or maxTotal <= 0:
+            raise ValueError(f"{filename}: invalid total density correlation")
+        fig, ax = plt.subplots(1, 1, figsize=(3, 3))
+        c = ax.pcolor(totalTGrid, totalRGrid, total, cmap="RdBu_r",
+                      vmin=-maxTotal, vmax=maxTotal, shading="auto")
+        fig.colorbar(c, ax=ax).formatter.set_powerlimits((0, 0))
+        ax.set_xlabel("Time apart $T$ (min)")
+        ax.set_ylabel(r"Distance apart $R$ $(\mu m)$")
+        ax.set_title(r"Total correlation $C_{\rho\rho}(R,T)$", pad=25)
+        if filename == f"pooled {fileType}":
+            fig.suptitle("Pooled recordings")
+        enlargeHeatmapText(fig)
+        fig.tight_layout()
+        fig.savefig(f"results/paperTheory/Correlation rho total {filename}",
+                    dpi=300, transparent=True, bbox_inches="tight")
+        plt.close(fig)
+
         annealedData = annealed[1:, 1:]
         annealedModel = densityAnnealedModel((rGrid, tGrid), fit["m_rho"], fit["D"])
         maxCorr = np.nanmax(np.abs(np.stack([annealedData, annealedModel]))) / norm
-        fig, ax = plt.subplots(1, 2, figsize=(8, 3))
-        for panel, values, title in zip(
+        fineR, fineT = finerHeatmapGrid(radii[1:]), finerHeatmapGrid(times[1:])
+        fineRGrid, fineTGrid = np.meshgrid(fineR, fineT)
+        fineModel = densityAnnealedModel((fineRGrid, fineTGrid), fit["m_rho"], fit["D"])
+        fig, ax = plt.subplots(1, 2, figsize=(6, 3))
+        for panel, values, xGrid, yGrid, title in zip(
             ax,
-            [annealedData, annealedModel],
+            [annealedData, fineModel],
+            [tGrid, fineTGrid],
+            [rGrid, fineRGrid],
             [r"Experiment $C^{nn}_{\rho\rho}(R,T)$",
              r"Fitted model $C^{nn}_{\rho\rho}(R,T)$"],
         ):
-            c = panel.pcolor(tGrid, rGrid, values / norm, cmap="RdBu_r",
+            c = panel.pcolor(xGrid, yGrid, values / norm, cmap="RdBu_r",
                              vmin=-maxCorr, vmax=maxCorr, shading="auto")
             fig.colorbar(c, ax=panel).formatter.set_powerlimits((0, 0))
             panel.set_xlabel("Time apart $T$ (min)")
             panel.set_ylabel(r"Distance apart $R$ $(\mu m)$")
             panel.set_title(title, pad=25)
+        if filename == f"pooled {fileType}":
+            fig.suptitle("Pooled recordings")
         enlargeHeatmapText(fig)
         fig.tight_layout()
         fig.savefig(f"results/paperTheory/Correlation dRho_n {filename}",
@@ -720,6 +792,8 @@ if True:
         ax.set_xlabel(r"Distance apart $R$ $(\mu m)$")
         ax.set_ylabel(r"$\delta \rho_s$ Correlation")
         ax.set_title(r"$C^{ss}_{\rho\rho}(R)$")
+        if filename == f"pooled {fileType}":
+            fig.suptitle("Pooled recordings")
         ax.legend()
         fig.tight_layout()
         fig.savefig(f"results/paperTheory/Correlation rho_s {filename}",
@@ -729,13 +803,15 @@ if True:
     annealedPrefactor = (
         dfDensityFits["m_rho"] / (32 * np.pi**3 * dfDensityFits["D"]**2)
     ).to_numpy()
+    pooledDensityFit = sampleFits[-1]
+    pooledPrefactor = pooledDensityFit["m_rho"] / (32 * np.pi**3 * pooledDensityFit["D"]**2)
     plotParameterBoxplots(
         [
-            (dfDensityFits["m_rho"].to_numpy(), r"$m_\rho$"),
-            (dfDensityFits["D"].to_numpy(), r"$D$ $(\mu m^2/\mathrm{min})$"),
-            (annealedPrefactor, r"$m_\rho/(32\pi^3 D^2)$"),
-            (dfDensityFits["m_s"].to_numpy(), r"$m_s$"),
-            (dfDensityFits["lambda"].to_numpy(), r"$\lambda$ $(\mu m)$"),
+            (dfDensityFits["m_rho"].to_numpy(), pooledDensityFit["m_rho"], r"$m_\rho$"),
+            (dfDensityFits["D"].to_numpy(), pooledDensityFit["D"], r"$D$ $(\mu m^2/\mathrm{min})$"),
+            (annealedPrefactor, pooledPrefactor, r"$m_\rho/(32\pi^3 D^2)$"),
+            (dfDensityFits["m_s"].to_numpy(), pooledDensityFit["m_s"], r"$m_s$"),
+            (dfDensityFits["lambda"].to_numpy(), pooledDensityFit["lambda"], r"$\lambda$ $(\mu m)$"),
         ],
         fileType,
         "density parameter boxplots",
@@ -765,35 +841,69 @@ def forIntegral(R, T, B, L, mQ, kMax=20, nK=10000):
     kernel = k[None, :] * sc.jv(0, R[:, None] * k[None, :])
     return mQ * dk * (kernel @ decay)
 
-# ---- full fit of B, L, mQ_1 and mQ_2 to C_Q(R, T) for R > 10 ----
-# B and L are shared by q1 and q2; each has its own amplitude mQ. The Gamma(k) fit
-# above gives the starting point.
+# ---- full fit of A, L, mQ_1 and mQ_2 to C_Q(R, T) for R > 10 ----
+# A and the model coefficient L* are shared by q1 and q2; L = L* / rho_star.
+# The pooled fit weights each correlation bin by its contributing pair count.
 if True:
     grid = 26
     timeGrid = 51
-    T = np.linspace(0, (timeGrid - 1), timeGrid)
+    minutesPerFrame = 2
+    T = np.arange(timeGrid) * minutesPerFrame
     R = np.linspace(0, 2 * (grid - 1), grid)
-    B_full = []
+    A_full = []
     L_full = []
     mQ_1_full = []
     mQ_2_full = []
     rmse_full = []
     fitR = R > 10
     filenames, fileType = util.getFilesType("Unwound18h")
-    for f, filename in enumerate(filenames):
+    qInputs = []
+    qCorrelations = [[], []]
+    qCounts = [[], []]
+    for filename in filenames:
+        path = f"databases/paperTheory/dfCordQ{filename}.pkl"
+        dfCor = pd.read_pickle(path)
+        if len(dfCor) != 1 or dfCor["Filename"].iloc[0] != filename:
+            raise ValueError(f"{path} must contain exactly one row for {filename}")
+        components = []
+        for i, component in enumerate(("dQ1dQ1", "dQ2dQ2")):
+            correlation = np.asarray(dfCor[component + "Correlation"].iloc[0])
+            count = np.asarray(dfCor[component + "Count"].iloc[0])
+            if correlation.shape != (timeGrid, grid + 1, 17) or count.shape != correlation.shape:
+                raise ValueError(f"{path}: unexpected {component} array shape")
+            if (np.any(~np.isfinite(count)) or np.any(count < 0)
+                    or np.any((count > 0) & ~np.isfinite(correlation))):
+                raise ValueError(f"{path}: invalid {component} correlation or count")
+            qCorrelations[i].append(correlation)
+            qCounts[i].append(count)
+            components.append(thetaAverage(correlation, count)[0].T[:-1][fitR])
+        qInputs.append((filename, *components))
+
+    if not qInputs:
+        raise ValueError(f"No recordings found for {fileType}")
+    pooledComponents = []
+    for correlations, counts in zip(qCorrelations, qCounts):
+        pooled, pooledCount = poolCorrelations(correlations, counts)
+        pooledComponents.append(thetaAverage(pooled, pooledCount)[0].T[:-1][fitR])
+    qInputs.append((f"pooled {fileType}", *pooledComponents))
+    rho_star = 0.07125876326265877
+    b = 0.09169152171935838
+    bulkOffset = 2 * rho_star * b
+    for filename, cor_q1, cor_q2 in qInputs:
+        isPooled = filename == f"pooled {fileType}"
         print(datetime.now().strftime("%H:%M:%S ") + filename + " full fit")
-        dfCor = pd.read_pickle(f"databases/paperTheory/dfCordQ{filename}.pkl")
-        cor_q1 = thetaAverage(dfCor["dQ1dQ1Correlation"][0], dfCor["dQ1dQ1Count"][0])[0]
-        cor_q2 = thetaAverage(dfCor["dQ2dQ2Correlation"][0], dfCor["dQ2dQ2Count"][0])[0]
-        cor_q1 = cor_q1.transpose()[:-1][fitR]  # (n_R, n_T) after dropping the empty bin
-        cor_q2 = cor_q2.transpose()[:-1][fitR]
 
         # fit in units of the data scale so all four parameters are of order 1
         dataScale = np.nanmax(np.abs(np.concatenate([cor_q1.ravel(), cor_q2.ravel()])))
+        if not np.isfinite(dataScale) or dataScale <= 0:
+            raise ValueError(f"{filename}: invalid Q correlation scale")
         data = np.concatenate([cor_q1.ravel(), cor_q2.ravel()]) / dataScale
         valid = np.isfinite(data)
+        if valid.sum() < 5:
+            raise ValueError(f"{filename}: insufficient finite Q correlations to fit")
 
-        def fullModel(_, B_, L_, m1, m2):
+        def fullModel(_, A_, L_, m1, m2):
+            B_ = A_ - bulkOffset
             model = forIntegral(R[fitR], T, B_, L_, 1)
             return np.concatenate([m1 * model.ravel(), m2 * model.ravel()])[valid]
 
@@ -806,25 +916,39 @@ if True:
             fullModel,
             None,
             data[valid],
-            p0=[0.01, 2, max(m1_0, 1e-3), max(m2_0, 1e-3)],
-            bounds=([0, 0, 0, 0], np.inf),
+            p0=[bulkOffset + 0.01, 2, max(m1_0, 1e-3), max(m2_0, 1e-3)],
+            bounds=([bulkOffset + 1e-8, 0, 0, 0], np.inf),
             max_nfev=2000,
         )
-        B_f, L_f = popt[0], popt[1]
+        A_f, L_star_f = popt[0], popt[1]
+        L_f = L_star_f / rho_star
         m1_f, m2_f = popt[2] * dataScale, popt[3] * dataScale
-        B_full.append(B_f)
-        L_full.append(L_f)
-        mQ_1_full.append(m1_f)
-        mQ_2_full.append(m2_f)
-        rmse_full.append(np.sqrt(np.mean((fullModel(None, *popt) - data[valid]) ** 2)))
+        rmse = np.sqrt(np.mean((fullModel(None, *popt) - data[valid]) ** 2))
+        if isPooled:
+            pooledQFit = (A_f, L_f, m1_f, m2_f)
+            pd.DataFrame([{
+                "A": A_f, "L": L_f, "L_star": L_star_f,
+                "mQ_1": m1_f, "mQ_2": m2_f,
+                "B": A_f - bulkOffset, "scaled_RMSE": rmse,
+            }]).to_csv(f"results/paperTheory/Q pooled fit {fileType}.csv", index=False)
+        else:
+            A_full.append(A_f)
+            L_full.append(L_f)
+            mQ_1_full.append(m1_f)
+            mQ_2_full.append(m2_f)
+            rmse_full.append(rmse)
         print(
-            f"B = {B_f:.4g},  L = {L_f:.4g},  "
+            f"A = {A_f:.4g},  L = {L_f:.4g},  "
             f"mQ_1 = {m1_f:.3e},  mQ_2 = {m2_f:.3e}"
         )
 
         # heatmaps of experiment, fitted model and residual (R > 10)
-        model = forIntegral(R[fitR], T, B_f, L_f, 1)
+        model = forIntegral(R[fitR], T, A_f - bulkOffset, L_star_f, 1)
         T_grid, R_grid = np.meshgrid(T, R[fitR])
+        fineR, fineT = finerHeatmapGrid(R[fitR]), finerHeatmapGrid(T)
+        fineTGrid, fineRGrid = np.meshgrid(fineT, fineR)
+        # The zero-lag cell extends below zero; hold its model at T=0 there.
+        fineModel = forIntegral(fineR, np.maximum(fineT, 0), A_f - bulkOffset, L_star_f, 1)
         fitted_q1, fitted_q2 = m1_f * model, m2_f * model
         residual_q1, residual_q2 = cor_q1 - fitted_q1, cor_q2 - fitted_q2
         vmax = np.nanmax(
@@ -848,7 +972,7 @@ if True:
         for row, (cor, fitted, residual, label) in enumerate(
             zip(
                 [cor_q1, cor_q2],
-                [fitted_q1, fitted_q2],
+                [m1_f * fineModel, m2_f * fineModel],
                 [residual_q1, residual_q2],
                 ["11", "22"],
             )
@@ -858,10 +982,11 @@ if True:
                 (fitted, rf"Model $C^{{{label}}}_{{qq}}(R,T)$"),
                 (residual, "Experiment - Model"),
             ]
-            for a, (values, title) in zip(ax[row], panels):
+            for column, (a, (values, title)) in enumerate(zip(ax[row], panels)):
+                xGrid, yGrid = (fineTGrid, fineRGrid) if column == 1 else (T_grid, R_grid)
                 c = a.pcolor(
-                    T_grid,
-                    R_grid,
+                    xGrid,
+                    yGrid,
                     values,
                     cmap="RdBu_r",
                     vmin=-vmax,
@@ -872,7 +997,8 @@ if True:
                 a.set_xlabel("Time apart $T$ (min)")
                 a.set_ylabel(r"Distance apart $R$ $(\mu m)$")
                 a.set_title(title, pad=25)
-        fig.suptitle(rf"Full fit: $B$={B_f:.3g}, $L$={L_f:.3g}", y=1.0)
+        fitTitle = "Pooled fit" if isPooled else "Full fit"
+        fig.suptitle(fitTitle + rf": $A$={A_f:.3g}, $L$={L_f:.3g}", y=1.0)
         enlargeHeatmapText(fig)
         fig.tight_layout()
         fig.savefig(
@@ -883,170 +1009,527 @@ if True:
         )
         plt.close("all")
 
-    print(f"Full fit B = {np.mean(B_full):.4g} +- {np.std(B_full):.4g}")
+    print(f"Full fit A = {np.mean(A_full):.4g} +- {np.std(A_full):.4g}")
     print(f"Full fit L = {np.mean(L_full):.4g} +- {np.std(L_full):.4g}")
     print(f"Full fit mQ_1 = {np.mean(mQ_1_full):.3e} +- {np.std(mQ_1_full):.3e}")
     print(f"Full fit mQ_2 = {np.mean(mQ_2_full):.3e} +- {np.std(mQ_2_full):.3e}")
     plotParameterBoxplots(
         [
-            (B_full, r"$B$"),
-            (L_full, r"$L$"),
-            (mQ_1_full, r"$m_{Q_1}$"),
-            (mQ_2_full, r"$m_{Q_2}$"),
+            (A_full, pooledQFit[0], r"$A$"),
+            (L_full, pooledQFit[1], r"$L$"),
+            (mQ_1_full, pooledQFit[2], r"$m_{Q_1}$"),
+            (mQ_2_full, pooledQFit[3], r"$m_{Q_2}$"),
         ],
         fileType,
         "Q fit parameter boxplots",
     )
 
+
+
+# ------------------------- Supplementary Figure 4 -------------------------
+
+
+def supplementary4Holm(pvalues):
+    """Holm-adjust one family of p-values, returning the original order."""
+    pvalues = np.asarray(pvalues, dtype=float)
+    if pvalues.ndim != 1 or np.any(~np.isfinite(pvalues)) or np.any(
+        (pvalues < 0) | (pvalues > 1)
+    ):
+        raise ValueError("Holm correction requires finite p-values in [0, 1]")
+    order = np.argsort(pvalues)
+    adjusted = np.minimum(1, np.maximum.accumulate(
+        pvalues[order] * np.arange(len(pvalues), 0, -1)
+    ))
+    result = np.empty_like(adjusted)
+    result[order] = adjusted
+    return result
+
+
+def supplementary4Tests(values, parameterNames, windowLabels):
+    """Complete-case Friedman and paired Wilcoxon tests for each parameter."""
+    values = np.asarray(values, dtype=float)
+    if (values.ndim != 3 or values.shape[1:] != (3, len(parameterNames))
+            or len(windowLabels) != 3 or len(values) < 3
+            or not np.all(np.isfinite(values))):
+        raise ValueError("Tests require at least three complete, finite paired recordings")
+    rows = []
+    pairs = ((0, 1), (0, 2), (1, 2))
+    for k, name in enumerate(parameterNames):
+        sample = values[:, :, k]
+        if np.all(sample == sample[:, :1]):
+            statistic, pvalue = 0.0, 1.0
+        else:
+            statistic, pvalue = sp.stats.friedmanchisquare(*sample.T)
+        if not np.isfinite(statistic) or not np.isfinite(pvalue):
+            raise ValueError(f"{name}: Friedman test returned non-finite results")
+        rows.append({
+            "Parameter": name, "Test": "Friedman", "Window1": "all",
+            "Window2": "all", "N": len(sample), "Statistic": statistic,
+            "MedianDifference_Window2_minus_Window1": np.nan,
+            "P_raw": pvalue, "P_Holm": np.nan,
+        })
+        pairRows = []
+        for i, j in pairs:
+            difference = sample[:, j] - sample[:, i]
+            if np.all(difference == 0):
+                statistic, pvalue = 0.0, 1.0
+            else:
+                # Pass precomputed differences to avoid subtraction inside SciPy.
+                statistic, pvalue = sp.stats.wilcoxon(
+                    difference, alternative="two-sided"
+                )
+            if not np.isfinite(statistic) or not np.isfinite(pvalue):
+                raise ValueError(f"{name}: Wilcoxon test returned non-finite results")
+            pairRows.append({
+                "Parameter": name, "Test": "Wilcoxon", "Window1": windowLabels[i],
+                "Window2": windowLabels[j], "N": len(sample), "Statistic": statistic,
+                "MedianDifference_Window2_minus_Window1": np.median(difference),
+                "P_raw": pvalue,
+            })
+        for row, adjusted in zip(
+            pairRows, supplementary4Holm([row["P_raw"] for row in pairRows])
+        ):
+            row["P_Holm"] = adjusted
+        rows.extend(pairRows)
+    # A separate family covers the four omnibus parameter tests.
+    omnibus = [row for row in rows if row["Test"] == "Friedman"]
+    for row, adjusted in zip(omnibus, supplementary4Holm([r["P_raw"] for r in omnibus])):
+        row["P_Holm"] = adjusted
+    return pd.DataFrame(rows)
+
+
+def supplementary4Plot(values, pooled, tests, parameterNames, windowLabels, path):
+    """Plot paired fits and the pair-count-weighted pooled fit in each window."""
+    labels = (r"$A$", r"$L$", r"$m_{Q_1}$", r"$m_{Q_2}$")
+    fig, axes = plt.subplots(1, 4, figsize=(16, 5))
+    for k, (ax, name, ylabel) in enumerate(zip(axes, parameterNames, labels)):
+        sample = values[:, :, k]
+        ax.boxplot(sample, positions=[0, 1, 2], widths=0.5, showfliers=False)
+        for recording in sample:
+            ax.plot([0, 1, 2], recording, color="tab:blue", alpha=0.25, linewidth=0.8)
+        ax.scatter(np.tile(np.arange(3), len(sample)), sample.ravel(),
+                   color="tab:blue", s=28, alpha=0.75, zorder=3)
+        ax.scatter(np.arange(3), pooled[:, k], marker="*", s=150, color="gold",
+                   edgecolor="black", linewidth=0.7, zorder=5, label="Pooled fit")
+        ax.set_xticks([0, 1, 2], windowLabels)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel("Time window (hours)")
+        highest = max(np.max(sample), np.max(pooled[:, k]))
+        span = highest if highest > 0 else 1.0
+        ax.set_ylim(0, highest + 0.63 * span)
+        rows = tests[(tests["Parameter"] == name) & (tests["Test"] == "Wilcoxon")]
+        for level, ((i, j), (_, row)) in enumerate(zip(
+            ((0, 1), (1, 2), (0, 2)),
+            rows.set_index(["Window1", "Window2"]).loc[
+                [(windowLabels[0], windowLabels[1]),
+                 (windowLabels[1], windowLabels[2]),
+                 (windowLabels[0], windowLabels[2])]
+            ].iterrows(),
+        )):
+            y = highest + (0.08 + 0.14 * level) * span
+            ax.plot([i, i, j, j], [y, y + 0.02 * span, y + 0.02 * span, y],
+                    color="black", linewidth=0.8)
+            pvalue = row["P_Holm"]
+            significance = "***" if pvalue < 0.001 else "**" if pvalue < 0.01 else "*" if pvalue < 0.05 else "ns"
+            ax.text((i + j) / 2, y + 0.025 * span, significance,
+                    ha="center", va="bottom", fontsize=9)
+        omnibus = tests[(tests["Parameter"] == name) & (tests["Test"] == "Friedman")]
+        ax.set_title(f"Friedman\nHolm p={omnibus['P_Holm'].iloc[0]:.3g}", fontsize=10)
+    axes[-1].legend(loc="upper left", bbox_to_anchor=(1.03, 1), fontsize=9)
+    fig.tight_layout()
+    fig.savefig(path, dpi=300, transparent=True, bbox_inches="tight")
+    plt.close(fig)
+
+
+# Fit recording-specific and pooled Q correlations in three one-hour windows.
+# Time lags are in minutes (two minutes per source frame).
+if False:
+    filenames, fileType = util.getFilesType("Unwound18h")
+    filenames = sorted(filenames)
+    if not filenames or len(filenames) != len(set(filenames)):
+        raise ValueError("Supplementary Figure 4 requires unique recordings")
+    windows = ((0, 29), (30, 59), (60, 89))
+    windowLabels = ("0-1", "1-2", "2-3")
+    parameterNames = ("A", "L", "mQ_1", "mQ_2")
+    radii = np.arange(26) * 2
+    times = np.arange(26) * 2
+    fitRows = []
+    individualFits = np.full((len(filenames), len(windows), 4), np.nan)
+    pooledFits = np.full((len(windows), 4), np.nan)
+    for windowIndex, (startFrame, endFrame) in enumerate(windows):
+        sampleSums, sampleCounts = [], []
+        for recordingIndex, filename in enumerate(filenames):
+            path = f"databases/paperTheory/dfCordQ{filename}_{startFrame}-{endFrame}.pkl"
+            dfCor = pd.read_pickle(path)
+            if (len(dfCor) != 1 or dfCor["Filename"].iloc[0] != filename
+                    or dfCor["StartFrame"].iloc[0] != startFrame
+                    or dfCor["EndFrame"].iloc[0] != endFrame):
+                raise ValueError(f"Incorrect supplementary correlation metadata: {path}")
+            sums, counts = [], []
+            for component in ("dQ1dQ1", "dQ2dQ2"):
+                cor = np.asarray(dfCor[component + "Correlation"].iloc[0])
+                count = np.asarray(dfCor[component + "Count"].iloc[0])
+                if cor.shape != (26, 27, 17) or count.shape != cor.shape:
+                    raise ValueError(f"{path}: unexpected {component} array shape")
+                if (np.any(~np.isfinite(count)) or np.any(count < 0)
+                        or np.any((count > 0) & ~np.isfinite(cor))):
+                    raise ValueError(f"{path}: invalid {component} correlation or count")
+                cor, count = cor[:, :-1], count[:, :-1]
+                sums.append(np.sum(np.where(count > 0, cor, 0) * count, axis=2).T)
+                counts.append(count.sum(axis=2).T)
+            sampleSums.append(sums)
+            sampleCounts.append(counts)
+            correlation = figure6PoolSamples((np.asarray([sums]), np.asarray([counts])),
+                                             np.array([0]))
+            try:
+                parameters, nearBounds = figure6FitPooled(correlation, radii, times)
+                individualFits[recordingIndex, windowIndex] = parameters
+                status = "ok"
+            except (ValueError, RuntimeError) as error:
+                parameters = np.full(4, np.nan)
+                nearBounds = (False,) * 4
+                status = f"failed: {error}"
+                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: {status}")
+            if any(nearBounds):
+                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
+            fitRows.append({
+                "Filename": filename, "Fit": "individual", "Window": windowLabels[windowIndex],
+                "StartFrame": startFrame, "EndFrame": endFrame, "Status": status,
+                **dict(zip(parameterNames, parameters)),
+                **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
+            })
+        correlation = figure6PoolSamples(
+            (np.asarray(sampleSums), np.asarray(sampleCounts)), np.arange(len(filenames))
+        )
+        try:
+            parameters, nearBounds = figure6FitPooled(correlation, radii, times)
+        except (ValueError, RuntimeError) as error:
+            raise RuntimeError(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]} fit failed") from error
+        pooledFits[windowIndex] = parameters
+        if any(nearBounds):
+            warnings.warn(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
+        fitRows.append({
+            "Filename": fileType, "Fit": "pooled", "Window": windowLabels[windowIndex],
+            "StartFrame": startFrame, "EndFrame": endFrame, "Status": "ok",
+            **dict(zip(parameterNames, parameters)),
+            **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
+        })
+    output = "results/paperTheory"
+    fits = pd.DataFrame(fitRows)
+    fits.to_csv(f"{output}/Sup Figure 4 Q window fits {fileType}.csv", index=False)
+    complete = np.all(np.isfinite(individualFits), axis=(1, 2))
+    if not np.all(complete):
+        warnings.warn(f"Supplementary Figure 4 complete-case tests exclude: {', '.join(np.asarray(filenames)[~complete])}")
+    tests = supplementary4Tests(individualFits[complete], parameterNames, windowLabels)
+    tests.to_csv(f"{output}/Sup Figure 4 Q window statistics {fileType}.csv", index=False)
+    supplementary4Plot(individualFits[complete], pooledFits, tests, parameterNames,
+                       windowLabels, f"{output}/Sup Figure 4 Q window boxplots {fileType}.png")
+    print(f"Supplementary Figure 4: {complete.sum()} of {len(filenames)} complete recordings")
+
+
 # ------------------------- Figure 6 -------------------------
 
-if True:
+# The shared constants are treated as fixed; bootstrap uncertainty is conditional on them.
+figure6RhoStar = 0.07125876326265877
+figure6Bulk = 0.09169152171935838
+figure6BootstrapReplicates = 1000
+figure6BootstrapSeed = 2026
+
+
+def figure6PoolSamples(samples, indices):
+    """Pool theta and recording contributions using pair counts."""
+    weighted, counts = samples
+    weightedSum = weighted[indices].sum(axis=0)
+    countSum = counts[indices].sum(axis=0)
+    return np.divide(weightedSum, countSum,
+                     out=np.full(countSum.shape, np.nan), where=countSum > 0)
+
+
+@lru_cache(maxsize=4)
+def figure6Kernel(radii):
+    dk = 20 / 10000
+    k = (np.arange(10000) + 0.5) * dk
+    return k, dk * k[None, :] * sc.jv(0, np.asarray(radii)[:, None] * k)
+
+
+def figure6FitPooled(correlations, radii, times):
+    """Fit the Figure 5 Q model to Q1 and Q2 correlations."""
+    fitR = radii >= 10
+    values = correlations[:, fitR, :]
+    scale = np.nanmax(np.abs(values))
+    if not np.isfinite(scale) or scale <= 0:
+        raise ValueError("Q correlation has an invalid scale")
+    data = values.ravel() / scale
+    valid = np.isfinite(data)
+    if valid.sum() < 5:
+        raise ValueError("Q correlation has insufficient finite bins")
+    offset = 2 * figure6RhoStar * figure6Bulk
+    k, kernel = figure6Kernel(tuple(radii[fitR]))
+    k2 = k**2
+    cachedParameters = None
+    cachedModel = None
+    cachedJacobian = None
+
+    def evaluate(A, Lstar, m1, m2):
+        nonlocal cachedParameters, cachedModel, cachedJacobian
+        current = (A, Lstar, m1, m2)
+        if current != cachedParameters:
+            rate = A - offset + Lstar * k2
+            decay = np.exp(-rate[:, None] * times[None, :])
+            base = decay / rate[:, None]
+            derivative = -base * (times[None, :] + 1 / rate[:, None])
+            integral = (kernel @ base).ravel()
+            dA = (kernel @ derivative).ravel()
+            dL = (kernel @ (derivative * k2[:, None])).ravel()
+            zeros = np.zeros_like(integral)
+            cachedModel = np.concatenate((m1 * integral, m2 * integral))[valid]
+            cachedJacobian = np.stack((
+                np.concatenate((m1 * dA, m2 * dA)),
+                np.concatenate((m1 * dL, m2 * dL)),
+                np.concatenate((integral, zeros)),
+                np.concatenate((zeros, integral)),
+            ), axis=1)[valid]
+            cachedParameters = current
+        return cachedModel, cachedJacobian
+
+    def model(_, A, Lstar, m1, m2):
+        return evaluate(A, Lstar, m1, m2)[0]
+
+    def jacobian(_, A, Lstar, m1, m2):
+        return evaluate(A, Lstar, m1, m2)[1]
+
+    initial = forIntegral(radii[fitR], times, 0.01, 2, 1).ravel()
+    initialNorm = np.sum(initial**2)
+    m1 = np.nansum(initial * values[0].ravel() / scale) / initialNorm
+    m2 = np.nansum(initial * values[1].ravel() / scale) / initialNorm
+    popt, _ = curve_fit(
+        model, None, data[valid],
+        p0=[offset + 0.01, 2, max(m1, 1e-3), max(m2, 1e-3)],
+        bounds=([offset + 1e-8, 0, 0, 0], np.inf), jac=jacobian, max_nfev=2000,
+    )
+    parameters = np.array([popt[0], popt[1] / figure6RhoStar,
+                           popt[2] * scale, popt[3] * scale])
+    if not np.all(np.isfinite(parameters)):
+        raise ValueError("Q fit produced non-finite parameters")
+    # Amplitude thresholds refer to the optimizer's data-scaled parameters.
+    nearBounds = (popt[0] - offset <= 1e-6, popt[1] <= 1e-6,
+                  popt[2] <= 1e-6, popt[3] <= 1e-6)
+    return parameters, nearBounds
+
+
+def figure6ModelValues(parameters, radii, times):
+    A, L, m1, m2 = parameters
+    integral = forIntegral(radii, times, A - 2 * figure6RhoStar * figure6Bulk,
+                           L * figure6RhoStar, 1)
+    return np.stack((m1 * integral, m2 * integral))
+
+
+if False:
     figure6StartTime, figure6EndTime = 90, 150
     figure6RadialStep, figure6Grid = 2, 21
-    figure6WoundDistance = 30
-    figure6Conditions = [
+    conditions = [
         ("Wild type", "Close", "WoundL18h", "#8b005b"),
         ("Wild type", "Far", "WoundL18h", "#cf369a"),
         ("Wild type", "Unwounded", "Unwound18h", "#f0a0d4"),
         ("JNK", "Close", "WoundLJNK", "#006b30"),
         ("JNK", "Far", "WoundLJNK", "#36a65c"),
         ("JNK", "Unwounded", "UnwoundJNK", "#a0d6aa"),
-    ]    
-    def figure6CorrelationPath(filename, region):
-        return (
-            f"databases/correlationsWound/dfCorFigure6{region}{filename}"
-            f"_minutes{figure6StartTime}-{figure6EndTime}"
-            f"_rmax{figure6RadialStep * (figure6Grid - 1)}.pkl"
-        )
-    
-    startTime, endTime = figure6StartTime, figure6EndTime
-    rStep, grid = figure6RadialStep, figure6Grid
-    lagStep = 2
-    times = np.arange(0, endTime - startTime + 1, lagStep)
-    radii = np.arange(grid - 1) * rStep
+    ]
+    times = np.arange(0, figure6EndTime - figure6StartTime + 1, 2)
+    radii = np.arange(figure6Grid - 1) * figure6RadialStep
     fitR = radii >= 10
-    conditions = figure6Conditions
-    figure6Fits = []
-    figure6Correlations = {}
+    parameterNames = ("A", "L", "mQ_1", "mQ_2")
+    samplesByCondition = {}
+    recordingsByType = {}
 
     for genotype, region, shapeFileType, colour in conditions:
-        filenames, _ = util.getFilesType(shapeFileType)
+        filenames = sorted(util.getFilesType(shapeFileType)[0])
         if not filenames:
             raise ValueError(f"No recordings found for {shapeFileType}")
+        if shapeFileType in recordingsByType and filenames != recordingsByType[shapeFileType]:
+            raise ValueError(f"Inconsistent paired recordings for {shapeFileType}")
+        recordingsByType[shapeFileType] = filenames
+        sampleSums, sampleCounts = [], []
         for filename in filenames:
-            path = figure6CorrelationPath(filename, region)
+            path = (
+                f"databases/correlationsWound/dfCorFigure6{region}{filename}"
+                f"_minutes{figure6StartTime}-{figure6EndTime}"
+                f"_rmax{figure6RadialStep * (figure6Grid - 1)}.pkl"
+            )
             if not exists(path):
-                raise FileNotFoundError(
-                    f"Missing Figure 6 correlation {path}; enable the correlation block above"
-                )
+                raise FileNotFoundError(f"Missing Figure 6 correlation {path}")
             dfCor = pd.read_pickle(path)
             if (len(dfCor) != 1 or dfCor["Filename"].iloc[0] != filename
                     or dfCor["Region"].iloc[0] != region
-                    or dfCor["StartTime"].iloc[0] != startTime
-                    or dfCor["EndTime"].iloc[0] != endTime
-                    or dfCor["Grid"].iloc[0] != grid
-                    or dfCor["RadialStep"].iloc[0] != rStep):
+                    or dfCor["StartTime"].iloc[0] != figure6StartTime
+                    or dfCor["EndTime"].iloc[0] != figure6EndTime
+                    or dfCor["Grid"].iloc[0] != figure6Grid
+                    or dfCor["RadialStep"].iloc[0] != figure6RadialStep):
                 raise ValueError(f"Incorrect Figure 6 correlation metadata: {path}")
-            correlations = []
+            sums, counts = [], []
             for component in ("dQ1dQ1", "dQ2dQ2"):
                 cor = np.asarray(dfCor[component + "Correlation"].iloc[0])
                 count = np.asarray(dfCor[component + "Count"].iloc[0])
-                if cor.shape != (61, grid, 17) or count.shape != cor.shape:
+                if cor.shape != (61, figure6Grid, 17) or count.shape != cor.shape:
                     raise ValueError(f"{path}: unexpected {component} array shape")
                 if (np.any(~np.isfinite(count)) or np.any(count < 0)
                         or np.any((count > 0) & ~np.isfinite(cor))):
                     raise ValueError(f"{path}: invalid {component} correlation or count")
-                correlations.append(thetaAverage(cor, count)[0][::lagStep, :-1].T)
-            cor_q1, cor_q2 = correlations
-            dataScale = np.nanmax(np.abs(np.stack([cor_q1[fitR], cor_q2[fitR]])))
-            if not np.isfinite(dataScale) or dataScale <= 0:
-                raise ValueError(f"{filename} {region}: invalid correlation scale")
-            data = np.concatenate([cor_q1[fitR].ravel(), cor_q2[fitR].ravel()]) / dataScale
-            valid = np.isfinite(data)
-            if valid.sum() < 5:
-                raise ValueError(f"{filename} {region}: insufficient data for fit")
+                cor, count = cor[::2, :-1], count[::2, :-1]
+                sums.append(np.sum(np.where(count > 0, cor, 0) * count, axis=2).T)
+                counts.append(count.sum(axis=2).T)
+            sampleSums.append(sums)
+            sampleCounts.append(counts)
+        samplesByCondition[(genotype, region)] = (
+            np.asarray(sampleSums), np.asarray(sampleCounts)
+        )
 
-            def figure6Model(_, B, L, m1, m2):
-                model = forIntegral(radii[fitR], times, B, L, 1)
-                return np.concatenate([m1 * model.ravel(), m2 * model.ravel()])[valid]
+    pooledResults = {}
+    for genotype, region, shapeFileType, colour in conditions:
+        key = (genotype, region)
+        correlation = figure6PoolSamples(
+            samplesByCondition[key], np.arange(len(recordingsByType[shapeFileType]))
+        )
+        try:
+            parameters, nearBounds = figure6FitPooled(correlation, radii, times)
+        except (ValueError, RuntimeError) as error:
+            raise RuntimeError(f"{genotype} {region}: pooled fit failed") from error
+        pooledResults[key] = (correlation, parameters, nearBounds)
+        print(f"{genotype} {region}: " + ", ".join(
+            f"{name}={value:.5g}" for name, value in zip(parameterNames, parameters)
+        ))
 
-            model0 = forIntegral(radii[fitR], times, 0.01, 2, 1).ravel()
-            m1_0 = np.nansum(model0 * cor_q1[fitR].ravel() / dataScale) / np.sum(model0**2)
-            m2_0 = np.nansum(model0 * cor_q2[fitR].ravel() / dataScale) / np.sum(model0**2)
-            try:
-                popt, _ = curve_fit(
-                    figure6Model, None, data[valid],
-                    p0=[0.01, 2, max(m1_0, 1e-3), max(m2_0, 1e-3)],
-                    bounds=([0, 0, 0, 0], np.inf), max_nfev=2000,
-                )
-            except (RuntimeError, ValueError) as error:
-                raise RuntimeError(f"{filename} {region}: Q correlation fit failed") from error
-            B, L = popt[:2]
-            m1, m2 = popt[2:] * dataScale
-            if not np.all(np.isfinite([B, L, m1, m2])):
-                raise ValueError(f"{filename} {region}: non-finite fit parameters")
-            figure6Fits.append({
-                "Genotype": genotype, "Region": region, "Filename": filename,
-                "B": B, "L": L, "mQ_1": m1, "mQ_2": m2,
-            })
-            fullModel = forIntegral(radii, times, B, L, 1)
-            figure6Correlations.setdefault((genotype, region), []).append(
-                (cor_q1, cor_q2, m1 * fullModel, m2 * fullModel)
+    rng = np.random.default_rng(figure6BootstrapSeed)
+    bootstrapRows, failureRows = [], []
+    attemptsByType = {}
+    if figure6BootstrapReplicates < 2:
+        raise ValueError("At least two bootstrap replicates are needed for a standard deviation")
+    maxAttempts = int(np.ceil(figure6BootstrapReplicates * 1.2))
+    for shapeFileType, filenames in recordingsByType.items():
+        groupConditions = [entry for entry in conditions if entry[2] == shapeFileType]
+        successes = 0
+        for attempt in range(1, maxAttempts + 1):
+            if successes == figure6BootstrapReplicates:
+                break
+            indices = rng.integers(0, len(filenames), size=len(filenames))
+            draw = "|".join(filenames[i] for i in indices)
+            attemptResults = []
+            for genotype, region, _, _ in groupConditions:
+                correlation = figure6PoolSamples(samplesByCondition[(genotype, region)], indices)
+                try:
+                    parameters, nearBounds = figure6FitPooled(correlation, radii, times)
+                except (ValueError, RuntimeError) as error:
+                    failureRows.append({
+                        "FileType": shapeFileType, "Attempt": attempt,
+                        "Genotype": genotype, "Region": region,
+                        "Recordings": draw, "Error": str(error),
+                    })
+                    break
+                attemptResults.append((genotype, region, parameters, nearBounds))
+            if len(attemptResults) != len(groupConditions):
+                continue
+            successes += 1
+            for genotype, region, parameters, nearBounds in attemptResults:
+                row = {
+                    "Genotype": genotype, "Region": region, "FileType": shapeFileType,
+                    "Replicate": successes, "Attempt": attempt, "Recordings": draw,
+                }
+                row.update(dict(zip(parameterNames, parameters)))
+                row.update({name + "_near_bound": flag
+                            for name, flag in zip(parameterNames, nearBounds)})
+                bootstrapRows.append(row)
+            if successes % 100 == 0:
+                print(f"{shapeFileType}: {successes}/{figure6BootstrapReplicates} bootstrap fits")
+        attemptsByType[shapeFileType] = successes + sum(
+            failure["FileType"] == shapeFileType for failure in failureRows
+        )
+        if successes < figure6BootstrapReplicates:
+            pd.DataFrame(failureRows).to_csv(
+                "results/paperTheory/Figure 6 bootstrap failures.csv", index=False
             )
-            print(f"{filename} {region}: B={B:.4g}, L={L:.4g}, "
-                  f"mQ_1={m1:.3e}, mQ_2={m2:.3e}")
+            raise RuntimeError(
+                f"{shapeFileType}: only {successes} successful bootstrap draws "
+                f"in {maxAttempts} attempts; see Figure 6 bootstrap failures.csv"
+            )
 
-            fitted_q1, fitted_q2 = m1 * fullModel[fitR], m2 * fullModel[fitR]
-            residual_q1 = cor_q1[fitR] - fitted_q1
-            residual_q2 = cor_q2[fitR] - fitted_q2
-            vmax = np.nanmax(np.abs(np.stack([
-                cor_q1[fitR], fitted_q1, residual_q1,
-                cor_q2[fitR], fitted_q2, residual_q2,
-            ])))
-            tGrid, rGrid = np.meshgrid(times, radii[fitR])
-            fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-            for row, (cor, model, residual, label) in enumerate((
-                (cor_q1[fitR], fitted_q1, residual_q1, "11"),
-                (cor_q2[fitR], fitted_q2, residual_q2, "22"),
+    dfBootstrap = pd.DataFrame(bootstrapRows)
+    dfBootstrap.to_csv("results/paperTheory/Figure 6 bootstrap samples.csv", index=False)
+    pd.DataFrame(failureRows, columns=[
+        "FileType", "Attempt", "Genotype", "Region", "Recordings", "Error"
+    ]).to_csv("results/paperTheory/Figure 6 bootstrap failures.csv", index=False)
+    if failureRows:
+        warnings.warn(f"{len(failureRows)} bootstrap draws failed; see Figure 6 bootstrap failures.csv",
+                      RuntimeWarning)
+
+    summaryRows = []
+    for genotype, region, shapeFileType, colour in conditions:
+        correlation, parameters, nearBounds = pooledResults[(genotype, region)]
+        draws = dfBootstrap[(dfBootstrap["Genotype"] == genotype)
+                            & (dfBootstrap["Region"] == region)]
+        row = {
+            "Genotype": genotype, "Region": region, "FileType": shapeFileType,
+            "Recordings": len(recordingsByType[shapeFileType]),
+            "BootstrapSuccesses": len(draws),
+            "BootstrapAttempts": attemptsByType[shapeFileType],
+            "BootstrapSeed": figure6BootstrapSeed,
+            "rho_star_fixed": figure6RhoStar, "b_fixed": figure6Bulk,
+        }
+        for name, estimate, bound in zip(parameterNames, parameters, nearBounds):
+            values = draws[name].to_numpy()
+            row[name] = estimate
+            row[name + "_bootstrap_sd"] = np.std(values, ddof=1)
+            row[name + "_ci_low"], row[name + "_ci_high"] = np.percentile(values, [2.5, 97.5])
+            row[name + "_near_bound"] = bound
+            row[name + "_bootstrap_near_bound"] = int(draws[name + "_near_bound"].sum())
+        summaryRows.append(row)
+    dfFigure6Summary = pd.DataFrame(summaryRows)
+    dfFigure6Summary.to_csv("results/paperTheory/Figure 6 pooled bootstrap parameters.csv", index=False)
+
+    for genotype, region, _, colour in conditions:
+        correlation, parameters, _ = pooledResults[(genotype, region)]
+        fitted = figure6ModelValues(parameters, radii, times)
+        residual = correlation - fitted
+        vmax = np.nanmax(np.abs(np.stack((correlation[:, fitR], fitted[:, fitR],
+                                         residual[:, fitR]))))
+        tGrid, rGrid = np.meshgrid(times, radii[fitR])
+        fineR, fineT = finerHeatmapGrid(radii[fitR]), finerHeatmapGrid(times)
+        fineTGrid, fineRGrid = np.meshgrid(fineT, fineR)
+        fineFitted = figure6ModelValues(parameters, fineR, np.maximum(fineT, 0))
+        fig, axes = plt.subplots(2, 3, figsize=(12, 6))
+        for row, label in enumerate(("11", "22")):
+            for column, (ax, values, title) in enumerate(zip(
+                axes[row], (correlation[row, fitR], fineFitted[row], residual[row, fitR]),
+                (rf"Pooled $C^{{{label}}}_{{qq}}(R,T)$",
+                 rf"Model $C^{{{label}}}_{{qq}}(R,T)$", "Pooled - Model"),
             )):
-                for ax, values, title in zip(
-                    axes[row], (cor, model, residual),
-                    (rf"Experiment $C^{{{label}}}_{{qq}}(R,T)$",
-                     rf"Model $C^{{{label}}}_{{qq}}(R,T)$", "Experiment - Model"),
-                ):
-                    image = ax.pcolor(tGrid, rGrid, values, cmap="RdBu_r",
-                                      vmin=-vmax, vmax=vmax, shading="auto")
-                    fig.colorbar(image, ax=ax)
-                    ax.set_xlabel("Time apart $T$ (min)")
-                    ax.set_ylabel(r"Distance apart $R$ $(\mu m)$")
-                    ax.set_title(title, pad=25)
-            fig.suptitle(f"{healthyName(filename)} {healthyName(region)}: " + rf"$B$={B:.3g}, $L$={L:.3g}")
-            enlargeHeatmapText(fig)
-            fig.tight_layout()
-            fig.savefig(f"results/paperTheory/Figure 6 fit {region} {filename}",
-                        dpi=300, transparent=True, bbox_inches="tight")
-            plt.close(fig)
+                xGrid, yGrid = (fineTGrid, fineRGrid) if column == 1 else (tGrid, rGrid)
+                image = ax.pcolor(xGrid, yGrid, values, cmap="RdBu_r",
+                                  vmin=-vmax, vmax=vmax, shading="auto")
+                fig.colorbar(image, ax=ax)
+                ax.set_xlabel("Time apart $T$ (min)")
+                ax.set_ylabel(r"Distance apart $R$ $(\mu m)$")
+                ax.set_title(title, pad=25)
+        fig.suptitle(f"{genotype} {healthyName(region)} pooled: "
+                     + rf"$A$={parameters[0]:.3g}, $L$={parameters[1]:.3g}")
+        enlargeHeatmapText(fig)
+        fig.tight_layout()
+        fig.savefig(f"results/paperTheory/Figure 6 pooled fit {genotype} {region}",
+                    dpi=300, transparent=True, bbox_inches="tight")
+        plt.close(fig)
 
-    dfFigure6 = pd.DataFrame(figure6Fits)
-    dfFigure6.to_csv("results/paperTheory/Figure 6 Q fit parameters.csv", index=False)
-    figure6SliceFigures = []
+    sliceFigures = []
     for component, label in enumerate(("11", "22")):
-        fig, axes = plt.subplots(2, 2, figsize=(8, 6))
+        fig, axes = plt.subplots(2, 2, figsize=(11, 7))
         for genotype, region, _, colour in conditions:
-            samples = figure6Correlations[(genotype, region)]
-            raw = np.stack([sample[component] for sample in samples])
-            model = np.stack([sample[component + 2] for sample in samples])
-            counts = np.isfinite(raw).sum(axis=0)
-            meanRaw = np.divide(np.nansum(raw, axis=0), counts,
-                                out=np.full(counts.shape, np.nan), where=counts > 0)
-            meanModel = np.mean(model, axis=0)
+            correlation, parameters, _ = pooledResults[(genotype, region)]
+            fitted = figure6ModelValues(parameters, radii, times)
             row = 0 if genotype == "Wild type" else 1
-            axes[row, 0].plot(radii[fitR], meanRaw[fitR, 0], "o",
+            axes[row, 0].plot(radii[fitR], correlation[component, fitR, 0], "o",
                               color=colour, label=healthyName(region))
-            axes[row, 0].plot(radii[fitR], meanModel[fitR, 0], "-", color=colour)
-            axes[row, 1].plot(times, meanRaw[radii == 10][0], "o",
+            axes[row, 0].plot(radii[fitR], fitted[component, fitR, 0], "-", color=colour)
+            axes[row, 1].plot(times, correlation[component, radii == 10][0], "o",
                               color=colour, label=healthyName(region))
-            axes[row, 1].plot(times, meanModel[radii == 10][0], "-", color=colour)
+            axes[row, 1].plot(times, fitted[component, radii == 10][0], "-", color=colour)
         for row, genotype in enumerate(("Wild type", "JNK")):
             axes[row, 0].set_title(f"{genotype}: T = 0 min")
             axes[row, 1].set_title(rf"{genotype}: R = 10 $\mu$m")
@@ -1056,51 +1539,49 @@ if True:
             axes[row, 1].set_xlim(times[0], times[-1])
             for ax in axes[row]:
                 ax.set_ylabel(rf"$C^{{{label}}}_{{qq}}(R,T)$")
-                ax.legend(title="Points: mean data; lines: mean fits", fontsize=9.1)
-        figure6SliceFigures.append((fig, axes, component))
-
-    sliceAxes = [ax for _, axes, _ in figure6SliceFigures for ax in axes.flat]
-    sliceYLimits = (min(ax.get_ylim()[0] for ax in sliceAxes),
-                    max(ax.get_ylim()[1] for ax in sliceAxes))
-    for fig, axes, component in figure6SliceFigures:
+                ax.legend(title="Points: pooled data; lines: pooled fit", fontsize=9.1)
+        sliceFigures.append((fig, axes, component))
+    sliceAxes = [ax for _, axes, _ in sliceFigures for ax in axes.flat]
+    limits = (min(ax.get_ylim()[0] for ax in sliceAxes),
+              max(ax.get_ylim()[1] for ax in sliceAxes))
+    for fig, axes, component in sliceFigures:
         for ax in axes.flat:
-            ax.set_ylim(sliceYLimits)
+            ax.set_ylim(limits)
         fig.tight_layout()
-        fig.savefig(f"results/paperTheory/Figure 6 Q{component + 1} correlation slices",
+        fig.savefig(f"results/paperTheory/Figure 6 pooled Q{component + 1} correlation slices",
                     dpi=300, transparent=True, bbox_inches="tight")
         plt.close(fig)
 
-    fig, axes = plt.subplots(2, 2, figsize=(6, 6))
-    conditionNames = [f"{genotype}\n{healthyName(region)}" for genotype, region, _, _ in conditions]
+    fig, axes = plt.subplots(2, 2, figsize=(8, 7))
     for ax, parameter, ylabel in zip(
-        axes.flat, ("B", "L", "mQ_1", "mQ_2"),
-        (r"$B$", r"$L$", r"$m_{Q_1}$", r"$m_{Q_2}$"),
+        axes.flat, parameterNames, (r"$A$", r"$L$", r"$m_{Q_1}$", r"$m_{Q_2}$")
     ):
-        groups = [
-            dfFigure6.loc[(dfFigure6["Genotype"] == genotype)
-                          & (dfFigure6["Region"] == region), parameter].to_numpy()
-            for genotype, region, _, _ in conditions
-        ]
-        values = np.concatenate(groups)
-        if not np.all(np.isfinite(values)) or np.any(values < 0):
-            raise ValueError(f"{parameter}: expected finite, non-negative fit values")
+        values = dfFigure6Summary[[parameter, parameter + "_ci_low",
+                                   parameter + "_ci_high"]].to_numpy()
+        if np.any(~np.isfinite(values)) or np.any(values < 0):
+            raise ValueError(f"{parameter}: invalid bootstrap interval or estimate")
         positive = values[values > 0]
         if positive.size == 0:
             raise ValueError(f"{parameter}: no positive values for logarithmic axis")
+        for i, (genotype, region, _, colour) in enumerate(conditions):
+            row = dfFigure6Summary[(dfFigure6Summary["Genotype"] == genotype)
+                                   & (dfFigure6Summary["Region"] == region)].iloc[0]
+            ax.vlines(i, row[parameter + "_ci_low"], row[parameter + "_ci_high"],
+                      color=colour, linewidth=2)
+            ax.scatter(i, row[parameter], color=colour, zorder=3)
         if np.any(values == 0):
             linearThreshold = np.median(positive) / 1000
             ax.set_yscale("symlog", linthresh=linearThreshold)
+            ax.set_ylim(bottom=-linearThreshold / 4)
             ax.set_title(f"Linear below {linearThreshold:.1g}")
         else:
             ax.set_yscale("log")
-        ax.boxplot(groups, positions=np.arange(6), widths=0.5, showfliers=False)
-        sns.swarmplot(data=groups, palette=[entry[3] for entry in conditions],
-                      size=6, ax=ax, zorder=3)
-        ax.set_xticks(np.arange(6), conditionNames, rotation=45, ha="right", fontsize=7.8)
+        ax.set_xticks(np.arange(len(conditions)), [
+            f"{genotype}\n{healthyName(region)}" for genotype, region, _, _ in conditions
+        ], rotation=45, ha="right", fontsize=7.8)
         ax.set_ylabel(ylabel)
-        if np.any(values == 0):
-            ax.set_ylim(bottom=-linearThreshold / 4)
+    fig.suptitle("Pooled estimates and 95% recording-bootstrap intervals")
     fig.tight_layout()
-    fig.savefig("results/paperTheory/Figure 6 Q fit parameter boxplots",
+    fig.savefig("results/paperTheory/Figure 6 pooled parameter intervals",
                 dpi=300, transparent=True, bbox_inches="tight")
     plt.close(fig)
