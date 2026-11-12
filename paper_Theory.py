@@ -1026,207 +1026,6 @@ if True:
 
 
 
-# ------------------------- Supplementary Figure 4 -------------------------
-
-
-def supplementary4Holm(pvalues):
-    """Holm-adjust one family of p-values, returning the original order."""
-    pvalues = np.asarray(pvalues, dtype=float)
-    if pvalues.ndim != 1 or np.any(~np.isfinite(pvalues)) or np.any(
-        (pvalues < 0) | (pvalues > 1)
-    ):
-        raise ValueError("Holm correction requires finite p-values in [0, 1]")
-    order = np.argsort(pvalues)
-    adjusted = np.minimum(1, np.maximum.accumulate(
-        pvalues[order] * np.arange(len(pvalues), 0, -1)
-    ))
-    result = np.empty_like(adjusted)
-    result[order] = adjusted
-    return result
-
-
-def supplementary4Tests(values, parameterNames, windowLabels):
-    """Complete-case Friedman and paired Wilcoxon tests for each parameter."""
-    values = np.asarray(values, dtype=float)
-    if (values.ndim != 3 or values.shape[1:] != (3, len(parameterNames))
-            or len(windowLabels) != 3 or len(values) < 3
-            or not np.all(np.isfinite(values))):
-        raise ValueError("Tests require at least three complete, finite paired recordings")
-    rows = []
-    pairs = ((0, 1), (0, 2), (1, 2))
-    for k, name in enumerate(parameterNames):
-        sample = values[:, :, k]
-        if np.all(sample == sample[:, :1]):
-            statistic, pvalue = 0.0, 1.0
-        else:
-            statistic, pvalue = sp.stats.friedmanchisquare(*sample.T)
-        if not np.isfinite(statistic) or not np.isfinite(pvalue):
-            raise ValueError(f"{name}: Friedman test returned non-finite results")
-        rows.append({
-            "Parameter": name, "Test": "Friedman", "Window1": "all",
-            "Window2": "all", "N": len(sample), "Statistic": statistic,
-            "MedianDifference_Window2_minus_Window1": np.nan,
-            "P_raw": pvalue, "P_Holm": np.nan,
-        })
-        pairRows = []
-        for i, j in pairs:
-            difference = sample[:, j] - sample[:, i]
-            if np.all(difference == 0):
-                statistic, pvalue = 0.0, 1.0
-            else:
-                # Pass precomputed differences to avoid subtraction inside SciPy.
-                statistic, pvalue = sp.stats.wilcoxon(
-                    difference, alternative="two-sided"
-                )
-            if not np.isfinite(statistic) or not np.isfinite(pvalue):
-                raise ValueError(f"{name}: Wilcoxon test returned non-finite results")
-            pairRows.append({
-                "Parameter": name, "Test": "Wilcoxon", "Window1": windowLabels[i],
-                "Window2": windowLabels[j], "N": len(sample), "Statistic": statistic,
-                "MedianDifference_Window2_minus_Window1": np.median(difference),
-                "P_raw": pvalue,
-            })
-        for row, adjusted in zip(
-            pairRows, supplementary4Holm([row["P_raw"] for row in pairRows])
-        ):
-            row["P_Holm"] = adjusted
-        rows.extend(pairRows)
-    # A separate family covers the four omnibus parameter tests.
-    omnibus = [row for row in rows if row["Test"] == "Friedman"]
-    for row, adjusted in zip(omnibus, supplementary4Holm([r["P_raw"] for r in omnibus])):
-        row["P_Holm"] = adjusted
-    return pd.DataFrame(rows)
-
-
-def supplementary4Plot(values, pooled, tests, parameterNames, windowLabels, path):
-    """Plot paired fits and the pair-count-weighted pooled fit in each window."""
-    labels = (r"$A$", r"$L$", r"$m_{Q_1}$", r"$m_{Q_2}$")
-    fig, axes = plt.subplots(1, 4, figsize=(16, 5))
-    for k, (ax, name, ylabel) in enumerate(zip(axes, parameterNames, labels)):
-        sample = values[:, :, k]
-        ax.boxplot(sample, positions=[0, 1, 2], widths=0.5, showfliers=False)
-        for recording in sample:
-            ax.plot([0, 1, 2], recording, color="tab:blue", alpha=0.25, linewidth=0.8)
-        ax.scatter(np.tile(np.arange(3), len(sample)), sample.ravel(),
-                   color="tab:blue", s=28, alpha=0.75, zorder=3)
-        ax.scatter(np.arange(3), pooled[:, k], marker="*", s=150, color="gold",
-                   edgecolor="black", linewidth=0.7, zorder=5, label="Pooled fit")
-        ax.set_xticks([0, 1, 2], windowLabels)
-        ax.set_ylabel(ylabel)
-        ax.set_xlabel("Time window (hours)")
-        highest = max(np.max(sample), np.max(pooled[:, k]))
-        span = highest if highest > 0 else 1.0
-        ax.set_ylim(0, highest + 0.63 * span)
-        rows = tests[(tests["Parameter"] == name) & (tests["Test"] == "Wilcoxon")]
-        for level, ((i, j), (_, row)) in enumerate(zip(
-            ((0, 1), (1, 2), (0, 2)),
-            rows.set_index(["Window1", "Window2"]).loc[
-                [(windowLabels[0], windowLabels[1]),
-                 (windowLabels[1], windowLabels[2]),
-                 (windowLabels[0], windowLabels[2])]
-            ].iterrows(),
-        )):
-            y = highest + (0.08 + 0.14 * level) * span
-            ax.plot([i, i, j, j], [y, y + 0.02 * span, y + 0.02 * span, y],
-                    color="black", linewidth=0.8)
-            pvalue = row["P_Holm"]
-            significance = "***" if pvalue < 0.001 else "**" if pvalue < 0.01 else "*" if pvalue < 0.05 else "ns"
-            ax.text((i + j) / 2, y + 0.025 * span, significance,
-                    ha="center", va="bottom", fontsize=9)
-        omnibus = tests[(tests["Parameter"] == name) & (tests["Test"] == "Friedman")]
-        ax.set_title(f"Friedman\nHolm p={omnibus['P_Holm'].iloc[0]:.3g}", fontsize=10)
-    axes[-1].legend(loc="upper left", bbox_to_anchor=(1.03, 1), fontsize=9)
-    fig.tight_layout()
-    fig.savefig(path, dpi=300, transparent=True, bbox_inches="tight")
-    plt.close(fig)
-
-
-# Fit recording-specific and pooled Q correlations in three one-hour windows.
-# Time lags are in minutes (two minutes per source frame).
-if False:
-    filenames, fileType = util.getFilesType("Unwound18h")
-    filenames = sorted(filenames)
-    if not filenames or len(filenames) != len(set(filenames)):
-        raise ValueError("Supplementary Figure 4 requires unique recordings")
-    windows = ((0, 29), (30, 59), (60, 89))
-    windowLabels = ("0-1", "1-2", "2-3")
-    parameterNames = ("A", "L", "mQ_1", "mQ_2")
-    radii = np.arange(26) * 2
-    times = np.arange(26) * 2
-    fitRows = []
-    individualFits = np.full((len(filenames), len(windows), 4), np.nan)
-    pooledFits = np.full((len(windows), 4), np.nan)
-    for windowIndex, (startFrame, endFrame) in enumerate(windows):
-        sampleSums, sampleCounts = [], []
-        for recordingIndex, filename in enumerate(filenames):
-            path = f"databases/paperTheory/dfCordQ{filename}_{startFrame}-{endFrame}.pkl"
-            dfCor = pd.read_pickle(path)
-            if (len(dfCor) != 1 or dfCor["Filename"].iloc[0] != filename
-                    or dfCor["StartFrame"].iloc[0] != startFrame
-                    or dfCor["EndFrame"].iloc[0] != endFrame):
-                raise ValueError(f"Incorrect supplementary correlation metadata: {path}")
-            sums, counts = [], []
-            for component in ("dQ1dQ1", "dQ2dQ2"):
-                cor = np.asarray(dfCor[component + "Correlation"].iloc[0])
-                count = np.asarray(dfCor[component + "Count"].iloc[0])
-                if cor.shape != (26, 27, 17) or count.shape != cor.shape:
-                    raise ValueError(f"{path}: unexpected {component} array shape")
-                if (np.any(~np.isfinite(count)) or np.any(count < 0)
-                        or np.any((count > 0) & ~np.isfinite(cor))):
-                    raise ValueError(f"{path}: invalid {component} correlation or count")
-                cor, count = cor[:, :-1], count[:, :-1]
-                sums.append(np.sum(np.where(count > 0, cor, 0) * count, axis=2).T)
-                counts.append(count.sum(axis=2).T)
-            sampleSums.append(sums)
-            sampleCounts.append(counts)
-            correlation = figure6PoolSamples((np.asarray([sums]), np.asarray([counts])),
-                                             np.array([0]))
-            try:
-                parameters, nearBounds = figure6FitPooled(correlation, radii, times)
-                individualFits[recordingIndex, windowIndex] = parameters
-                status = "ok"
-            except (ValueError, RuntimeError) as error:
-                parameters = np.full(4, np.nan)
-                nearBounds = (False,) * 4
-                status = f"failed: {error}"
-                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: {status}")
-            if any(nearBounds):
-                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
-            fitRows.append({
-                "Filename": filename, "Fit": "individual", "Window": windowLabels[windowIndex],
-                "StartFrame": startFrame, "EndFrame": endFrame, "Status": status,
-                **dict(zip(parameterNames, parameters)),
-                **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
-            })
-        correlation = figure6PoolSamples(
-            (np.asarray(sampleSums), np.asarray(sampleCounts)), np.arange(len(filenames))
-        )
-        try:
-            parameters, nearBounds = figure6FitPooled(correlation, radii, times)
-        except (ValueError, RuntimeError) as error:
-            raise RuntimeError(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]} fit failed") from error
-        pooledFits[windowIndex] = parameters
-        if any(nearBounds):
-            warnings.warn(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
-        fitRows.append({
-            "Filename": fileType, "Fit": "pooled", "Window": windowLabels[windowIndex],
-            "StartFrame": startFrame, "EndFrame": endFrame, "Status": "ok",
-            **dict(zip(parameterNames, parameters)),
-            **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
-        })
-    output = "results/paperTheory"
-    fits = pd.DataFrame(fitRows)
-    fits.to_csv(f"{output}/Sup Figure 4 Q window fits {fileType}.csv", index=False)
-    complete = np.all(np.isfinite(individualFits), axis=(1, 2))
-    if not np.all(complete):
-        warnings.warn(f"Supplementary Figure 4 complete-case tests exclude: {', '.join(np.asarray(filenames)[~complete])}")
-    tests = supplementary4Tests(individualFits[complete], parameterNames, windowLabels)
-    tests.to_csv(f"{output}/Sup Figure 4 Q window statistics {fileType}.csv", index=False)
-    supplementary4Plot(individualFits[complete], pooledFits, tests, parameterNames,
-                       windowLabels, f"{output}/Sup Figure 4 Q window boxplots {fileType}.png")
-    print(f"Supplementary Figure 4: {complete.sum()} of {len(filenames)} complete recordings")
-
-
 # ------------------------- Figure 6 -------------------------
 
 # The shared constants are treated as fixed; bootstrap uncertainty is conditional on them.
@@ -1252,8 +1051,10 @@ def figure6Kernel(radii):
     return k, dk * k[None, :] * sc.jv(0, np.asarray(radii)[:, None] * k)
 
 
-def figure6FitPooled(correlations, radii, times):
+def figure6FitPooled(correlations, radii, times, rhoStar=figure6RhoStar):
     """Fit the Figure 5 Q model to Q1 and Q2 correlations."""
+    if not np.isfinite(rhoStar) or rhoStar <= 0:
+        raise ValueError("Q fit density must be finite and positive")
     fitR = radii >= 10
     values = correlations[:, fitR, :]
     scale = np.nanmax(np.abs(values))
@@ -1263,7 +1064,7 @@ def figure6FitPooled(correlations, radii, times):
     valid = np.isfinite(data)
     if valid.sum() < 5:
         raise ValueError("Q correlation has insufficient finite bins")
-    offset = 2 * figure6RhoStar * figure6Bulk
+    offset = 2 * rhoStar * figure6Bulk
     k, kernel = figure6Kernel(tuple(radii[fitR]))
     k2 = k**2
     cachedParameters = None
@@ -1307,7 +1108,7 @@ def figure6FitPooled(correlations, radii, times):
         p0=[offset + 0.01, 2, max(m1, 1e-3), max(m2, 1e-3)],
         bounds=([offset + 1e-8, 0, 0, 0], np.inf), jac=jacobian, max_nfev=2000,
     )
-    parameters = np.array([popt[0], popt[1] / figure6RhoStar,
+    parameters = np.array([popt[0], popt[1] / rhoStar,
                            popt[2] * scale, popt[3] * scale])
     if not np.all(np.isfinite(parameters)):
         raise ValueError("Q fit produced non-finite parameters")
@@ -1585,3 +1386,271 @@ if False:
     fig.savefig("results/paperTheory/Figure 6 pooled parameter intervals",
                 dpi=300, transparent=True, bbox_inches="tight")
     plt.close(fig)
+
+
+
+
+# ------------------------- Supplementary Figure 4 -------------------------
+
+
+def supplementary4Holm(pvalues):
+    """Holm-adjust one family of p-values, returning the original order."""
+    pvalues = np.asarray(pvalues, dtype=float)
+    if pvalues.ndim != 1 or np.any(~np.isfinite(pvalues)) or np.any(
+        (pvalues < 0) | (pvalues > 1)
+    ):
+        raise ValueError("Holm correction requires finite p-values in [0, 1]")
+    order = np.argsort(pvalues)
+    adjusted = np.minimum(1, np.maximum.accumulate(
+        pvalues[order] * np.arange(len(pvalues), 0, -1)
+    ))
+    result = np.empty_like(adjusted)
+    result[order] = adjusted
+    return result
+
+
+def supplementary4Tests(values, parameterNames, windowLabels):
+    """Complete-case Friedman and paired Wilcoxon tests for each parameter."""
+    values = np.asarray(values, dtype=float)
+    if (values.ndim != 3 or values.shape[1:] != (3, len(parameterNames))
+            or len(windowLabels) != 3 or len(values) < 3
+            or not np.all(np.isfinite(values))):
+        raise ValueError("Tests require at least three complete, finite paired recordings")
+    rows = []
+    pairs = ((0, 1), (0, 2), (1, 2))
+    for k, name in enumerate(parameterNames):
+        sample = values[:, :, k]
+        if np.all(sample == sample[:, :1]):
+            statistic, pvalue = 0.0, 1.0
+        else:
+            statistic, pvalue = sp.stats.friedmanchisquare(*sample.T)
+        if not np.isfinite(statistic) or not np.isfinite(pvalue):
+            raise ValueError(f"{name}: Friedman test returned non-finite results")
+        rows.append({
+            "Parameter": name, "Test": "Friedman", "Window1": "all",
+            "Window2": "all", "N": len(sample), "Statistic": statistic,
+            "MedianDifference_Window2_minus_Window1": np.nan,
+            "P_raw": pvalue, "P_Holm": np.nan,
+        })
+        pairRows = []
+        for i, j in pairs:
+            difference = sample[:, j] - sample[:, i]
+            if np.all(difference == 0):
+                statistic, pvalue = 0.0, 1.0
+            else:
+                # Pass precomputed differences to avoid subtraction inside SciPy.
+                statistic, pvalue = sp.stats.wilcoxon(
+                    difference, alternative="two-sided"
+                )
+            if not np.isfinite(statistic) or not np.isfinite(pvalue):
+                raise ValueError(f"{name}: Wilcoxon test returned non-finite results")
+            pairRows.append({
+                "Parameter": name, "Test": "Wilcoxon", "Window1": windowLabels[i],
+                "Window2": windowLabels[j], "N": len(sample), "Statistic": statistic,
+                "MedianDifference_Window2_minus_Window1": np.median(difference),
+                "P_raw": pvalue,
+            })
+        for row, adjusted in zip(
+            pairRows, supplementary4Holm([row["P_raw"] for row in pairRows])
+        ):
+            row["P_Holm"] = adjusted
+        rows.extend(pairRows)
+    # A separate family covers the four omnibus parameter tests.
+    omnibus = [row for row in rows if row["Test"] == "Friedman"]
+    for row, adjusted in zip(omnibus, supplementary4Holm([r["P_raw"] for r in omnibus])):
+        row["P_Holm"] = adjusted
+    return pd.DataFrame(rows)
+
+
+def supplementary4Plot(values, pooled, tests, parameterNames, windowLabels, path):
+    """Plot paired fits and the pair-count-weighted pooled fit in each window."""
+    labels = (r"$A$", r"$L$", r"$m_{Q_1}$", r"$m_{Q_2}$")
+    fig, axes = plt.subplots(1, 4, figsize=(16, 5))
+    for k, (ax, name, ylabel) in enumerate(zip(axes, parameterNames, labels)):
+        sample = values[:, :, k]
+        ax.boxplot(sample, positions=[0, 1, 2], widths=0.5, showfliers=False)
+        for recording in sample:
+            ax.plot([0, 1, 2], recording, color="tab:blue", alpha=0.25, linewidth=0.8)
+        ax.scatter(np.tile(np.arange(3), len(sample)), sample.ravel(),
+                   color="tab:blue", s=28, alpha=0.75, zorder=3)
+        ax.scatter(np.arange(3), pooled[:, k], marker="*", s=150, color="gold",
+                   edgecolor="black", linewidth=0.7, zorder=5, label="Pooled fit")
+        ax.set_xticks([0, 1, 2], windowLabels)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel("Time window (hours)")
+        highest = max(np.max(sample), np.max(pooled[:, k]))
+        span = highest if highest > 0 else 1.0
+        ax.set_ylim(0, highest + 0.63 * span)
+        rows = tests[(tests["Parameter"] == name) & (tests["Test"] == "Wilcoxon")]
+        for level, ((i, j), (_, row)) in enumerate(zip(
+            ((0, 1), (1, 2), (0, 2)),
+            rows.set_index(["Window1", "Window2"]).loc[
+                [(windowLabels[0], windowLabels[1]),
+                 (windowLabels[1], windowLabels[2]),
+                 (windowLabels[0], windowLabels[2])]
+            ].iterrows(),
+        )):
+            y = highest + (0.08 + 0.14 * level) * span
+            ax.plot([i, i, j, j], [y, y + 0.02 * span, y + 0.02 * span, y],
+                    color="black", linewidth=0.8)
+            pvalue = row["P_Holm"]
+            significance = "***" if pvalue < 0.001 else "**" if pvalue < 0.01 else "*" if pvalue < 0.05 else "ns"
+            ax.text((i + j) / 2, y + 0.025 * span, significance,
+                    ha="center", va="bottom", fontsize=9)
+        omnibus = tests[(tests["Parameter"] == name) & (tests["Test"] == "Friedman")]
+        ax.set_title(f"Friedman\nHolm p={omnibus['P_Holm'].iloc[0]:.3g}", fontsize=10)
+    axes[-1].legend(loc="upper left", bbox_to_anchor=(1.03, 1), fontsize=9)
+    fig.tight_layout()
+    fig.savefig(path, dpi=300, transparent=True, bbox_inches="tight")
+    plt.close(fig)
+
+
+def supplementary4Heatmaps(correlations, radii, times, windowLabels, path):
+    """Plot pooled data with one shared colour scale per Q component."""
+    correlations = np.asarray(correlations)
+    if correlations.shape != (3, 2, len(radii), len(times)) or len(windowLabels) != 3:
+        raise ValueError("Supplementary Figure 4: unexpected pooled correlation shape")
+    fig, axes = plt.subplots(2, 3, figsize=(13.5, 7))
+    tGrid, rGrid = np.meshgrid(times, radii)
+    for component, label in enumerate(("11", "22")):
+        values = correlations[:, component]
+        if not np.any(np.isfinite(values)):
+            raise ValueError(f"Supplementary Figure 4: no finite Q{component + 1} data")
+        vmax = np.nanmax(np.abs(values))
+        if vmax <= 0:
+            raise ValueError(f"Supplementary Figure 4: zero Q{component + 1} colour scale")
+        for window, ax in enumerate(axes[component]):
+            image = ax.pcolor(tGrid, rGrid, values[window], cmap="RdBu_r",
+                              vmin=-vmax, vmax=vmax, shading="auto")
+            fig.colorbar(image, ax=ax)
+            ax.set_xlabel("Time apart $T$ (min)")
+            ax.set_ylabel(r"Distance apart $R$ $(\mu m)$")
+            ax.set_title(rf"Pooled $C^{{{label}}}_{{qq}}$: {windowLabels[window]} h")
+    enlargeHeatmapText(fig)
+    fig.tight_layout()
+    fig.savefig(path, dpi=300, transparent=True, bbox_inches="tight")
+    plt.close(fig)
+
+
+def supplementary4WindowDensities(dfShape, filenames, windows):
+    """Average 1 / mean cell area equally across frames and recordings."""
+    densities = np.empty((len(filenames), len(windows)))
+    for i, filename in enumerate(filenames):
+        sample = dfShape[dfShape["Filename"] == filename]
+        for j, (startFrame, endFrame) in enumerate(windows):
+            window = sample[sample["T"].between(startFrame, endFrame)]
+            frameAreas = window.groupby("T")["Area"].mean().reindex(
+                np.arange(startFrame, endFrame + 1)
+            ).to_numpy()
+            if np.any(~np.isfinite(frameAreas)) or np.any(frameAreas <= 0):
+                raise ValueError(f"{filename} frames {startFrame}-{endFrame}: missing or invalid mean cell area")
+            densities[i, j] = np.mean(1 / frameAreas)
+    return densities
+
+
+# Fit recording-specific and pooled Q correlations in three one-hour windows.
+if True:
+    filenames, fileType = util.getFilesType("Unwound18h")
+    filenames = sorted(filenames)
+    if not filenames or len(filenames) != len(set(filenames)):
+        raise ValueError("Supplementary Figure 4 requires unique recordings")
+    windows = ((0, 29), (30, 59), (60, 89))
+    windowLabels = ("0-1", "1-2", "2-3")
+    parameterNames = ("A", "L", "mQ_1", "mQ_2")
+    radii = np.arange(26) * 2
+    times = np.arange(26) * 2
+    dfShape = pd.read_pickle(f"databases/dfShape{fileType}.pkl")
+    recordingDensities = supplementary4WindowDensities(dfShape, filenames, windows)
+    windowDensities = recordingDensities.mean(axis=0)
+    fitRows = []
+    individualFits = np.full((len(filenames), len(windows), 4), np.nan)
+    pooledFits = np.full((len(windows), 4), np.nan)
+    pooledCorrelations = []
+    for windowIndex, (startFrame, endFrame) in enumerate(windows):
+        rhoStar = windowDensities[windowIndex]
+        print(f"Supplementary Figure 4 {windowLabels[windowIndex]} h: rho_star={rhoStar:.6g} um^-2")
+        sampleSums, sampleCounts = [], []
+        for recordingIndex, filename in enumerate(filenames):
+            path = f"databases/paperTheory/dfCordQ{filename}_{startFrame}-{endFrame}.pkl"
+            dfCor = pd.read_pickle(path)
+            if (len(dfCor) != 1 or dfCor["Filename"].iloc[0] != filename
+                    or dfCor["StartFrame"].iloc[0] != startFrame
+                    or dfCor["EndFrame"].iloc[0] != endFrame):
+                raise ValueError(f"Incorrect supplementary correlation metadata: {path}")
+            sums, counts = [], []
+            for component in ("dQ1dQ1", "dQ2dQ2"):
+                cor = np.asarray(dfCor[component + "Correlation"].iloc[0])
+                count = np.asarray(dfCor[component + "Count"].iloc[0])
+                if cor.shape != (26, 27, 17) or count.shape != cor.shape:
+                    raise ValueError(f"{path}: unexpected {component} array shape")
+                if (np.any(~np.isfinite(count)) or np.any(count < 0)
+                        or np.any((count > 0) & ~np.isfinite(cor))):
+                    raise ValueError(f"{path}: invalid {component} correlation or count")
+                cor, count = cor[:, :-1], count[:, :-1]
+                sums.append(np.sum(np.where(count > 0, cor, 0) * count, axis=2).T)
+                counts.append(count.sum(axis=2).T)
+            sampleSums.append(sums)
+            sampleCounts.append(counts)
+            correlation = figure6PoolSamples((np.asarray([sums]), np.asarray([counts])),
+                                             np.array([0]))
+            try:
+                parameters, nearBounds = figure6FitPooled(correlation, radii, times, rhoStar)
+                individualFits[recordingIndex, windowIndex] = parameters
+                status = "ok"
+            except (ValueError, RuntimeError) as error:
+                parameters = np.full(4, np.nan)
+                nearBounds = (False,) * 4
+                status = f"failed: {error}"
+                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: {status}")
+            if any(nearBounds):
+                warnings.warn(f"Supplementary Figure 4 {filename} {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
+            fitRows.append({
+                "Filename": filename, "Fit": "individual", "Window": windowLabels[windowIndex],
+                "StartFrame": startFrame, "EndFrame": endFrame, "Status": status,
+                "rho_star": rhoStar, "b_fixed": figure6Bulk,
+                **dict(zip(parameterNames, parameters)),
+                **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
+            })
+        correlation = figure6PoolSamples(
+            (np.asarray(sampleSums), np.asarray(sampleCounts)), np.arange(len(filenames))
+        )
+        pooledCorrelations.append(correlation)
+        try:
+            parameters, nearBounds = figure6FitPooled(correlation, radii, times, rhoStar)
+        except (ValueError, RuntimeError) as error:
+            raise RuntimeError(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]} fit failed") from error
+        pooledFits[windowIndex] = parameters
+        if any(nearBounds):
+            warnings.warn(f"Supplementary Figure 4 pooled {windowLabels[windowIndex]}: fit near bounds {nearBounds}")
+        fitRows.append({
+            "Filename": fileType, "Fit": "pooled", "Window": windowLabels[windowIndex],
+            "StartFrame": startFrame, "EndFrame": endFrame, "Status": "ok",
+            "rho_star": rhoStar, "b_fixed": figure6Bulk,
+            **dict(zip(parameterNames, parameters)),
+            **{f"{name}_near_bound": near for name, near in zip(parameterNames, nearBounds)},
+        })
+    output = "results/paperTheory"
+    densityRows = []
+    for windowIndex, (startFrame, endFrame) in enumerate(windows):
+        for recordingIndex, filename in enumerate(filenames):
+            densityRows.append({
+                "Filename": filename, "Window": windowLabels[windowIndex],
+                "StartFrame": startFrame, "EndFrame": endFrame,
+                "recording_rho_star": recordingDensities[recordingIndex, windowIndex],
+                "window_rho_star": windowDensities[windowIndex],
+            })
+    pd.DataFrame(densityRows).to_csv(
+        f"{output}/Sup Figure 4 window densities {fileType}.csv", index=False
+    )
+    fits = pd.DataFrame(fitRows)
+    fits.to_csv(f"{output}/Sup Figure 4 Q window fits {fileType}.csv", index=False)
+    complete = np.all(np.isfinite(individualFits), axis=(1, 2))
+    if not np.all(complete):
+        warnings.warn(f"Supplementary Figure 4 complete-case tests exclude: {', '.join(np.asarray(filenames)[~complete])}")
+    tests = supplementary4Tests(individualFits[complete], parameterNames, windowLabels)
+    tests.to_csv(f"{output}/Sup Figure 4 Q window statistics {fileType}.csv", index=False)
+    supplementary4Plot(individualFits[complete], pooledFits, tests, parameterNames,
+                       windowLabels, f"{output}/Sup Figure 4 Q window boxplots {fileType}.png")
+    supplementary4Heatmaps(pooledCorrelations, radii, times, windowLabels,
+                           f"{output}/Sup Figure 4 pooled Q window heatmaps {fileType}.png")
+    print(f"Supplementary Figure 4: {complete.sum()} of {len(filenames)} complete recordings")
